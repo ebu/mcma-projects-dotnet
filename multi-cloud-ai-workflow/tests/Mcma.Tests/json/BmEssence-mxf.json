@@ -1,0 +1,260 @@
+{
+    "@type": "BMEssence",
+    "bmContent": "https://ul05fz8ytd.execute-api.us-east-1.amazonaws.com/beta/bm-contents/e2449167-37fe-4fc4-82ab-cbe05ce60e03",
+    "status": "NEW",
+    "locations": [
+        {
+            "@type": "S3Locator",
+            "awsS3Bucket": "triskel.mcma.us-east-1.beta.repository",
+            "awsS3Key": "20190323/cb60189c-bb2e-4ae5-99ab-c9222ee9d15d.mxf"
+        }
+    ],
+    "id": "https://ul05fz8ytd.execute-api.us-east-1.amazonaws.com/beta/bm-essences/67b31284-62bd-47e7-8f72-bb75fbb93364",
+    "dateCreated": "2019-03-23T12:46:44.4245541Z",
+    "dateModified": "2019-03-23T12:46:44.4245541Z",
+    "technicalMetadata": {
+        "ebucore:ebuCoreMain": {
+            "@version": "1.8",
+            "@dateLastModified": "2019-03-23",
+            "@writingLibraryName": "MediaInfoLib",
+            "@timeLastModified": "12:46:43Z",
+            "ebucore:coreMetadata": [
+                {
+                    "ebucore:format": [
+                        {
+                            "ebucore:timecodeFormat": [
+                                {
+                                    "ebucore:technicalAttributeBoolean": [
+                                        {
+                                            "#value": "true",
+                                            "@typeLabel": "Stripped"
+                                        }
+                                    ],
+                                    "ebucore:timecodeTrack": [
+                                        {
+                                            "@trackId": "1",
+                                            "@typeLabel": "Material"
+                                        }
+                                    ],
+                                    "@timecodeFormatName": "MXF TC",
+                                    "ebucore:timecodeStart": [
+                                        {
+                                            "ebucore:timecode": [
+                                                {
+                                                    "#value": "00:00:00:00"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "ebucore:technicalAttributeBoolean": [
+                                        {
+                                            "#value": "true",
+                                            "@typeLabel": "Stripped"
+                                        }
+                                    ],
+                                    "ebucore:timecodeTrack": [
+                                        {
+                                            "@trackId": "1",
+                                            "@typeLabel": "Source"
+                                        }
+                                    ],
+                                    "@timecodeFormatName": "MXF TC",
+                                    "ebucore:timecodeStart": [
+                                        {
+                                            "ebucore:timecode": [
+                                                {
+                                                    "#value": "01:00:00:00"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "ebucore:fileSize": [
+                                {
+                                    "#value": "2815388"
+                                }
+                            ],
+                            "ebucore:duration": [
+                                {
+                                    "ebucore:normalPlayTime": [
+                                        {
+                                            "#value": "PT10.640S"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "ebucore:videoFormat": [
+                                {
+                                    "@videoFormatName": "MPEG Video",
+                                    "@videoFormatVersionId": "Version 2",
+                                    "ebucore:frameRate": [
+                                        {
+                                            "#value": "25"
+                                        }
+                                    ],
+                                    "ebucore:bitRateMode": [
+                                        {
+                                            "#value": "constant"
+                                        }
+                                    ],
+                                    "ebucore:videoTrack": [
+                                        {
+                                            "@trackId": "2",
+                                            "@trackName": "Picture Track"
+                                        }
+                                    ],
+                                    "ebucore:technicalAttributeString": [
+                                        {
+                                            "#value": "Component",
+                                            "@typeLabel": "Standard"
+                                        },
+                                        {
+                                            "#value": "YUV",
+                                            "@typeLabel": "ColorSpace"
+                                        },
+                                        {
+                                            "#value": "4:2:0",
+                                            "@typeLabel": "ChromaSubsampling"
+                                        },
+                                        {
+                                            "#value": "BT.601 PAL",
+                                            "@typeLabel": "colour_primaries"
+                                        },
+                                        {
+                                            "#value": "BT.470 System B/G",
+                                            "@typeLabel": "transfer_characteristics"
+                                        },
+                                        {
+                                            "#value": "BT.470 System B/G",
+                                            "@typeLabel": "matrix_coefficients"
+                                        }
+                                    ],
+                                    "ebucore:bitRate": [
+                                        {
+                                            "#value": "2097200"
+                                        }
+                                    ],
+                                    "ebucore:technicalAttributeInteger": [
+                                        {
+                                            "@unit": "byte",
+                                            "#value": "2789276",
+                                            "@typeLabel": "StreamSize"
+                                        },
+                                        {
+                                            "@unit": "bit",
+                                            "#value": "8",
+                                            "@typeLabel": "BitDepth"
+                                        }
+                                    ],
+                                    "ebucore:scanningOrder": [
+                                        {
+                                            "#value": "bottom"
+                                        }
+                                    ],
+                                    "ebucore:videoEncoding": [
+                                        {
+                                            "@typeLink": "http://www.ebu.ch/metadata/cs/ebu_VideoCompressionCodeCS.xml#2.2.2",
+                                            "@typeLabel": "MPEG-2 Video Main Profile @ Main Level"
+                                        }
+                                    ],
+                                    "ebucore:codec": [
+                                        {
+                                            "ebucore:codecIdentifier": [
+                                                {
+                                                    "dc:identifier": [
+                                                        {
+                                                            "#value": "0D01030102046001"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "ebucore:scanningFormat": [
+                                        {
+                                            "#value": "progressive"
+                                        }
+                                    ],
+                                    "ebucore:width": [
+                                        {
+                                            "@unit": "pixel",
+                                            "#value": "720"
+                                        }
+                                    ],
+                                    "ebucore:aspectRatio": [
+                                        {
+                                            "ebucore:factorNumerator": [
+                                                {
+                                                    "#value": "4"
+                                                }
+                                            ],
+                                            "@typeLabel": "display",
+                                            "ebucore:factorDenominator": [
+                                                {
+                                                    "#value": "3"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "ebucore:height": [
+                                        {
+                                            "@unit": "pixel",
+                                            "#value": "576"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "ebucore:fileName": [
+                                {
+                                    "#value": "ba0ecb63-7a4b-47db-899d-3addcebeda39"
+                                }
+                            ],
+                            "ebucore:locator": [
+                                {
+                                    "#value": "/tmp/ba0ecb63-7a4b-47db-899d-3addcebeda39"
+                                }
+                            ],
+                            "ebucore:dateCreated": [
+                                {
+                                    "@startDate": "2006-01-11",
+                                    "@startTime": "18:58:47.524"
+                                }
+                            ],
+                            "ebucore:containerFormat": [
+                                {
+                                    "ebucore:containerEncoding": [
+                                        {
+                                            "@formatLabel": "MXF"
+                                        }
+                                    ],
+                                    "@containerFormatName": "MXF",
+                                    "ebucore:technicalAttributeString": [
+                                        {
+                                            "#value": "OP-1a",
+                                            "@typeLabel": "FormatProfile"
+                                        },
+                                        {
+                                            "#value": "Open / Incomplete",
+                                            "@typeLabel": "FormatSettings"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "ebucore:technicalAttributeInteger": [
+                                {
+                                    "@unit": "bps",
+                                    "#value": "2116833",
+                                    "@typeLabel": "OverallBitRate"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "@writingLibraryVersion": "18.05"
+        }
+    }
+}

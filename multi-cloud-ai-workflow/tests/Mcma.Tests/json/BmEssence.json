@@ -1,0 +1,261 @@
+{
+	"@type": "BMEssence",
+	"bMContent": "https://rcg9yk1z3h.execute-api.us-east-2.amazonaws.com/dev/bm-contents/ad66d0c7-6c74-4ca4-b77f-762c539aca8c",
+	"locations": [
+		{
+			"@type": "S3Locator",
+			"awsS3Bucket": "triskel.mcma.us-east-2.dev.repository",
+			"awsS3Key": "20190311/f706aa80-919a-4f72-ad8a-201d6bdf476a.mp4"
+		}
+	],
+	"technicalMetadata": {
+		"ebucore:ebuCoreMain": {
+			"@version": "1.8",
+			"@writingLibraryName": "MediaInfoLib",
+			"@writingLibraryVersion": "18.05",
+			"@dateLastModified": "2019-03-11",
+			"@timeLastModified": "16:53:11Z",
+			"ebucore:coreMetadata": [
+				{
+					"ebucore:format": [
+						{
+							"ebucore:videoFormat": [
+								{
+									"@videoFormatName": "AVC",
+									"ebucore:width": [
+										{
+											"@unit": "pixel",
+											"#value": "480"
+										}
+									],
+									"ebucore:height": [
+										{
+											"@unit": "pixel",
+											"#value": "270"
+										}
+									],
+									"ebucore:frameRate": [
+										{
+											"@factorNumerator": "1000",
+											"@factorDenominator": "1001",
+											"#value": "30"
+										}
+									],
+									"ebucore:aspectRatio": [
+										{
+											"@typeLabel": "display",
+											"ebucore:factorNumerator": [
+												{
+													"#value": "16"
+												}
+											],
+											"ebucore:factorDenominator": [
+												{
+													"#value": "9"
+												}
+											]
+										}
+									],
+									"ebucore:videoEncoding": [
+										{
+											"@typeLabel": "Baseline@L2.1"
+										}
+									],
+									"ebucore:codec": [
+										{
+											"ebucore:codecIdentifier": [
+												{
+													"dc:identifier": [
+														{
+															"#value": "avc1"
+														}
+													]
+												}
+											]
+										}
+									],
+									"ebucore:bitRate": [
+										{
+											"#value": "500000"
+										}
+									],
+									"ebucore:scanningFormat": [
+										{
+											"#value": "progressive"
+										}
+									],
+									"ebucore:videoTrack": [
+										{
+											"@trackId": "1"
+										}
+									],
+									"ebucore:technicalAttributeString": [
+										{
+											"@typeLabel": "ColorSpace",
+											"#value": "YUV"
+										},
+										{
+											"@typeLabel": "ChromaSubsampling",
+											"#value": "4:2:0"
+										}
+									],
+									"ebucore:technicalAttributeInteger": [
+										{
+											"@typeLabel": "StreamSize",
+											"@unit": "byte",
+											"#value": "4922554"
+										},
+										{
+											"@typeLabel": "BitDepth",
+											"@unit": "bit",
+											"#value": "8"
+										}
+									],
+									"ebucore:technicalAttributeBoolean": [
+										{
+											"@typeLabel": "CABAC",
+											"#value": "false"
+										},
+										{
+											"@typeLabel": "MBAFF",
+											"#value": "false"
+										}
+									]
+								}
+							],
+							"ebucore:audioFormat": [
+								{
+									"@audioFormatName": "AAC",
+									"ebucore:audioEncoding": [
+										{
+											"@typeLabel": "LC"
+										}
+									],
+									"ebucore:codec": [
+										{
+											"ebucore:codecIdentifier": [
+												{
+													"dc:identifier": [
+														{
+															"#value": "mp4a-40-2"
+														}
+													]
+												}
+											]
+										}
+									],
+									"ebucore:samplingRate": [
+										{
+											"#value": "44100"
+										}
+									],
+									"ebucore:bitRate": [
+										{
+											"#value": "128029"
+										}
+									],
+									"ebucore:bitRateMode": [
+										{
+											"#value": "constant"
+										}
+									],
+									"ebucore:audioTrack": [
+										{
+											"@trackId": "2"
+										}
+									],
+									"ebucore:channels": [
+										{
+											"#value": "2"
+										}
+									],
+									"ebucore:technicalAttributeString": [
+										{
+											"@typeLabel": "ChannelPositions",
+											"#value": "Front: L R"
+										},
+										{
+											"@typeLabel": "ChannelLayout",
+											"#value": "L R"
+										}
+									],
+									"ebucore:technicalAttributeInteger": [
+										{
+											"@typeLabel": "StreamSize",
+											"@unit": "byte",
+											"#value": "1249047"
+										}
+									]
+								}
+							],
+							"ebucore:containerFormat": [
+								{
+									"@containerFormatName": "MPEG-4",
+									"ebucore:containerEncoding": [
+										{
+											"@formatLabel": "MPEG-4"
+										}
+									],
+									"ebucore:codec": [
+										{
+											"ebucore:codecIdentifier": [
+												{
+													"dc:identifier": [
+														{
+															"#value": "isom"
+														}
+													]
+												}
+											]
+										}
+									],
+									"ebucore:technicalAttributeString": [
+										{
+											"@typeLabel": "FormatProfile",
+											"#value": "Base Media"
+										},
+										{
+											"@typeLabel": "WritingApplication",
+											"#value": "Lavf56.31.102"
+										}
+									]
+								}
+							],
+							"ebucore:duration": [
+								{
+									"ebucore:normalPlayTime": [
+										{
+											"#value": "PT1M18.048S"
+										}
+									]
+								}
+							],
+							"ebucore:fileSize": [
+								{
+									"#value": "6239107"
+								}
+							],
+							"ebucore:fileName": [
+								{
+									"#value": "b2567a0e-38f5-4a90-98b3-a204e534d2e9"
+								}
+							],
+							"ebucore:locator": [
+								{
+									"#value": "/tmp/b2567a0e-38f5-4a90-98b3-a204e534d2e9"
+								}
+							],
+							"ebucore:technicalAttributeInteger": [
+								{
+									"@typeLabel": "OverallBitRate",
+									"@unit": "bps",
+									"#value": "639515"
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	}
+}

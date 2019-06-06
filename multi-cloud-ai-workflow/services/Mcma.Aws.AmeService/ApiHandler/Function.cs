@@ -8,6 +8,13 @@ using Mcma.Core.Serialization;
 using Mcma.Aws;
 using Mcma.Core.Logging;
 using Mcma.Aws.Api;
+using Mcma.Core;
+using Mcma.Aws.DynamoDb;
+using Mcma.Api;
+using Amazon.Lambda;
+using Amazon.Lambda.Model;
+using Mcma.Api.Routes.Defaults;
+using Mcma.Aws.Lambda;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -16,16 +23,10 @@ namespace Mcma.Aws.AmeService.ApiHandler
 {
     public class Function
     {
-        private static ApiGatewayApiController Controller = new ApiGatewayApiController();
-
-        static Function()
-        {
-            Controller.AddRoute("GET", "/job-assignments", JobAssignmentRoutes.GetJobAssignmentsAsync);
-            Controller.AddRoute("POST", "/job-assignments", JobAssignmentRoutes.AddJobAssignmentAsync);
-            Controller.AddRoute("DELETE", "/job-assignments", JobAssignmentRoutes.DeleteJobAssignmentsAsync);
-            Controller.AddRoute("GET", "/job-assignments/{id}", JobAssignmentRoutes.GetJobAssignmentAsync);
-            Controller.AddRoute("DELETE", "/job-assignments/{id}", JobAssignmentRoutes.DeleteJobAssignmentAsync);
-        }
+        private static ApiGatewayApiController Controller { get; } =
+            AwsDefaultRoutes.WithDynamoDb<JobAssignment>()
+                            .ForJobAssignments<LambdaWorkerInvoker>()
+                            .ToController();
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
         {

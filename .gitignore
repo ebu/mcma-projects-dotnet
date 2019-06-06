@@ -9,3 +9,4 @@ terraform.tfstate.backup
 terraform.tfvars
 build.inputs
 aws-credentials.json
+build.state

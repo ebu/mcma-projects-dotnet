@@ -66,31 +66,52 @@ public class BuildProject : BuildTask
     private const string DistFolder = "dist";
     private const string StagingFolder = DistFolder + "/staging";
 
-    public BuildProject(string project, bool build = true, bool clean = true)
+    public BuildProject(string projectFolder, bool build = true, bool clean = true)
     {
-        Project = project;
-        DistFullPath = $"{project}/{DistFolder}";
-        StagingFullPath = $"{project}/{StagingFolder}";
+        ProjectFolder = projectFolder;
+        DistFullPath = $"{projectFolder}/{DistFolder}";
+        StagingFullPath = $"{projectFolder}/{StagingFolder}";
 
         if (clean)
             Clean = new DeleteFiles(StagingFullPath);
 
         if (build)
         {
-            CheckForSourceChanges = new CheckProjectForChanges(project);
+            CheckForSourceChanges = new CheckProjectForChanges(projectFolder);
 
             ProjectBuild =
                 new AggregateTask(
-                    DotNetCli.Clean(project, StagingFolder),
-                    DotNetCli.Publish(project, StagingFolder));
+                    DotNetCli.Clean(projectFolder, StagingFolder),
+                    DotNetCli.Publish(projectFolder, StagingFolder));
         }
         else
             CheckForOutputChanges = new CheckForFileChanges(StagingFullPath, $"{DistFullPath}/lambda.zip", "\\.json");
+
+        var csprojFiles = Directory.GetFiles(projectFolder, "*.csproj");
+        if (csprojFiles.Length == 0)
+            throw new Exception($"No .csproj file found in {projectFolder}.");
+        if (csprojFiles.Length > 1)
+            throw new Exception($"More than 1 .csproj file found in {projectFolder}.");
+
+        ProjectFile = csprojFiles[0];
+        ProjectName = ProjectFile.Replace(".csproj", ""); 
         
-        Zip = new ZipTask(StagingFullPath, $"{DistFullPath}/lambda.zip");
+        // set json files with read permissions for all for builds on Linux boxes
+        Zip = new ZipTask(StagingFullPath, $"{DistFullPath}/lambda.zip")
+        {
+            ExternalAttributes =
+            {
+                {ProjectName + ".deps.json", 0444},
+                {ProjectName + ".runtimeconfig.json", 0444}
+            }
+        };
     }
 
-    private string Project { get; }
+    private string ProjectFolder { get; }
+
+    private string ProjectFile { get; }
+
+    private string ProjectName { get; }
 
     private string DistFullPath { get; }
 
@@ -118,19 +139,19 @@ public class BuildProject : BuildTask
             if (ProjectBuild != null)
                 await ProjectBuild.Run();
 
-            foreach (var postBuildCopy in PostBuildCopies.Select(kvp => new CopyFiles(Path.Combine(Project, kvp.Key), Path.Combine(StagingFullPath, kvp.Value))))
+            foreach (var postBuildCopy in PostBuildCopies.Select(kvp => new CopyFiles(Path.Combine(ProjectFolder, kvp.Key), Path.Combine(StagingFullPath, kvp.Value))))
                 await postBuildCopy.Run();
 
             if (CheckForSourceChanges != null || await CheckForOutputChanges.Run())
             {
-                Console.WriteLine($"Zipping project {Project} output...");
+                Console.WriteLine($"Zipping project {ProjectFolder} output...");
                 await Zip.Run();
             }
             else
-                Console.WriteLine($"Zip file for project {Project} is up-to-date.");
+                Console.WriteLine($"Zip file for project {ProjectFolder} is up-to-date.");
         }
         else
-            Console.WriteLine($"Project {Project} is up-to-date.");
+            Console.WriteLine($"Project {ProjectFolder} is up-to-date.");
 
         return true;
     }

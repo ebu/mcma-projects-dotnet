@@ -28,7 +28,7 @@ namespace Mcma.Aws.Workflows.ProcessWorkflowCompletion
             {
                 var jobData = new JobBase
                 {
-                    Status = "COMPLETED",
+                    Status = JobStatus.Completed,
                     Progress = 100,
                     JobOutput = @event["output"]?.ToMcmaObject<JobParameterBag>()
                 };

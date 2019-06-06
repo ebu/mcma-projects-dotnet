@@ -160,7 +160,7 @@ resource "aws_api_gateway_deployment" "job_repository_deployment" {
     "ServicesUrl"              = "${local.services_url}"
     "ServicesAuthType"         = "${local.services_auth_type}"
     "ServicesAuthContext"      = "${local.services_auth_context}"
-    "WorkerLambdaFunctionName" = "${aws_lambda_function.job-repository-worker.function_name}"
+    "WorkerFunctionName" = "${aws_lambda_function.job-repository-worker.function_name}"
     "DeploymentHash"           = "${sha256(file("./services/job-repository.tf"))}"
   }
 }

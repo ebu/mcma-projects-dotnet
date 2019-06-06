@@ -8,6 +8,7 @@ using Amazon.Rekognition.Model;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Mcma.Aws;
+using Mcma.Aws.S3;
 using Mcma.Core;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;

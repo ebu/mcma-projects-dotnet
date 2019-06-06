@@ -11,6 +11,9 @@ using Mcma.Core.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Mcma.Core.Logging;
+using Mcma.Aws.S3;
+using Mcma.Core;
+using Mcma.Core.ContextVariables;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -20,7 +23,7 @@ namespace Mcma.Aws.AwsAiService.S3Trigger
 
     public class Function
     {
-        private StageVariables StageVariables { get; } = new StageVariables();
+        private IContextVariableProvider ContextVariableProvider { get; } = new EnvironmentVariableProvider();
 
         public async Task Handler(S3Event @event, ILambdaContext context)
         {
@@ -39,19 +42,22 @@ namespace Mcma.Aws.AwsAiService.S3Trigger
 
                     var transcribeJobUuid = awsS3Key.Substring(awsS3Key.IndexOf("-") + 1, awsS3Key.LastIndexOf(".") - awsS3Key.IndexOf("-") - 1);
 
-                    var jobAssignmentId = StageVariables.PublicUrl + "/job-assignments/" + transcribeJobUuid;
+                    var jobAssignmentId = ContextVariableProvider.GetRequiredContextVariable("PublicUrl") + "/job-assignments/" + transcribeJobUuid;
 
                     var invokeParams = new InvokeRequest
                     {
-                        FunctionName = StageVariables.WorkerLambdaFunctionName,
+                        FunctionName = ContextVariableProvider.GetRequiredContextVariable("WorkerFunctionName"),
                         InvocationType = "Event",
                         LogType = "None",
                         Payload = new
                         {
-                            action = "ProcessTranscribeJobResult",
-                            stageVariables = StageVariables.ToDictionary(),
-                            jobAssignmentId,
-                            outputFile = new S3Locator { AwsS3Bucket = awsS3Bucket, AwsS3Key = awsS3Key }
+                            operationName = "ProcessTranscribeJobResult",
+                            contextVariables = ContextVariableProvider.GetAllContextVariables(),
+                            input = new
+                            {
+                                jobAssignmentId,
+                                outputFile = new S3Locator { AwsS3Bucket = awsS3Bucket, AwsS3Key = awsS3Key }
+                            }
                         }.ToMcmaJson().ToString()
                     };
 

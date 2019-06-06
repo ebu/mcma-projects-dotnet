@@ -8,6 +8,9 @@ using Mcma.Aws;
 using Mcma.Core.Serialization;
 using Mcma.Core.Logging;
 using Mcma.Worker;
+using Mcma.Aws.Worker;
+using Mcma.Core;
+using Mcma.Worker.Builders;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -16,12 +19,21 @@ namespace Mcma.Aws.WorkflowService.Worker
 {
     public class Function
     {
-        public async Task Handler(WorkflowServiceWorkerRequest @event, ILambdaContext context)
+        private static IWorker Worker =
+            new WorkerBuilder()
+                .HandleJobsOfType<WorkflowJob>(x =>
+                    x.AddProfile<RunWorkflow>("ConformWorkflow")
+                     .AddProfile<RunWorkflow>("AiWorkflow"))
+                .HandleRequestsOfType<ProcessNotificationRequest>(x =>
+                    x.WithOperation(ProcessNotificationHandler.OperationName,
+                        y => y.Handle<ProcessNotificationHandler>()))
+                .Build();
+        public async Task Handler(WorkerRequest @event, ILambdaContext context)
         {
             Logger.Debug(@event.ToMcmaJson().ToString());
             Logger.Debug(context.ToMcmaJson().ToString());
 
-            await McmaWorker.DoWorkAsync<WorkflowServiceWorker, WorkflowServiceWorkerRequest>(@event.Action, @event);
+            await Worker.DoWorkAsync(@event);
         }
     }
 }

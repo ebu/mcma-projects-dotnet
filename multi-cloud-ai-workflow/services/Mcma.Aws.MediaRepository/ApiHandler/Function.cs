@@ -9,6 +9,8 @@ using Mcma.Aws;
 using Mcma.Core.Serialization;
 using Mcma.Core.Logging;
 using Mcma.Aws.Api;
+using Mcma.Core;
+using Mcma.Api.Routes;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -17,22 +19,11 @@ namespace Mcma.Aws.MediaRepository.ApiHandler
 {
     public class Function
     {
-        private static ApiGatewayApiController Controller = new ApiGatewayApiController();
-
-        static Function()
-        {
-            Controller.AddRoute("GET", "/bm-contents", BmContentRoutes.GetBmContentsAsync);
-            Controller.AddRoute("POST", "/bm-contents", BmContentRoutes.AddBmContentAsync);
-            Controller.AddRoute("GET", "/bm-contents/{id}", BmContentRoutes.GetBmContentAsync);
-            Controller.AddRoute("PUT", "/bm-contents/{id}", BmContentRoutes.PutBmContentAsync);
-            Controller.AddRoute("DELETE", "/bm-contents/{id}", BmContentRoutes.DeleteBmContentAsync);
-
-            Controller.AddRoute("GET", "/bm-essences", BmEssenceRoutes.GetBmEssencesAsync);
-            Controller.AddRoute("POST", "/bm-essences", BmEssenceRoutes.AddBmEssenceAsync);
-            Controller.AddRoute("GET", "/bm-essences/{id}", BmEssenceRoutes.GetBmEssenceAsync);
-            Controller.AddRoute("PUT", "/bm-essences/{id}", BmEssenceRoutes.PutBmEssenceAsync);
-            Controller.AddRoute("DELETE", "/bm-essences/{id}", BmEssenceRoutes.DeleteBmEssenceAsync);
-        }
+        private static ApiGatewayApiController Controller { get; } =
+            new McmaApiRouteCollection()
+                .AddRoutes(AwsDefaultRoutes.WithDynamoDb<BMContent>("bm-contents").AddAll().Build())
+                .AddRoutes(AwsDefaultRoutes.WithDynamoDb<BMEssence>("bm-essences").AddAll().Build())
+                .ToController();
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
         {

@@ -8,6 +8,11 @@ using Mcma.Core.Serialization;
 using Mcma.Aws;
 using Mcma.Core.Logging;
 using Mcma.Aws.Api;
+using Mcma.Core;
+using Mcma.Aws.Lambda;
+using Mcma.Api.Routes.Defaults;
+using Mcma.Api.Routes;
+using System.Net.Http;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -16,19 +21,11 @@ namespace Mcma.Aws.TransformService.ApiHandler
 {
     public class Function
     {
-        private static ApiGatewayApiController Controller = new ApiGatewayApiController();
-
-        static Function()
-        {
-            Controller.AddRoute("GET", "/job-assignments", JobAssignmentRoutes.GetJobAssignmentsAsync);
-            Controller.AddRoute("POST", "/job-assignments", JobAssignmentRoutes.AddJobAssignmentAsync);
-            Controller.AddRoute("DELETE", "/job-assignments", JobAssignmentRoutes.DeleteJobAssignmentsAsync);
-            Controller.AddRoute("GET", "/job-assignments/{id}", JobAssignmentRoutes.GetJobAssignmentAsync);
-            Controller.AddRoute("DELETE", "/job-assignments/{id}", JobAssignmentRoutes.DeleteJobAssignmentAsync);
-
-            // adding route for notifications from ec2 transform service
-            Controller.AddRoute("POST", "/job-assignments/{id}/notifications", JobAssignmentRoutes.ProcessNotificationAsync);
-        }
+        private static ApiGatewayApiController Controller =
+            new McmaApiRouteCollection()
+                .AddRoutes(AwsDefaultRoutes.WithDynamoDb<JobAssignment>().ForJobAssignments<LambdaWorkerInvoker>())
+                .AddRoute(HttpMethod.Post.Method, "/job-assignments/{id}/notifications", JobAssignmentRoutes.ProcessNotificationAsync)
+                .ToController();
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
         {

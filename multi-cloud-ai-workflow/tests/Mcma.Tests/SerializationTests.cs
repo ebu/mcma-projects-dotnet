@@ -7,6 +7,7 @@ using Mcma.Core;
 using Mcma.Core.Serialization;
 using Mcma.Aws;
 using System.Text.RegularExpressions;
+using Mcma.Aws.S3;
 
 namespace Mcma.Tests
 {

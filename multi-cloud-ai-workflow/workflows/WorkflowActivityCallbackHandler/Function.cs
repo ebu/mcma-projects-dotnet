@@ -16,6 +16,8 @@ using Newtonsoft.Json.Linq;
 using Amazon.Lambda.APIGatewayEvents;
 using Mcma.Core.Logging;
 using Mcma.Aws.Api;
+using Mcma.Api.Routes;
+using System.Net.Http;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -24,62 +26,51 @@ namespace Mcma.Aws.Workflows.WorkflowActivityCallbackHandler
 {
     public class Function
     {
-        private static ApiGatewayApiController Controller = new ApiGatewayApiController();
+        private static ApiGatewayApiController Controller { get; } =
+            new McmaApiRouteCollection()
+                .AddRoute(HttpMethod.Post.Method, "/notifications", ProcessNotificationAsync)
+                .ToController();
 
-        static Function()
-        {
-            Controller.AddRoute("POST", "/notifications", ProcessNotificationAsync);
-        }
-
-        private static async Task ProcessNotificationAsync(McmaApiRequest request, McmaApiResponse response)
+        private static async Task ProcessNotificationAsync(McmaApiRequestContext requestContext)
         {
             Logger.Debug(nameof(ProcessNotificationAsync));
-            Logger.Debug(request.ToMcmaJson().ToString());
+            Logger.Debug(requestContext.Request.ToMcmaJson().ToString());
 
-            var notification = request.JsonBody.ToMcmaObject<Notification>();
-
-            if (notification == null)
-            {
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.StatusMessage = "Missing notification in request body";
+            if (requestContext.IsBadRequestDueToMissingBody(out Notification notification))
                 return;
-            }
 
             if (notification.Content == null)
             {
-                response.StatusCode = (int)HttpStatusCode.BadRequest;
-                response.StatusMessage = "Missing notification content";
+                requestContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                requestContext.Response.StatusMessage = "Missing notification content";
                 return;
             }
 
             var job = notification.Content.ToMcmaObject<Job>();
 
-            var taskToken = request.QueryStringParameters["taskToken"];
-
-            var stepFunctionClient = new AmazonStepFunctionsClient();
-            switch (job.Status)
+            var taskToken = requestContext.Request.QueryStringParameters["taskToken"];
+            
+            if (job.Status == JobStatus.Completed)
             {
-                case "COMPLETED":
-                    Logger.Debug($"Sending task success for task token {taskToken}");
+                using (var stepFunctionClient = new AmazonStepFunctionsClient())
                     await stepFunctionClient.SendTaskSuccessAsync(new SendTaskSuccessRequest
                     {
                         TaskToken = taskToken,
                         Output = $"\"{notification.Source}\""
                     });
-                    break;
-                case "FAILED":
-                    Logger.Debug($"Sending task failure for task token {taskToken}");
-                    var error = job.Type + " failed execution";
-                    var cause = job.Type + " with id '" + job.Id + "' failed execution with statusMessage '" + job.StatusMessage + "'";
-
+            }
+            else if (job.Status == JobStatus.Failed)
+            {
+                using (var stepFunctionClient = new AmazonStepFunctionsClient())
                     await stepFunctionClient.SendTaskFailureAsync(new SendTaskFailureRequest
                     {
                         TaskToken = taskToken,
-                        Error = error,
-                        Cause = cause
+                        Error = job.Type + " failed execution",
+                        Cause = job.Type + " with id '" + job.Id + "' failed execution with statusMessage '" + job.StatusMessage + "'"
                     });
-                    break;
             }
+            else
+                Logger.Debug($"Ignoring notification for updated status of '{job.Status}'");
         }
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)

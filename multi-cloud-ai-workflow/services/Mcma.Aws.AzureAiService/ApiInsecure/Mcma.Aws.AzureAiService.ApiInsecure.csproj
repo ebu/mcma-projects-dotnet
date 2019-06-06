@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Mcma.Core" Version="0.0.1.1" />
-    <PackageReference Include="Mcma.Aws" Version="0.0.1.1" />
-    <PackageReference Include="Mcma.Api" Version="0.0.1.1" />
+    <PackageReference Include="Mcma.Core" Version="0.2.8" />
+    <PackageReference Include="Mcma.Aws" Version="0.2.8" />
+    <PackageReference Include="Mcma.Api" Version="0.2.8" />
  
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.1.3" />
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />

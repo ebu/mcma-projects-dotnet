@@ -8,6 +8,7 @@ using Mcma.Aws;
 using Mcma.Core.Serialization;
 using Mcma.Core.Logging;
 using Mcma.Worker;
+using Mcma.Worker.Builders;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -16,12 +17,24 @@ namespace Mcma.Aws.JobRepository.Worker
 {
     public class Function
     {
-        public async Task Handler(JobRepositoryWorkerRequest @event, ILambdaContext context)
+        private static IWorker Worker =
+            new WorkerBuilder()
+                .HandleRequestsOfType<CreateJobProcessRequest>(x =>
+                    x.WithOperation(JobRepositoryWorkerOperations.CreateJobProcessOperationName,
+                        y => y.Handle(JobRepositoryWorkerOperations.CreateJobProcessAsync)))
+                .HandleRequestsOfType<DeleteJobProcessRequest>(x =>
+                    x.WithOperation(JobRepositoryWorkerOperations.DeleteJobProcessOperationName,
+                        y => y.Handle(JobRepositoryWorkerOperations.DeleteJobProcessAsync)))
+                .HandleRequestsOfType<ProcessNotificationRequest>(x =>
+                    x.WithOperation(JobRepositoryWorkerOperations.ProcessNotificationOperationName,
+                        y => y.Handle(JobRepositoryWorkerOperations.ProcessNotificationAsync)))
+                .Build();
+        public async Task Handler(WorkerRequest @event, ILambdaContext context)
         {
             Logger.Debug(@event.ToMcmaJson().ToString());
             Logger.Debug(context.ToMcmaJson().ToString());
             
-            await McmaWorker.DoWorkAsync<JobRepositoryWorker, JobRepositoryWorkerRequest>(@event.Action, @event);
+            await Worker.DoWorkAsync(@event);
         }
     }
 }

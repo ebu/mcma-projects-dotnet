@@ -38,7 +38,7 @@ namespace Mcma.Aws.Workflows.ProcessWorkflowFailure
             {
                 var jobData = new JobBase
                 {
-                    Status = "FAILED",
+                    Status = JobStatus.Failed,
                     StatusMessage = statusMessage
                 };
                 await resourceManager.SendNotificationAsync(jobData, @event["notificationEndpoint"].ToMcmaObject<NotificationEndpoint>());

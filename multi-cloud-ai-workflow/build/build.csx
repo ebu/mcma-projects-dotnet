@@ -68,7 +68,7 @@ public static class Build
 
             var origColor = Console.ForegroundColor;
             Console.ForegroundColor = error != null ? ConsoleColor.Red : ConsoleColor.Green;
-            Console.WriteLine($"Build {(error != null ? "failed" : "succeeded")}");
+            Console.WriteLine($"Build {(error != null ? "FAILED" : "succeeded")}");
             Console.ForegroundColor = origColor;
 
             Console.WriteLine($"Started: {started}");

@@ -1,18 +1,16 @@
 using System;
-using System.Text;
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Model;
-using Amazon.Lambda.Serialization;
 using Amazon.Lambda.SNSEvents;
 using Newtonsoft.Json.Linq;
-using Mcma.Aws;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Core.ContextVariables;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
 using Mcma.Core.Utility;
-using Mcma.Core;
-using Mcma.Core.ContextVariables;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -22,6 +20,7 @@ namespace Mcma.Aws.AwsAiService.SnsTrigger
 
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
         private IContextVariableProvider ContextVariableProvider { get; } = new EnvironmentVariableProvider();
 
         public async Task Handler(SNSEvent @event, ILambdaContext context)
@@ -59,7 +58,7 @@ namespace Mcma.Aws.AwsAiService.SnsTrigger
 
                     var invokeParams = new InvokeRequest
                     {
-                        FunctionName = ContextVariableProvider.GetRequiredContextVariable("WorkerFunctionName"),
+                        FunctionName = ContextVariableProvider.GetRequiredContextVariable("WorkerFunctionId"),
                         InvocationType = "Event",
                         LogType = "None",
                         Payload = JObject.FromObject(new

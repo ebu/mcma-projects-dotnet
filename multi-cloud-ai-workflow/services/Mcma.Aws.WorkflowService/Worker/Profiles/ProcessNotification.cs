@@ -1,21 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Amazon.Lambda.Core;
+using Mcma.Client;
 using Mcma.Core;
-using Newtonsoft.Json.Linq;
-using Mcma.Core.Serialization;
-using Mcma.Core.Logging;
-using Mcma.Aws.DynamoDb;
-using Mcma.Worker;
 using Mcma.Core.ContextVariables;
+using Mcma.Core.Serialization;
+using Mcma.Data;
+using Mcma.Worker;
 
 namespace Mcma.Aws.WorkflowService.Worker
 {
-    internal class ProcessNotificationHandler : WorkerOperationHandler<ProcessNotificationRequest>
+    internal class ProcessNotification : WorkerOperationHandler<ProcessNotificationRequest>
     {
-        public const string OperationName = "ProcessNotification";
+        public ProcessNotification(IResourceManagerProvider resourceManagerProvider, IDbTableProvider<JobAssignment> dbTableProvider)
+        {
+            ResourceManagerProvider = resourceManagerProvider;
+            DbTableProvider = dbTableProvider;
+        }
+
+        private IResourceManagerProvider ResourceManagerProvider { get; }
+
+        private IDbTableProvider<JobAssignment> DbTableProvider { get; }
 
         protected override async Task ExecuteAsync(WorkerRequest @event, ProcessNotificationRequest notificationRequest)
         {
@@ -23,7 +27,7 @@ namespace Mcma.Aws.WorkflowService.Worker
             var notification = notificationRequest.Notification;
             var notificationJobPayload = notification.Content.ToMcmaObject<JobBase>();
 
-            var table = new DynamoDbTable<JobAssignment>(@event.TableName());
+            var table = DbTableProvider.Table(@event.TableName());
 
             var jobAssignment = await table.GetAsync(jobAssignmentId);
 
@@ -37,7 +41,7 @@ namespace Mcma.Aws.WorkflowService.Worker
 
             await table.PutAsync(jobAssignmentId, jobAssignment);
 
-            var resourceManager = @event.GetAwsV4ResourceManager();
+            var resourceManager = ResourceManagerProvider.Get(@event);
 
             await resourceManager.SendNotificationAsync(jobAssignment, jobAssignment.NotificationEndpoint);
         }

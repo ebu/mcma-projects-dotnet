@@ -1,17 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Mcma.Core" Version="0.2.8" />
-    <PackageReference Include="Mcma.Aws" Version="0.2.8" />
-    <PackageReference Include="Mcma.Api" Version="0.2.8" />
+    <PackageReference Include="Mcma.Core" Version="0.5.3" />
+    <PackageReference Include="Mcma.Client" Version="0.5.3" />
+    <PackageReference Include="Mcma.Api" Version="0.5.3" />
+    
+    <PackageReference Include="Mcma.Aws.ApiGateway" Version="0.5.3" />
+    <PackageReference Include="Mcma.Aws.Client" Version="0.5.3" />
+    <PackageReference Include="Mcma.Aws.DynamoDb" Version="0.5.3" />
+    <PackageReference Include="Mcma.Aws.Lambda" Version="0.5.3" />
+    <PackageReference Include="Mcma.Aws.LambdaWorkerInvoker" Version="0.5.3" />
+    <PackageReference Include="Mcma.Aws.S3" Version="0.5.3" />
  
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.1.3" />
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.4.0" />
     <PackageReference Include="AWSSDK.DynamoDBV2" Version="3.3.14.6" />
-    <PackageReference Include="AWSSDK.Lambda" Version="3.3.17" />
+    <PackageReference Include="AWSSDK.Lambda" Version="3.3.102.35" />
     <PackageReference Include="Microsoft.AspNetCore.Routing" Version="2.1.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>
 
   <PropertyGroup>

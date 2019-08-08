@@ -29,13 +29,12 @@ resource "aws_lambda_function" "aws-ai-service-s3-trigger" {
 
   environment {
     variables = {
-      "TableName"                = "${aws_dynamodb_table.aws_ai_service_table.name}"
-      "PublicUrl"                = "${local.aws_ai_service_url}"
-      "ServicesUrl"              = "${local.services_url}"
-      "ServicesAuthType"         = "${local.services_auth_type}"
-      "ServicesAuthContext"      = "${local.services_auth_context}"
-      "WorkerFunctionName" = "${aws_lambda_function.aws-ai-service-worker.function_name}"
-      "ServiceOutputBucket"      = "${aws_s3_bucket.aws-ai-service-output.id}"
+      "TableName"           = "${aws_dynamodb_table.aws_ai_service_table.name}"
+      "PublicUrl"           = "${local.aws_ai_service_url}"
+      "ServicesUrl"         = "${local.services_url}"
+      "ServicesAuthType"    = "${local.services_auth_type}"
+      "WorkerFunctionId"  = "${aws_lambda_function.aws-ai-service-worker.function_name}"
+      "ServiceOutputBucket" = "${aws_s3_bucket.aws-ai-service-output.id}"
     }
   }
 }
@@ -80,13 +79,12 @@ resource "aws_lambda_function" "aws-ai-service-sns-trigger" {
 
   environment {
     variables = {
-      "TableName"                = "${aws_dynamodb_table.aws_ai_service_table.name}"
-      "PublicUrl"                = "${local.aws_ai_service_url}"
-      "ServicesUrl"              = "${local.services_url}"
-      "ServicesAuthType"         = "${local.services_auth_type}"
-      "ServicesAuthContext"      = "${local.services_auth_context}"
-      "WorkerFunctionName" = "${aws_lambda_function.aws-ai-service-worker.function_name}"
-      "ServiceOutputBucket"      = "${aws_s3_bucket.aws-ai-service-output.id}"
+      "TableName"           = "${aws_dynamodb_table.aws_ai_service_table.name}"
+      "PublicUrl"           = "${local.aws_ai_service_url}"
+      "ServicesUrl"         = "${local.services_url}"
+      "ServicesAuthType"    = "${local.services_auth_type}"
+      "WorkerFunctionId"  = "${aws_lambda_function.aws-ai-service-worker.function_name}"
+      "ServiceOutputBucket" = "${aws_s3_bucket.aws-ai-service-output.id}"
     }
   }
 }
@@ -107,8 +105,8 @@ resource "aws_lambda_function" "aws-ai-service-worker" {
 
   environment {
     variables = {
-      REKO_SNS_ROLE_ARN = "${aws_iam_role.iam_role_Reko_to_SNS.arn}"
-      SNS_TOPIC_ARN     = "${aws_sns_topic.sns_topic_reko_output.arn}"
+      RekoSnsRoleArn = "${aws_iam_role.iam_role_Reko_to_SNS.arn}"
+      SnsTopicArn     = "${aws_sns_topic.sns_topic_reko_output.arn}"
     }
   }
 }
@@ -361,14 +359,13 @@ resource "aws_api_gateway_deployment" "aws_ai_service_deployment" {
   stage_name  = "${var.environment_type}"
 
   variables = {
-    "TableName"                = "${aws_dynamodb_table.aws_ai_service_table.name}"
-    "PublicUrl"                = "${local.aws_ai_service_url}"
-    "ServicesUrl"              = "${local.services_url}"
-    "ServicesAuthType"         = "${local.services_auth_type}"
-    "ServicesAuthContext"      = "${local.services_auth_context}"
-    "WorkerFunctionName" = "${aws_lambda_function.aws-ai-service-worker.function_name}"
-    "ServiceOutputBucket"      = "${aws_s3_bucket.aws-ai-service-output.id}"
-    "DeploymentHash"           = "${sha256(file("./services/aws-ai-service.tf"))}"
+    "TableName"           = "${aws_dynamodb_table.aws_ai_service_table.name}"
+    "PublicUrl"           = "${local.aws_ai_service_url}"
+    "ServicesUrl"         = "${local.services_url}"
+    "ServicesAuthType"    = "${local.services_auth_type}"
+    "WorkerFunctionId"  = "${aws_lambda_function.aws-ai-service-worker.function_name}"
+    "ServiceOutputBucket" = "${aws_s3_bucket.aws-ai-service-output.id}"
+    "DeploymentHash"      = "${sha256(file("./services/aws-ai-service.tf"))}"
   }
 }
 

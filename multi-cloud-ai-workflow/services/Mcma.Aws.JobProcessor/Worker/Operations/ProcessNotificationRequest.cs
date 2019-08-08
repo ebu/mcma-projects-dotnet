@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json;
-using Amazon.Lambda.Core;
-using Mcma.Core;
-using System.Collections.Generic;
+﻿using Mcma.Core;
 
 namespace Mcma.Aws.JobProcessor.Worker
 {

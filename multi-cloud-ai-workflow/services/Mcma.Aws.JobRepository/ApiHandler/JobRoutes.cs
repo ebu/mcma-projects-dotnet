@@ -1,18 +1,10 @@
-using System;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Amazon.Lambda.Core;
 using Mcma.Api;
-using Mcma.Core;
-using Mcma.Core.Serialization;
-using Amazon.Lambda;
-using Amazon.Lambda.Model;
-using Mcma.Core.Logging;
-using Mcma.Aws.Api;
 using Mcma.Aws.DynamoDb;
 using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Core;
 using Mcma.Core.ContextVariables;
 
 namespace Mcma.Aws.JobRepository.ApiHandler
@@ -21,42 +13,37 @@ namespace Mcma.Aws.JobRepository.ApiHandler
     {
         private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker();
 
-        public static async Task StopJobAsync(McmaApiRequestContext requestContext)
+        public static Task StopJobAsync(McmaApiRequestContext requestContext)
         {
-            var table = new DynamoDbTable<Job>(requestContext.TableName());
-
-            var jobId = requestContext.PublicUrl() + "/jobs/" + requestContext.Request.PathVariables["id"];
-
-            if (!requestContext.ResourceIfFound(await table.GetAsync(jobId), false))
-                return;
-
             requestContext.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
             requestContext.Response.StatusMessage = "Stopping job is not implemented";
+            return Task.CompletedTask;
         }
         
-        public static async Task CancelJobAsync(McmaApiRequestContext requestContext)
+        public static Task CancelJobAsync(McmaApiRequestContext requestContext)
         {
-            var table = new DynamoDbTable<Job>(requestContext.TableName());
-
-            var jobId = requestContext.PublicUrl() + "/jobs/" + requestContext.Request.PathVariables["id"];
-
-            if (!requestContext.ResourceIfFound(await table.GetAsync(jobId), false))
-                return;
-
             requestContext.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
             requestContext.Response.StatusMessage = "Stopping job is not implemented";
+            return Task.CompletedTask;
         }
 
         public static async Task ProcessNotificationAsync(McmaApiRequestContext requestContext)
         {
             var table = new DynamoDbTable<Job>(requestContext.TableName());
 
-            var job = await table.GetAsync(requestContext.PublicUrl() + "/jobs/" + requestContext.Request.PathVariables["id"]);
-            if (!requestContext.ResourceIfFound(job, false))
+            var notification = requestContext.GetRequestBody<Notification>();
+            if (notification == null)
+            {
+                requestContext.SetResponseBadRequestDueToMissingBody();
                 return;
+            }
 
-            if (requestContext.IsBadRequestDueToMissingBody<Notification>(out var notification))
+            var job = await table.GetAsync(requestContext.PublicUrl() + "/jobs/" + requestContext.Request.PathVariables["id"]);
+            if (job == null)
+            {
+                requestContext.SetResponseResourceNotFound();
                 return;
+            }
 
             if (job.JobProcess != notification.Source)
             {
@@ -65,17 +52,14 @@ namespace Mcma.Aws.JobRepository.ApiHandler
                 return;
             }
 
-            await WorkerInvoker.RunAsync(
-                requestContext.WorkerFunctionName(),
+            await WorkerInvoker.InvokeAsync(
+                requestContext.WorkerFunctionId(),
+                "ProcessNotification",
+                requestContext.GetAllContextVariables().ToDictionary(),
                 new
                 {
-                    operationName = "processNotification",
-                    contextVariables = requestContext.GetAllContextVariables(),
-                    input = new
-                    {
-                        jobId = job.Id,
-                        notification = notification
-                    }
+                    jobId = job.Id,
+                    notification = notification
                 });
         }
     }

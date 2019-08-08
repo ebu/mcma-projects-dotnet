@@ -32,34 +32,34 @@ resource "aws_s3_bucket_object" "file_3" {
 
 resource "aws_s3_bucket_object" "file_4" {
   bucket       = "${aws_s3_bucket.website.bucket}"
-  key          = "main.9035ff16774134926929.js"
-  source       = "../website/dist/website/main.9035ff16774134926929.js"
+  key          = "main.709d571198474daedfb7.js"
+  source       = "../website/dist/website/main.709d571198474daedfb7.js"
   content_type = "application/javascript"
-  etag         = "${md5(file("../website/dist/website/main.9035ff16774134926929.js"))}"
+  etag         = "${md5(file("../website/dist/website/main.709d571198474daedfb7.js"))}"
 }
 
 resource "aws_s3_bucket_object" "file_5" {
   bucket       = "${aws_s3_bucket.website.bucket}"
-  key          = "polyfills.b23caee6469a572f772d.js"
-  source       = "../website/dist/website/polyfills.b23caee6469a572f772d.js"
+  key          = "polyfills.32c5648fd4ca0eb849e2.js"
+  source       = "../website/dist/website/polyfills.32c5648fd4ca0eb849e2.js"
   content_type = "application/javascript"
-  etag         = "${md5(file("../website/dist/website/polyfills.b23caee6469a572f772d.js"))}"
+  etag         = "${md5(file("../website/dist/website/polyfills.32c5648fd4ca0eb849e2.js"))}"
 }
 
 resource "aws_s3_bucket_object" "file_6" {
   bucket       = "${aws_s3_bucket.website.bucket}"
-  key          = "runtime.a5dd35324ddfd942bef1.js"
-  source       = "../website/dist/website/runtime.a5dd35324ddfd942bef1.js"
+  key          = "runtime.26209474bfa8dc87a77c.js"
+  source       = "../website/dist/website/runtime.26209474bfa8dc87a77c.js"
   content_type = "application/javascript"
-  etag         = "${md5(file("../website/dist/website/runtime.a5dd35324ddfd942bef1.js"))}"
+  etag         = "${md5(file("../website/dist/website/runtime.26209474bfa8dc87a77c.js"))}"
 }
 
 resource "aws_s3_bucket_object" "file_7" {
   bucket       = "${aws_s3_bucket.website.bucket}"
-  key          = "styles.3dc2d43a14eaab0ed152.css"
-  source       = "../website/dist/website/styles.3dc2d43a14eaab0ed152.css"
+  key          = "styles.b3b9a8b9ca51bd14285c.css"
+  source       = "../website/dist/website/styles.b3b9a8b9ca51bd14285c.css"
   content_type = "text/css"
-  etag         = "${md5(file("../website/dist/website/styles.3dc2d43a14eaab0ed152.css"))}"
+  etag         = "${md5(file("../website/dist/website/styles.b3b9a8b9ca51bd14285c.css"))}"
 }
 
 resource "aws_s3_bucket_object" "file_8" {

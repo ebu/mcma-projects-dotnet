@@ -1,18 +1,14 @@
-using System;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization.Json;
+using Mcma.Api.Routes.Defaults;
+using Mcma.Aws.ApiGateway;
+using Mcma.Aws.DynamoDb;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
 using Mcma.Core;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
-using Mcma.Api;
-using Mcma.Api.Routes.Defaults;
-using Mcma.Aws;
-using Mcma.Aws.Api;
-using Mcma.Aws.DynamoDb;
-using Mcma.Aws.Lambda;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -21,10 +17,11 @@ namespace Mcma.Aws.AwsAiService.ApiHandler
 {
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
         private static ApiGatewayApiController Controller { get; } =
-            AwsDefaultRoutes.WithDynamoDb<JobAssignment>()
-                            .ForJobAssignments<LambdaWorkerInvoker>()
-                            .ToController();
+            new DefaultRouteCollectionBuilder<JobAssignment>(new DynamoDbTableProvider<JobAssignment>())
+                .ForJobAssignments<LambdaWorkerInvoker>()
+                .ToApiGatewayApiController();
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
         {

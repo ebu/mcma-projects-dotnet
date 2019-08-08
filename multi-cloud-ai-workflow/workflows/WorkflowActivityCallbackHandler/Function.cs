@@ -1,23 +1,18 @@
-using System;
 using System.Net;
-using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization;
-using Amazon.S3;
-using Amazon.S3.Model;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
 using Mcma.Api;
-using Mcma.Aws;
-using Mcma.Core;
-using Mcma.Core.Serialization;
-using Newtonsoft.Json.Linq;
-using Amazon.Lambda.APIGatewayEvents;
-using Mcma.Core.Logging;
-using Mcma.Aws.Api;
 using Mcma.Api.Routes;
-using System.Net.Http;
+using Mcma.Aws.ApiGateway;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Core;
+using Mcma.Core.Logging;
+using Mcma.Core.Serialization;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -26,18 +21,23 @@ namespace Mcma.Aws.Workflows.WorkflowActivityCallbackHandler
 {
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
         private static ApiGatewayApiController Controller { get; } =
             new McmaApiRouteCollection()
-                .AddRoute(HttpMethod.Post.Method, "/notifications", ProcessNotificationAsync)
-                .ToController();
+                .AddRoute(HttpMethod.Post, "/notifications", ProcessNotificationAsync)
+                .ToApiGatewayApiController();
 
         private static async Task ProcessNotificationAsync(McmaApiRequestContext requestContext)
         {
             Logger.Debug(nameof(ProcessNotificationAsync));
             Logger.Debug(requestContext.Request.ToMcmaJson().ToString());
 
-            if (requestContext.IsBadRequestDueToMissingBody(out Notification notification))
+            var notification = requestContext.GetRequestBody<Notification>();
+            if (notification == null)
+            {
+                requestContext.SetResponseBadRequestDueToMissingBody();
                 return;
+            }
 
             if (notification.Content == null)
             {

@@ -1,33 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Amazon;
-using Amazon.Lambda.Core;
-using Amazon.S3;
 using Amazon.S3.Model;
-using Mcma.Core;
-using Mcma.Core.Serialization;
-using Mcma.Core.Logging;
 using Mcma.Aws.S3;
-using Mcma.Aws.DynamoDb;
-using Mcma.Worker;
-using Mcma.Aws.Worker;
-using Mcma.Data;
+using Mcma.Client;
+using Mcma.Core;
 using Mcma.Core.ContextVariables;
+using Mcma.Core.Logging;
+using Mcma.Data;
+using Mcma.Worker;
 
 namespace Mcma.Aws.AzureAiService.Worker
 {
-    internal class ProcessNotificationHandler : WorkerOperationHandler<ProcessNotificationRequest>
+    internal class ProcessNotification : WorkerOperationHandler<ProcessNotificationRequest>
     {
-        public const string OperationName = "ProcessNotification";
-
-        public ProcessNotificationHandler(IDbTableProvider<JobAssignment> dbTableProvider, IWorkerResourceManagerProvider resourceManagerProvider)
+        public ProcessNotification(IDbTableProvider<JobAssignment> dbTableProvider, IResourceManagerProvider resourceManagerProvider)
         {
             DbTableProvider = dbTableProvider;
             ResourceManagerProvider = resourceManagerProvider;
@@ -35,7 +22,7 @@ namespace Mcma.Aws.AzureAiService.Worker
 
         private IDbTableProvider<JobAssignment> DbTableProvider { get; }
 
-        private IWorkerResourceManagerProvider ResourceManagerProvider { get; }
+        private IResourceManagerProvider ResourceManagerProvider { get; }
 
         protected override async Task ExecuteAsync(WorkerRequest request, ProcessNotificationRequest requestInput)
         {
@@ -50,7 +37,7 @@ namespace Mcma.Aws.AzureAiService.Worker
             var workerJobHelper =
                 new WorkerJobHelper<AIJob>(
                     DbTableProvider.Table(request.TableName()),
-                    ResourceManagerProvider.GetResourceManager(request),
+                    ResourceManagerProvider.Get(request),
                     request,
                     requestInput.JobAssignmentId);
 

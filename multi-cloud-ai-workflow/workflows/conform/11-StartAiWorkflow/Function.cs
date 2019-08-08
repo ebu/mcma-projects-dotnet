@@ -1,17 +1,15 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization;
-using Amazon.S3;
-using Amazon.S3.Model;
-using Mcma.Aws;
+using Mcma.Aws.Client;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Client;
 using Mcma.Core;
+using Mcma.Core.ContextVariables;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
@@ -21,11 +19,16 @@ namespace Mcma.Aws.Workflows.Conform.StartAiWorkflow
 {
     public class Function
     {
-        private static readonly string SERVICE_REGISTRY_URL = Environment.GetEnvironmentVariable(nameof(SERVICE_REGISTRY_URL));
+        static Function() => McmaTypes.Add<S3Locator>();
+        
+        private static EnvironmentVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
         
         public async Task<JToken> Handler(JToken @event, ILambdaContext context)
         {
-            var resourceManager = AwsEnvironment.GetAwsV4ResourceManager();
+            var resourceManager = ResourceManagerProvider.Get(EnvironmentVariableProvider);
 
             try
             {

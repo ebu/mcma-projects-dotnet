@@ -1,22 +1,19 @@
-using System;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
-using Amazon.Lambda.APIGatewayEvents;
-using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization.Json;
-using Mcma.Core.Serialization;
-using Mcma.Aws;
-using Mcma.Core.Logging;
-using Mcma.Aws.Api;
-using System.Net.Http;
-using Mcma.Api.Routes;
-using Mcma.Api;
-using Mcma.Aws.DynamoDb;
-using Mcma.Core;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.Core;
+using Mcma.Api;
+using Mcma.Api.Routes;
+using Mcma.Aws.ApiGateway;
+using Mcma.Aws.DynamoDb;
 using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Core;
 using Mcma.Core.ContextVariables;
+using Mcma.Core.Logging;
+using Mcma.Core.Serialization;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -25,10 +22,11 @@ namespace Mcma.Aws.AzureAiService.ApiInsecure
 {
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
         private static ApiGatewayApiController Controller { get; } = 
             new McmaApiRouteCollection()
-                .AddRoute(HttpMethod.Post.Method, "/job-assignments/{id}/notifications", ProcessNotificationAsync)
-                .ToController();
+                .AddRoute(HttpMethod.Post, "/job-assignments/{id}/notifications", ProcessNotificationAsync)
+                .ToApiGatewayApiController();
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
         {
@@ -51,8 +49,11 @@ namespace Mcma.Aws.AzureAiService.ApiInsecure
 
             Logger.Debug("jobAssignment = {0}", jobAssignment);
 
-            if (!requestContext.ResourceIfFound(jobAssignment, false))
+            if (jobAssignment == null)
+            {
+                requestContext.SetResponseResourceNotFound();
                 return;
+            }
 
             var notification = requestContext.Request.QueryStringParameters;
             Logger.Debug("notification = {0}", notification);
@@ -64,17 +65,14 @@ namespace Mcma.Aws.AzureAiService.ApiInsecure
             }
 
             var lambdaWorkerInvoker = new LambdaWorkerInvoker();
-            await lambdaWorkerInvoker.RunAsync(
-                requestContext.WorkerFunctionName(),
+            await lambdaWorkerInvoker.InvokeAsync(
+                requestContext.WorkerFunctionId(),
+                "ProcessNotification",
+                requestContext.GetAllContextVariables().ToDictionary(),
                 new
                 {
-                    operationName = "ProcessNotification",
-                    contextVariables = requestContext.GetAllContextVariables(),
-                    input = new
-                    {
-                        jobAssignmentId,
-                        notification
-                    }
+                    jobAssignmentId,
+                    notification
                 });
         }
     }

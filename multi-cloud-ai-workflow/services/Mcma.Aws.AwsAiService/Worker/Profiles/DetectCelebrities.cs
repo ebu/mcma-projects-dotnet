@@ -40,8 +40,8 @@ namespace Mcma.Aws.AwsAiService.Worker
                 JobTag = base64JobId,
                 NotificationChannel = new NotificationChannel
                 {
-                    RoleArn = Environment.GetEnvironmentVariable("REKO_SNS_ROLE_ARN"),
-                    SNSTopicArn = Environment.GetEnvironmentVariable("SNS_TOPIC_ARN")
+                    RoleArn = Environment.GetEnvironmentVariable("RekoSnsRoleArn"),
+                    SNSTopicArn = Environment.GetEnvironmentVariable("SnsTopicArn")
                 }
             };
 

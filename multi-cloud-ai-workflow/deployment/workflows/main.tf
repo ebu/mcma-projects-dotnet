@@ -91,9 +91,8 @@ resource "aws_lambda_function" "process-workflow-completion" {
 
   environment {
     variables = {
-      SERVICES_URL          = "${var.services_url}"
-      SERVICES_AUTH_TYPE    = "${var.services_auth_type}"
-      SERVICES_AUTH_CONTEXT = "${var.services_auth_context}"
+      ServicesUrl      = "${var.services_url}"
+      ServicesAuthType = "${var.services_auth_type}"
     }
   }
 }
@@ -110,9 +109,8 @@ resource "aws_lambda_function" "process-workflow-failure" {
 
   environment {
     variables = {
-      SERVICES_URL          = "${var.services_url}"
-      SERVICES_AUTH_TYPE    = "${var.services_auth_type}"
-      SERVICES_AUTH_CONTEXT = "${var.services_auth_context}"
+      ServicesUrl      = "${var.services_url}"
+      ServicesAuthType = "${var.services_auth_type}"
     }
   }
 }
@@ -182,7 +180,7 @@ resource "aws_api_gateway_deployment" "workflow_activity_callback_handler_deploy
   stage_name  = "${var.environment_type}"
 
   variables = {
-    "PublicUrl" = "${local.workflow_activity_callback_handler_url}"
+    "PublicUrl"      = "${local.workflow_activity_callback_handler_url}"
     "DeploymentHash" = "${sha256(file("./workflows/main.tf"))}"
   }
 }

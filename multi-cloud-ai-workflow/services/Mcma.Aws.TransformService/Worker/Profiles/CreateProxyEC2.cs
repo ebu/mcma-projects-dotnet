@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Mcma.Client;
 using Mcma.Core;
 using Mcma.Core.Logging;
 using Mcma.Worker;

@@ -1,18 +1,21 @@
-﻿using System;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization.Json;
-using Mcma.Core.Serialization;
-using Mcma.Aws;
-using Mcma.Core.Logging;
-using Mcma.Aws.Api;
-using Mcma.Core;
-using Mcma.Aws.Lambda;
 using Mcma.Api;
 using Mcma.Api.Routes;
+using Mcma.Api.Routes.Defaults;
+using Mcma.Aws.ApiGateway;
+using Mcma.Aws.Client;
+using Mcma.Aws.DynamoDb;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Client;
+using Mcma.Core;
+using Mcma.Core.ContextVariables;
+using Mcma.Core.Logging;
+using Mcma.Core.Serialization;
+using Mcma.Data;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -21,29 +24,36 @@ namespace Mcma.Aws.JobProcessor.ApiHandler
 {
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
+
+        private static IDbTableProvider<JobProcess> DbTableProvider { get; } =
+            new DynamoDbTableProvider<JobProcess>();
+
         private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker();
+
+        private static McmaApiRouteCollection Routes { get; } =
+            new DefaultRouteCollectionBuilder<JobProcess>(DbTableProvider)
+                .AddAll()
+                .Route(r => r.Create).Configure(r =>
+                    r.OnCompleted(
+                        (requestContext, jobProcess) =>
+                            WorkerInvoker.InvokeAsync(
+                                requestContext.WorkerFunctionId(),
+                                "CreateJobAssignment",
+                                requestContext.GetAllContextVariables().ToDictionary(),
+                                new { jobProcessId = jobProcess.Id })
+                    )
+                )
+                .Route(r => r.Update).Remove()
+                .Build();
 
         private static ApiGatewayApiController Controller { get; } =
             new McmaApiRouteCollection()
-                .AddRoutes(
-                    AwsDefaultRoutes.WithDynamoDb<JobProcess>()
-                        .AddAll()
-                        .Route(r => r.Create).Configure(r =>
-                            r.OnCompleted((requestContext, jobProcess) =>
-                                WorkerInvoker.RunAsync(requestContext.WorkerFunctionName(),
-                                    new
-                                    {
-                                        operationName = "createJobAssignment",
-                                        contextVariables = requestContext.GetAllContextVariables(),
-                                        input = new
-                                        {
-                                            jobProcessId = jobProcess.Id
-                                        }
-                                    })))
-                        .Route(r => r.Update).Remove()
-                        .Build())
+                .AddRoutes(Routes)
                 .AddRoute(HttpMethod.Post.Method, "/job-processes/{id}/notifications", JobProcessRoutes.ProcessNotificationAsync)
-                .ToController();
+                .ToApiGatewayApiController();
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
         {

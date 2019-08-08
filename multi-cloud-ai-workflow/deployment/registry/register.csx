@@ -1,11 +1,13 @@
 #load "../../build/task.csx"
 #load "../../build/build.csx"
 
-#r "nuget:Newtonsoft.Json, 11.0.2"
-#r "nuget:AWSSDK.CognitoIdentityProvider, 3.3.11.22"
+#r "nuget:Newtonsoft.Json, 12.0.2"
+#r "nuget:AWSSDK.CognitoIdentityProvider, 3.3.102.40"
 #r "nuget:AWSSDK.Extensions.CognitoAuthentication, 0.9.4"
-#r "nuget:Mcma.Core, 0.2.8"
-#r "nuget:Mcma.Aws, 0.2.8"
+#r "nuget:AWSSDK.S3, 3.3.104.5"
+#r "nuget:Mcma.Core, 0.5.3"
+#r "nuget:Mcma.Client, 0.5.3"
+#r "nuget:Mcma.Aws.Client, 0.5.3"
 
 using Amazon;
 using Amazon.Runtime;
@@ -17,15 +19,25 @@ using Amazon.S3.Model;
 using Newtonsoft.Json.Linq;
 
 using Mcma.Core;
-using Mcma.Aws;
-using Mcma.Aws.Authentication;
+using Mcma.Client;
+using Mcma.Aws.Client;
 
 public class UpdateServiceRegistry : BuildTask
 {
     private static readonly JObject AwsCredentialsJson = JObject.Parse(File.ReadAllText("./deployment/aws-credentials.json"));
     private static readonly AWSCredentials AwsCredentials = new BasicAWSCredentials(AwsCredentialsJson["accessKeyId"].Value<string>(), AwsCredentialsJson["secretAccessKey"].Value<string>());
     private static readonly RegionEndpoint AwsRegion = RegionEndpoint.GetBySystemName(AwsCredentialsJson["region"].Value<string>());
-    
+
+    private static AwsV4AuthContext ServicesAuthContext { get; } =
+        new AwsV4AuthContext(
+            AwsCredentialsJson["accessKeyId"].Value<string>(),
+            AwsCredentialsJson["secretAccessKey"].Value<string>(),
+            AwsCredentialsJson["region"].Value<string>()
+        );
+
+    private static IResourceManagerProvider ResourceManagerProvider { get; } =
+        new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(ServicesAuthContext));
+
     private static readonly IDictionary<string, JobProfile> JOB_PROFILES = new Dictionary<string, JobProfile>
     {
         ["ConformWorkflow"] = new JobProfile
@@ -190,7 +202,7 @@ public class UpdateServiceRegistry : BuildTask
         }
         catch (Exception error)
         {
-            Console.WriteLine("Failed to delete existing user:", error);
+            Console.WriteLine($"Failed to delete existing user: {error}");
         }
 
         try
@@ -233,7 +245,7 @@ public class UpdateServiceRegistry : BuildTask
         }
         catch (Exception error)
         {
-            Console.WriteLine("Failed to setup user due to error:", error);
+            Console.WriteLine($"Failed to setup user due to error: {error}");
         }
 
         // 2. Uploading configuration to website
@@ -243,8 +255,7 @@ public class UpdateServiceRegistry : BuildTask
             resourceManager = new
             {
                 servicesUrl = terraformOutput["services_url"],
-                servicesAuthType = terraformOutput["services_auth_type"],
-                servicesAuthContext = terraformOutput["services_auth_context"],
+                servicesAuthType = terraformOutput["services_auth_type"]
             },
             aws = new
             {
@@ -295,7 +306,6 @@ public class UpdateServiceRegistry : BuildTask
         
         var servicesUrl = terraformOutput["services_url"];
         var servicesAuthType = terraformOutput["services_auth_type"];
-        var servicesAuthContext = terraformOutput["services_auth_context"];
 
         var jobProfilesUrl = $"{terraformOutput["service_registry_url"]}/job-profiles";
 
@@ -311,17 +321,8 @@ public class UpdateServiceRegistry : BuildTask
             },
             AuthType = "AWS4"
         };
-
-        var resourceManager = new ResourceManager(
-            new ResourceManagerOptions(servicesUrl).WithAwsV4Auth(
-                new AwsV4AuthContext
-                (
-                    AwsCredentialsJson["accessKeyId"].Value<string>(),
-                    AwsCredentialsJson["secretAccessKey"].Value<string>(),
-                    AwsCredentialsJson["region"].Value<string>()
-                )
-            )
-        );
+        
+        var resourceManager = ResourceManagerProvider.Get(servicesUrl, servicesAuthType);
         
         Console.WriteLine("Getting existing services...");
         var retrievedServices = await resourceManager.GetAsync<Service>();

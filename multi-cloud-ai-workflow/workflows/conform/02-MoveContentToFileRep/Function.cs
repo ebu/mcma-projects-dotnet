@@ -1,15 +1,15 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Amazon;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Mcma.Aws;
+using Mcma.Aws.Client;
+using Mcma.Aws.Lambda;
 using Mcma.Aws.S3;
+using Mcma.Client;
 using Mcma.Core;
+using Mcma.Core.ContextVariables;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
 using Newtonsoft.Json.Linq;
@@ -21,15 +21,23 @@ namespace Mcma.Aws.Workflows.Conform.MoveContentToFileRep
 {
     public class Function
     {
-        private static readonly string REPOSITORY_BUCKET = Environment.GetEnvironmentVariable(nameof(REPOSITORY_BUCKET));
-        private static readonly string SERVICE_REGISTRY_URL = Environment.GetEnvironmentVariable(nameof(SERVICE_REGISTRY_URL));
+        static Function() => McmaTypes.Add<S3Locator>();
+        
+        private static readonly string RepositoryBucket = Environment.GetEnvironmentVariable(nameof(RepositoryBucket));
 
-        private static string yyyymmdd()
-            => DateTime.UtcNow.ToString("yyyyMMdd");
+        private static EnvironmentVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
+
+        private static string yyyymmdd() => DateTime.UtcNow.ToString("yyyyMMdd");
 
         public async Task<JToken> Handler(JToken @event, ILambdaContext context)
         {
-            var resourceManager = AwsEnvironment.GetAwsV4ResourceManager();
+            if (@event == null)
+                throw new Exception("Missing workflow input");
+
+            var resourceManager = ResourceManagerProvider.Get(EnvironmentVariableProvider);
 
             try
             {
@@ -47,7 +55,7 @@ namespace Mcma.Aws.Workflows.Conform.MoveContentToFileRep
 
             var inputFile = @event["input"]["inputFile"].ToMcmaObject<S3Locator>();
 
-            var s3Bucket = REPOSITORY_BUCKET;
+            var s3Bucket = RepositoryBucket;
             var s3Key = yyyymmdd() + "/" + Guid.NewGuid();
 
             var idxLastDot = inputFile.AwsS3Key.LastIndexOf(".");

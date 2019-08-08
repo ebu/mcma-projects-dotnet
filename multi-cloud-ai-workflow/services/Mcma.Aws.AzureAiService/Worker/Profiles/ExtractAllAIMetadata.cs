@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Mcma.Aws.S3;
+using Mcma.Client;
 using Mcma.Core;
 using Mcma.Core.Logging;
-using Mcma.Aws.S3;
 using Mcma.Worker;
 
 namespace Mcma.Aws.AzureAiService.Worker

@@ -3,23 +3,20 @@ using System.Threading.Tasks;
 using Amazon.S3.Model;
 using Amazon.Rekognition;
 using Amazon.Rekognition.Model;
+using Mcma.Aws.S3;
 using Mcma.Core;
+using Mcma.Core.ContextVariables;
 using Mcma.Core.Serialization;
 using Mcma.Core.Logging;
-using Mcma.Aws.S3;
-using Mcma.Aws.DynamoDb;
-using Mcma.Worker;
-using Mcma.Aws.Worker;
 using Mcma.Data;
-using Mcma.Core.ContextVariables;
+using Mcma.Worker;
+using Mcma.Client;
 
 namespace Mcma.Aws.AwsAiService.Worker
 {
-    internal class ProcessRekognitionResultHandler : WorkerOperationHandler<ProcessRekognitionResult>
+    internal class ProcessRekognitionResult : WorkerOperationHandler<ProcessRekognitionResultRequest>
     {
-        public const string OperationName = "ProcessRekognitionResult";
-
-        public ProcessRekognitionResultHandler(IDbTableProvider<JobAssignment> dbTableProvider, IWorkerResourceManagerProvider resourceManagerProvider)
+        public ProcessRekognitionResult(IDbTableProvider<JobAssignment> dbTableProvider, IResourceManagerProvider resourceManagerProvider)
         {
             DbTableProvider = dbTableProvider;
             ResourceManagerProvider = resourceManagerProvider;
@@ -27,14 +24,14 @@ namespace Mcma.Aws.AwsAiService.Worker
 
         private IDbTableProvider<JobAssignment> DbTableProvider { get; }
 
-        private IWorkerResourceManagerProvider ResourceManagerProvider { get; }
+        private IResourceManagerProvider ResourceManagerProvider { get; }
 
-        protected override async Task ExecuteAsync(WorkerRequest request, ProcessRekognitionResult requestInput)
+        protected override async Task ExecuteAsync(WorkerRequest request, ProcessRekognitionResultRequest requestInput)
         {
             var workerJobHelper =
                 new WorkerJobHelper<AIJob>(
                     DbTableProvider.Table(request.TableName()),
-                    ResourceManagerProvider.GetResourceManager(request),
+                    ResourceManagerProvider.Get(request),
                     request,
                     requestInput.JobAssignmentId);
             try

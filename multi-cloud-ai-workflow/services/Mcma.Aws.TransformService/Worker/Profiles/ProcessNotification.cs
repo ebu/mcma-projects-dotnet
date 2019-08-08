@@ -2,22 +2,31 @@
 using System.Threading.Tasks;
 using Mcma.Core;
 using Mcma.Core.Serialization;
-using Mcma.Aws.DynamoDb;
 using Mcma.Worker;
 using Mcma.Core.ContextVariables;
+using Mcma.Client;
+using Mcma.Data;
 
 namespace Mcma.Aws.TransformService.Worker
 {
-    internal class ProcessNotificationHandler : WorkerOperationHandler<ProcessNotificationRequest>
+    internal class ProcessNotification : WorkerOperationHandler<ProcessNotificationRequest>
     {
-        public const string OperationName = "ProcessNotification";
+        public ProcessNotification(IResourceManagerProvider resourceManagerProvider, IDbTableProvider<JobAssignment> dbTableProvider)
+        {
+            ResourceManagerProvider = resourceManagerProvider;
+            DbTableProvider = dbTableProvider;
+        }
+
+        private IResourceManagerProvider ResourceManagerProvider { get; }
+
+        private IDbTableProvider<JobAssignment> DbTableProvider { get; }
 
         protected override async Task ExecuteAsync(WorkerRequest @event, ProcessNotificationRequest notificationRequest)
         {
             var jobAssignmentId = notificationRequest.JobAssignmentId;
             var notification = notificationRequest.Notification;
 
-            var table = new DynamoDbTable<JobAssignment>(@event.TableName());
+            var table = DbTableProvider.Table(@event.TableName());
 
             var jobAssignment = await table.GetAsync(jobAssignmentId);
 
@@ -31,7 +40,7 @@ namespace Mcma.Aws.TransformService.Worker
 
             await table.PutAsync(jobAssignmentId, jobAssignment);
 
-            var resourceManager = @event.GetAwsV4ResourceManager();
+            var resourceManager = ResourceManagerProvider.Get(@event);
 
             await resourceManager.SendNotificationAsync(jobAssignment, jobAssignment.NotificationEndpoint);
         }

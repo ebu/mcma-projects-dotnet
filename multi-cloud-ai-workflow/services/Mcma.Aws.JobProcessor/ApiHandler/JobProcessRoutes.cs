@@ -1,19 +1,11 @@
-using System;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Amazon.Lambda.Core;
 using Mcma.Api;
-using Mcma.Core;
-using Mcma.Core.ContextVariables;
-using Mcma.Core.Serialization;
-using Amazon.Lambda;
-using Amazon.Lambda.Model;
-using Mcma.Core.Logging;
-using Mcma.Aws.Api;
 using Mcma.Aws.DynamoDb;
 using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Core;
+using Mcma.Core.ContextVariables;
 
 namespace Mcma.Aws.JobProcessor.ApiHandler
 {
@@ -26,12 +18,22 @@ namespace Mcma.Aws.JobProcessor.ApiHandler
             var request = requestContext.Request;
             var response = requestContext.Response;
 
+            var notification = requestContext.GetRequestBody<Notification>();
+            if (notification == null)
+            {
+                requestContext.SetResponseBadRequestDueToMissingBody();
+                return;
+            }
+
             var table = new DynamoDbTable<JobProcess>(requestContext.TableName());
 
             var jobProcess = await table.GetAsync(requestContext.PublicUrl() + "/job-processes/" + request.PathVariables["id"]);
-            if (!requestContext.ResourceIfFound(jobProcess, false) ||
-                requestContext.IsBadRequestDueToMissingBody<Notification>(out var notification))
+            
+            if (jobProcess == null)
+            {
+                requestContext.SetResponseResourceNotFound();
                 return;
+            }
 
             if (jobProcess.JobAssignment != notification.Source)
             {
@@ -40,17 +42,14 @@ namespace Mcma.Aws.JobProcessor.ApiHandler
                 return;
             }
 
-            await WorkerInvoker.RunAsync(
-                requestContext.WorkerFunctionName(),
+            await WorkerInvoker.InvokeAsync(
+                requestContext.WorkerFunctionId(),
+                "ProcessNotification",
+                requestContext.GetAllContextVariables().ToDictionary(),
                 new
                 {
-                    operationName = "processNotification",
-                    contextVariables = requestContext.GetAllContextVariables(),
-                    input = new
-                    {
-                        jobProcessId = jobProcess.Id,
-                        notification = notification
-                    }
+                    jobProcessId = jobProcess.Id,
+                    notification = notification
                 });
         }
     }

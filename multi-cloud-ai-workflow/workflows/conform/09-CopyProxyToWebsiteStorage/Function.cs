@@ -1,19 +1,18 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Mcma.Aws;
+using Mcma.Aws.Client;
+using Mcma.Aws.Lambda;
 using Mcma.Aws.S3;
+using Mcma.Client;
 using Mcma.Core;
+using Mcma.Core.ContextVariables;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
@@ -23,14 +22,21 @@ namespace Mcma.Aws.Workflows.Conform.CopyProxyToWebsiteStorage
 {
     public class Function
     {
-        private static readonly string WEBSITE_BUCKET = Environment.GetEnvironmentVariable(nameof(WEBSITE_BUCKET));
+        static Function() => McmaTypes.Add<S3Locator>();
+        private static readonly string WebsiteBucket = Environment.GetEnvironmentVariable(nameof(WebsiteBucket));
+        
+        private static EnvironmentVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
         
         private string GetTransformJobId(JToken @event)
             => @event["data"]["transformJob"]?.FirstOrDefault()?.ToString();
 
         public async Task<S3Locator> Handler(JToken @event, ILambdaContext context)
         {
-            var resourceManager = AwsEnvironment.GetAwsV4ResourceManager();
+
+            var resourceManager = ResourceManagerProvider.Get(EnvironmentVariableProvider);
 
             try
             {
@@ -66,7 +72,7 @@ namespace Mcma.Aws.Workflows.Conform.CopyProxyToWebsiteStorage
                 outputFile = transformJob.JobOutput.Get<S3Locator>(nameof(outputFile));
             }
 
-            var s3Bucket = WEBSITE_BUCKET;
+            var s3Bucket = WebsiteBucket;
             var s3Key = "media/" + Guid.NewGuid();
 
             var idxLastDot = outputFile.AwsS3Key.LastIndexOf(".");

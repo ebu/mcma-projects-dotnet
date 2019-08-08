@@ -1,16 +1,15 @@
-﻿using System;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
-using Amazon.Lambda.APIGatewayEvents;
+﻿using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization.Json;
-using Mcma.Aws;
-using Mcma.Aws.Worker;
-using Mcma.Core.Serialization;
-using Mcma.Core.Logging;
-using Mcma.Worker;
-using Mcma.Core;
+using Mcma.Aws.Client;
 using Mcma.Aws.DynamoDb;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Client;
+using Mcma.Core;
+using Mcma.Core.Logging;
+using Mcma.Core.Serialization;
+using Mcma.Data;
+using Mcma.Worker;
 using Mcma.Worker.Builders;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
@@ -20,20 +19,23 @@ namespace Mcma.Aws.AzureAiService.Worker
 {
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
+
+        private static IDbTableProvider<JobAssignment> DbTableProvider { get; } =
+            new DynamoDbTableProvider<JobAssignment>();
+
         public static IWorker Worker { get; } =
             new WorkerBuilder()
-                .HandleJobsOfType<AIJob>(x =>
-                    x.AddProfile<TranscribeAudio>(TranscribeAudio.Name)
-                     .AddProfile<TranslateText>(TranslateText.Name)
-                     .AddProfile<ExtractAllAIMetadata>(ExtractAllAIMetadata.Name))
-                .HandleRequestsOfType<ProcessNotificationRequest>(
+                .HandleJobsOfType<AIJob>(
+                    DbTableProvider,
+                    ResourceManagerProvider,
                     x =>
-                        x.WithOperation(ProcessNotificationHandler.OperationName,
-                            y =>
-                                y.Handle(
-                                    new ProcessNotificationHandler(
-                                        new DynamoDbTableProvider<JobAssignment>(),
-                                        new AwsWorkerResourceManagerProvider()))))
+                        x.AddProfile<TranscribeAudio>(TranscribeAudio.Name)
+                        .AddProfile<TranslateText>(TranslateText.Name)
+                        .AddProfile<ExtractAllAIMetadata>(ExtractAllAIMetadata.Name))
+                .HandleOperation(new ProcessNotification(DbTableProvider, ResourceManagerProvider))
                 .Build();
 
         public async Task Handler(WorkerRequest @event, ILambdaContext context)

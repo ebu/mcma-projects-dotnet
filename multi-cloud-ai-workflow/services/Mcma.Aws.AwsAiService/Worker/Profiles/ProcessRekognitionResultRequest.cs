@@ -1,6 +1,6 @@
 ﻿namespace Mcma.Aws.AwsAiService.Worker
 {
-    public class ProcessRekognitionResult
+    public class ProcessRekognitionResultRequest
     {
         public string JobAssignmentId { get; set; }
 

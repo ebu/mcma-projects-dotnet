@@ -63,7 +63,7 @@ namespace Mcma.Tests
         private const string VIDEO_CODEC_ISOM = "isom";
         private const int VIDEO_BITRATE_MB = 2;
 
-        private static readonly int THRESHOLD_SECONDS = int.Parse(Environment.GetEnvironmentVariable("THESHOLD_SECONDS"));
+        private static readonly int THRESHOLD_SECONDS = int.Parse(Environment.GetEnvironmentVariable("ThresholdSeconds"));
         
         public static string ToMcmaObject_ShouldDeserializeBmEssenceMxf()
         {

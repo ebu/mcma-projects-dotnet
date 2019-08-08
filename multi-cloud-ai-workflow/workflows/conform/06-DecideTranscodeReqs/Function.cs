@@ -1,18 +1,16 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization;
-using Amazon.S3;
-using Amazon.S3.Model;
-using Mcma.Aws;
+using Mcma.Aws.Client;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Client;
 using Mcma.Core;
+using Mcma.Core.ContextVariables;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
@@ -22,22 +20,29 @@ namespace Mcma.Aws.Workflows.Conform.DecideTranscodeReqs
 {
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
         // Local Define
         private const string VIDEO_FORMAT = "AVC";
         private const string VIDEO_CODEC = "mp42";
         private const string VIDEO_CODEC_ISOM = "isom";
         private const int VIDEO_BITRATE_MB = 2;
 
-        private static readonly int THRESHOLD_SECONDS = int.Parse(Environment.GetEnvironmentVariable("THESHOLD_SECONDS"));
+        private static readonly int THRESHOLD_SECONDS = int.Parse(Environment.GetEnvironmentVariable("ThresholdSeconds"));
+
+        private static EnvironmentVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
 
         private double CalcSeconds(int hour, int minute, double seconds)
             => (hour * 60 * 60) + (minute * 60) + seconds;
- 
+
         public async Task<JToken> Handler(JToken @event, ILambdaContext context)
         {
-            Logger.Debug(@event.ToMcmaJson().ToString());
+            if (@event == null)
+                throw new Exception("Missing workflow input");
 
-            var resourceManager = AwsEnvironment.GetAwsV4ResourceManager();
+            var resourceManager = ResourceManagerProvider.Get(EnvironmentVariableProvider);
 
             try
             {

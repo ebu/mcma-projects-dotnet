@@ -1,20 +1,17 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization;
-using Amazon.S3;
-using Amazon.S3.Model;
 using Amazon.StepFunctions;
 using Amazon.StepFunctions.Model;
-using Mcma.Aws;
+using Mcma.Aws.Client;
+using Mcma.Aws.Lambda;
 using Mcma.Aws.S3;
+using Mcma.Client;
 using Mcma.Core;
+using Mcma.Core.ContextVariables;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
@@ -24,18 +21,26 @@ namespace Mcma.Aws.Workflows.Conform.LongTranscode
 {
     public class Function
     {
-        private static readonly string SERVICE_REGISTRY_URL = Environment.GetEnvironmentVariable(nameof(SERVICE_REGISTRY_URL));
-        private static readonly string ACTIVITY_ARN = Environment.GetEnvironmentVariable(nameof(ACTIVITY_ARN));
-        private static readonly string ACTIVITY_CALLBACK_URL = Environment.GetEnvironmentVariable(nameof(ACTIVITY_CALLBACK_URL));
-        private static readonly string TEMP_BUCKET = Environment.GetEnvironmentVariable(nameof(TEMP_BUCKET));
-        private static readonly string REPOSITORY_BUCKET = Environment.GetEnvironmentVariable(nameof(REPOSITORY_BUCKET));
-        private static readonly string WEBSITE_BUCKET = Environment.GetEnvironmentVariable(nameof(WEBSITE_BUCKET));
+        static Function() => McmaTypes.Add<S3Locator>();
+        private static readonly string ActivityArn = Environment.GetEnvironmentVariable(nameof(ActivityArn));
+        private static readonly string ActivityCallbackUrl = Environment.GetEnvironmentVariable(nameof(ActivityCallbackUrl));
+        private static readonly string TempBucket = Environment.GetEnvironmentVariable(nameof(TempBucket));
+        private static readonly string RepositoryBucket = Environment.GetEnvironmentVariable(nameof(RepositoryBucket));
+        private static readonly string WebsiteBucket = Environment.GetEnvironmentVariable(nameof(WebsiteBucket));
 
         private const string JOB_PROFILE_NAME = "CreateProxyEC2";
-        
+
+        private static EnvironmentVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
+
         public async Task Handler(JToken @event, ILambdaContext context)
         {
-            var resourceManager = AwsEnvironment.GetAwsV4ResourceManager();
+            if (@event == null)
+                throw new Exception("Missing workflow input");
+
+            var resourceManager = ResourceManagerProvider.Get(EnvironmentVariableProvider);
 
             try
             {
@@ -54,7 +59,7 @@ namespace Mcma.Aws.Workflows.Conform.LongTranscode
             var stepFunction = new AmazonStepFunctionsClient();
             var data = await stepFunction.GetActivityTaskAsync(new GetActivityTaskRequest
             {
-                ActivityArn = ACTIVITY_ARN
+                ActivityArn = ActivityArn
             });
 
             var taskToken = data.TaskToken;
@@ -78,13 +83,13 @@ namespace Mcma.Aws.Workflows.Conform.LongTranscode
                     ["inputFile"] = @event["data"]["repositoryFile"],
                     ["outputLocation"] = new S3Locator
                     {
-                        AwsS3Bucket = REPOSITORY_BUCKET,
+                        AwsS3Bucket = RepositoryBucket,
                         AwsS3KeyPrefix = "TransformJobResults/"
                     }
                 },
                 NotificationEndpoint = new NotificationEndpoint
                 {
-                    HttpEndpoint = ACTIVITY_CALLBACK_URL + "?taskToken=" + Uri.EscapeDataString(taskToken)
+                    HttpEndpoint = ActivityCallbackUrl + "?taskToken=" + Uri.EscapeDataString(taskToken)
                 }
             };
 

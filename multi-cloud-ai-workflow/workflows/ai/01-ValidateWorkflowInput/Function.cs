@@ -2,12 +2,12 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization;
-using Amazon.S3;
-using Amazon.S3.Model;
-using Mcma.Aws;
+using Mcma.Aws.Client;
+using Mcma.Aws.Lambda;
 using Mcma.Aws.S3;
+using Mcma.Client;
 using Mcma.Core;
+using Mcma.Core.ContextVariables;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
 using Newtonsoft.Json.Linq;
@@ -19,14 +19,20 @@ namespace Mcma.Aws.Workflows.Ai.ValidateWorkflowInput
 {
     public class Function
     {
-        private static readonly string WEBSITE_BUCKET = Environment.GetEnvironmentVariable(nameof(WEBSITE_BUCKET));
+        static Function() => McmaTypes.Add<S3Locator>();
+        private static readonly string WebsiteBucket = Environment.GetEnvironmentVariable(nameof(WebsiteBucket));
+
+        private static EnvironmentVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
 
         public async Task<S3Locator> Handler(JToken @event, ILambdaContext context)
         {
             if (@event == null)
                 throw new Exception("Missing workflow input");
 
-            var resourceManager = AwsEnvironment.GetAwsV4ResourceManager();
+            var resourceManager = ResourceManagerProvider.Get(EnvironmentVariableProvider);
 
             try
             {
@@ -62,7 +68,7 @@ namespace Mcma.Aws.Workflows.Ai.ValidateWorkflowInput
 
             // find the media locator in the website bucket with public httpEndpoint
             var mediaFileLocator =
-                bmEssence.Locations.OfType<S3Locator>().FirstOrDefault(l => l.AwsS3Bucket == WEBSITE_BUCKET);
+                bmEssence.Locations.OfType<S3Locator>().FirstOrDefault(l => l.AwsS3Bucket == WebsiteBucket);
 
             if (mediaFileLocator == null)
                 throw new Exception("No suitable Locator found on bmEssence");

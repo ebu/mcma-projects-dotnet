@@ -1,22 +1,19 @@
 using System;
 using System.Threading.Tasks;
 using Amazon.S3.Model;
-using Mcma.Core;
-using Mcma.Core.Logging;
 using Mcma.Aws.S3;
-using Mcma.Aws.DynamoDb;
-using Mcma.Worker;
-using Mcma.Data;
-using Mcma.Aws.Worker;
+using Mcma.Client;
+using Mcma.Core;
 using Mcma.Core.ContextVariables;
+using Mcma.Core.Logging;
+using Mcma.Data;
+using Mcma.Worker;
 
 namespace Mcma.Aws.AwsAiService.Worker
 {
-    internal class ProcessTranscribeJobResultHandler : WorkerOperationHandler<ProcessTranscribeJobResult>
+    internal class ProcessTranscribeJobResult : WorkerOperationHandler<ProcessTranscribeJobResultRequest>
     {
-        public const string OperationName = "ProcessTranscribeJobResult";
-
-        public ProcessTranscribeJobResultHandler(IDbTableProvider<JobAssignment> dbTableProvider, IWorkerResourceManagerProvider resourceManagerProvider)
+        public ProcessTranscribeJobResult(IDbTableProvider<JobAssignment> dbTableProvider, IResourceManagerProvider resourceManagerProvider)
         {
             DbTableProvider = dbTableProvider;
             ResourceManagerProvider = resourceManagerProvider;
@@ -24,14 +21,14 @@ namespace Mcma.Aws.AwsAiService.Worker
 
         private IDbTableProvider<JobAssignment> DbTableProvider { get; }
 
-        private IWorkerResourceManagerProvider ResourceManagerProvider { get; }
+        private IResourceManagerProvider ResourceManagerProvider { get; }
 
-        protected override async Task ExecuteAsync(WorkerRequest request, ProcessTranscribeJobResult requestInput)
+        protected override async Task ExecuteAsync(WorkerRequest request, ProcessTranscribeJobResultRequest requestInput)
         {
             var workerJobHelper =
                 new WorkerJobHelper<AIJob>(
                     DbTableProvider.Table(request.TableName()),
-                    ResourceManagerProvider.GetResourceManager(request),
+                    ResourceManagerProvider.Get(request),
                     request,
                     requestInput.JobAssignmentId);
             try

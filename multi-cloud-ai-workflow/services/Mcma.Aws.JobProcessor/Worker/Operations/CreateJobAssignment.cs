@@ -1,26 +1,33 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Amazon.Lambda.Core;
-using Mcma.Core;
-using Mcma.Core.Serialization;
-using Mcma.Core.Logging;
-using System.Collections.Generic;
 using Mcma.Aws.DynamoDb;
-using Mcma.Worker;
+using Mcma.Client;
+using Mcma.Core;
 using Mcma.Core.ContextVariables;
+using Mcma.Core.Logging;
+using Mcma.Data;
+using Mcma.Worker;
 
 namespace Mcma.Aws.JobProcessor.Worker
 {
-    internal static class JobProcessorWorkerOperations
+    internal class CreateJobAssignment : WorkerOperationHandler<CreateJobAssignmentRequest>
     {
-        public const string CreateJobAssignmentOperationName = "CreateJobAssignment";
-        public const string DeleteJobAssignmentOperationName = "DeleteJobAssignment";
-        public const string ProcessNotificationOperationName = "ProcessNotification";
-        
-        public static async Task CreateJobAssignmentAsync(WorkerRequest request, CreateJobAssignmentRequest createRequest)
+        public CreateJobAssignment(IResourceManagerProvider resourceManagerProvider, IAuthProvider authProvider, IDbTableProvider<JobProcess> dbTableProvider)
         {
-            var resourceManager = request.GetAwsV4ResourceManager();
+            ResourceManagerProvider = resourceManagerProvider;
+            AuthProvider = authProvider;
+            DbTableProvider = dbTableProvider;
+        }
+
+        private IResourceManagerProvider ResourceManagerProvider { get; }
+
+        private IAuthProvider AuthProvider { get; }
+
+        private IDbTableProvider<JobProcess> DbTableProvider { get; }
+
+        protected override async Task ExecuteAsync(WorkerRequest request, CreateJobAssignmentRequest createRequest)
+        {
+            var resourceManager = ResourceManagerProvider.Get(request);
 
             var table = new DynamoDbTable<JobProcess>(request.TableName());
 
@@ -55,7 +62,7 @@ namespace Mcma.Aws.JobProcessor.Worker
                 
                 foreach (var service in services)
                 {
-                    var serviceClient = new ServiceClient(service, AwsEnvironment.GetDefaultAwsV4AuthProvider());
+                    var serviceClient = new ServiceClient(service, AuthProvider);
 
                     jobAssignmentResourceEndpoint = null;
 
@@ -112,51 +119,6 @@ namespace Mcma.Aws.JobProcessor.Worker
             jobProcess.DateModified = DateTime.UtcNow;
 
             await table.PutAsync(jobProcessId, jobProcess);
-
-            await resourceManager.SendNotificationAsync(jobProcess, jobProcess.NotificationEndpoint);
-        }
-
-        public static async Task DeleteJobAssignmentAsync(WorkerRequest request, DeleteJobAssignmentRequest deleteRequest)
-        {
-            var jobAssignmentId = deleteRequest.JobAssignmentId;
-
-            try
-            {
-                var resourceManager = request.GetAwsV4ResourceManager();
-                await resourceManager.DeleteAsync<JobAssignment>(jobAssignmentId);
-            }
-            catch (Exception error)
-            {
-                Logger.Exception(error);
-            }
-        }
-
-        public static async Task ProcessNotificationAsync(WorkerRequest request, ProcessNotificationRequest @event)
-        {
-            var jobProcessId = @event.JobProcessId;
-            var notification = @event.Notification;
-            var notificationJobData = notification.Content.ToMcmaObject<JobBase>();
-
-            var table = new DynamoDbTable<JobProcess>(request.TableName());
-
-            var jobProcess = await table.GetAsync(jobProcessId);
-
-            // not updating job if it already was marked as completed or failed.
-            if (jobProcess.Status == JobStatus.Completed || jobProcess.Status == JobStatus.Failed)
-            {
-                Logger.Warn("Ignoring update of job process that tried to change state from " + jobProcess.Status + " to " + notificationJobData.Status);
-                return;
-            }
-
-            jobProcess.Status = notificationJobData.Status;
-            jobProcess.StatusMessage = notificationJobData.StatusMessage;
-            jobProcess.Progress = notificationJobData.Progress;
-            jobProcess.JobOutput = notificationJobData.JobOutput;
-            jobProcess.DateModified = DateTime.UtcNow;
-
-            await table.PutAsync(jobProcessId, jobProcess);
-
-            var resourceManager = request.GetAwsV4ResourceManager();
 
             await resourceManager.SendNotificationAsync(jobProcess, jobProcess.NotificationEndpoint);
         }

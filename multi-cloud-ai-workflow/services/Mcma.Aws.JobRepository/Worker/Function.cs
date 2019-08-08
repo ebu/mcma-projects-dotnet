@@ -1,12 +1,14 @@
-﻿using System;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
-using Amazon.Lambda.APIGatewayEvents;
+﻿using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization.Json;
-using Mcma.Aws;
-using Mcma.Core.Serialization;
+using Mcma.Aws.Client;
+using Mcma.Aws.DynamoDb;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Client;
+using Mcma.Core;
 using Mcma.Core.Logging;
+using Mcma.Core.Serialization;
+using Mcma.Data;
 using Mcma.Worker;
 using Mcma.Worker.Builders;
 
@@ -17,18 +19,20 @@ namespace Mcma.Aws.JobRepository.Worker
 {
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
+        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global);
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; } = new ResourceManagerProvider(AuthProvider);
+
+        private static IDbTableProvider<Job> DbTableProvider { get; } = new DynamoDbTableProvider<Job>();
+
         private static IWorker Worker =
             new WorkerBuilder()
-                .HandleRequestsOfType<CreateJobProcessRequest>(x =>
-                    x.WithOperation(JobRepositoryWorkerOperations.CreateJobProcessOperationName,
-                        y => y.Handle(JobRepositoryWorkerOperations.CreateJobProcessAsync)))
-                .HandleRequestsOfType<DeleteJobProcessRequest>(x =>
-                    x.WithOperation(JobRepositoryWorkerOperations.DeleteJobProcessOperationName,
-                        y => y.Handle(JobRepositoryWorkerOperations.DeleteJobProcessAsync)))
-                .HandleRequestsOfType<ProcessNotificationRequest>(x =>
-                    x.WithOperation(JobRepositoryWorkerOperations.ProcessNotificationOperationName,
-                        y => y.Handle(JobRepositoryWorkerOperations.ProcessNotificationAsync)))
+                .HandleOperation(new CreateJobProcess(ResourceManagerProvider, DbTableProvider))
+                .HandleOperation(new DeleteJobProcess(ResourceManagerProvider))
+                .HandleOperation(new ProcessNotification(ResourceManagerProvider, DbTableProvider))
                 .Build();
+
         public async Task Handler(WorkerRequest @event, ILambdaContext context)
         {
             Logger.Debug(@event.ToMcmaJson().ToString());

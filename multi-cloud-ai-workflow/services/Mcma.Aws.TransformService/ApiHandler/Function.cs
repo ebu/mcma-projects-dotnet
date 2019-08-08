@@ -1,18 +1,17 @@
-using System;
+using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization.Json;
-using Mcma.Core.Serialization;
-using Mcma.Aws;
-using Mcma.Core.Logging;
-using Mcma.Aws.Api;
-using Mcma.Core;
-using Mcma.Aws.Lambda;
-using Mcma.Api.Routes.Defaults;
 using Mcma.Api.Routes;
-using System.Net.Http;
+using Mcma.Api.Routes.Defaults;
+using Mcma.Aws.ApiGateway;
+using Mcma.Aws.DynamoDb;
+using Mcma.Aws.Lambda;
+using Mcma.Aws.S3;
+using Mcma.Core;
+using Mcma.Core.Logging;
+using Mcma.Core.Serialization;
+using Mcma.Data;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -21,11 +20,17 @@ namespace Mcma.Aws.TransformService.ApiHandler
 {
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
+        private static IDbTableProvider<JobAssignment> DbTableProvider { get; } = new DynamoDbTableProvider<JobAssignment>();
+
+        private static McmaApiRouteCollection Routes { get; } =
+            new DefaultRouteCollectionBuilder<JobAssignment>(DbTableProvider).ForJobAssignments<LambdaWorkerInvoker>();
+
         private static ApiGatewayApiController Controller =
             new McmaApiRouteCollection()
-                .AddRoutes(AwsDefaultRoutes.WithDynamoDb<JobAssignment>().ForJobAssignments<LambdaWorkerInvoker>())
-                .AddRoute(HttpMethod.Post.Method, "/job-assignments/{id}/notifications", JobAssignmentRoutes.ProcessNotificationAsync)
-                .ToController();
+                .AddRoutes(Routes)
+                .AddRoute(HttpMethod.Post, "/job-assignments/{id}/notifications", JobAssignmentRoutes.ProcessNotificationAsync)
+                .ToApiGatewayApiController();
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
         {

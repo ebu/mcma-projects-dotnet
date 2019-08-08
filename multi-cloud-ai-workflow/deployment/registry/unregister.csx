@@ -1,15 +1,38 @@
 #load "../../build/build.csx"
 #load "../../build/task.csx"
 
-#r "nuget:Newtonsoft.Json, 11.0.2"
+#r "nuget:AWSSDK.Core, 3.3.103.20"
+#r "nuget:Newtonsoft.Json, 12.0.2"
 
-#r "nuget:Mcma.Core, 0.2.8"
+#r "nuget:Mcma.Core, 0.5.3"
+#r "nuget:Mcma.Client, 0.5.3"
+#r "nuget:Mcma.Aws.Client, 0.5.3"
 
 using System.Threading.Tasks;
+using Amazon;
+using Amazon.Runtime;
 using Mcma.Core;
+using Mcma.Client;
+using Mcma.Aws.Client;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 public class ClearServiceRegistry : BuildTask
 {
+    private static readonly JObject AwsCredentialsJson = JObject.Parse(File.ReadAllText("./deployment/aws-credentials.json"));
+    private static readonly AWSCredentials AwsCredentials = new BasicAWSCredentials(AwsCredentialsJson["accessKeyId"].Value<string>(), AwsCredentialsJson["secretAccessKey"].Value<string>());
+    private static readonly RegionEndpoint AwsRegion = RegionEndpoint.GetBySystemName(AwsCredentialsJson["region"].Value<string>());
+
+    private static AwsV4AuthContext ServicesAuthContext { get; } =
+        new AwsV4AuthContext(
+            AwsCredentialsJson["accessKeyId"].Value<string>(),
+            AwsCredentialsJson["secretAccessKey"].Value<string>(),
+            AwsCredentialsJson["region"].Value<string>()
+        );
+
+    private static IResourceManagerProvider ResourceManagerProvider { get; } =
+        new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(ServicesAuthContext));
+
     private IDictionary<string, string> ParseContent(string content)
     {
         var serviceUrls = new Dictionary<string, string>();
@@ -32,7 +55,7 @@ public class ClearServiceRegistry : BuildTask
         
         var servicesUrl = terraformOutput["services_url"];
 
-        var resourceManager = new ResourceManager(new ResourceManagerOptions(servicesUrl));
+        var resourceManager = ResourceManagerProvider.Get(new ResourceManagerConfig(servicesUrl));
         await resourceManager.InitAsync();
 
         foreach (var jobProfile in await resourceManager.GetAsync<JobProfile>())

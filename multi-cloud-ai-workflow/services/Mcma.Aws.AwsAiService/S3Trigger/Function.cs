@@ -1,19 +1,15 @@
 using System;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Amazon.Lambda;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Model;
-using Amazon.Lambda.Serialization;
 using Amazon.Lambda.S3Events;
-using Newtonsoft.Json.Linq;
-using Mcma.Aws;
-using Mcma.Core.Serialization;
-using System.Text;
-using System.Text.RegularExpressions;
-using Mcma.Core.Logging;
+using Mcma.Aws.Lambda;
 using Mcma.Aws.S3;
-using Mcma.Core;
 using Mcma.Core.ContextVariables;
+using Mcma.Core.Logging;
+using Mcma.Core.Serialization;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 [assembly: McmaLambdaLogger]
@@ -23,6 +19,7 @@ namespace Mcma.Aws.AwsAiService.S3Trigger
 
     public class Function
     {
+        static Function() => McmaTypes.Add<S3Locator>();
         private IContextVariableProvider ContextVariableProvider { get; } = new EnvironmentVariableProvider();
 
         public async Task Handler(S3Event @event, ILambdaContext context)
@@ -46,7 +43,7 @@ namespace Mcma.Aws.AwsAiService.S3Trigger
 
                     var invokeParams = new InvokeRequest
                     {
-                        FunctionName = ContextVariableProvider.GetRequiredContextVariable("WorkerFunctionName"),
+                        FunctionName = ContextVariableProvider.GetRequiredContextVariable("WorkerFunctionId"),
                         InvocationType = "Event",
                         LogType = "None",
                         Payload = new

@@ -11,3 +11,5 @@ build.inputs
 build-inputs.json
 aws-credentials.json
 build.state
+private-key.json
+public-key.json

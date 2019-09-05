@@ -8,5 +8,6 @@ terraform.tfstate
 terraform.tfstate.backup
 terraform.tfvars
 build.inputs
+build-inputs.json
 aws-credentials.json
 build.state

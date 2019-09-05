@@ -124,10 +124,10 @@ resource "aws_api_gateway_deployment" "azure_ai_service_deployment" {
     "ServicesUrl"          = "${local.services_url}"
     "ServicesAuthType"     = "${local.services_auth_type}"
     "WorkerFunctionId"   = "${aws_lambda_function.azure-ai-service-worker.function_name}"
-    "AzureApiUrl"          = "${var.azure_api_url}"
+    "AzureVideoIndexerApiUrl"          = "${var.azure_api_url}"
     "AzureLocation"        = "${var.azure_location}"
-    "AzureAccountID"       = "${var.azure_account_id}"
-    "AzureSubscriptionKey" = "${var.azure_subscription_key}"
+    "AzureVideoIndexerAccountID"       = "${var.azure_account_id}"
+    "AzureVideoIndexerSubscriptionKey" = "${var.azure_subscription_key}"
     "DeploymentHash"       = "${sha256(file("./services/azure-ai-service.tf"))}"
   }
 }
@@ -188,10 +188,10 @@ resource "aws_api_gateway_deployment" "azure_ai_service_deployment_non_secure" {
     "ServicesUrl"          = "${local.services_url}"
     "ServicesAuthType"     = "${local.services_auth_type}"
     "WorkerFunctionId"   = "${aws_lambda_function.azure-ai-service-worker.function_name}"
-    "AzureApiUrl"          = "${var.azure_api_url}"
+    "AzureVideoIndexerApiUrl"          = "${var.azure_api_url}"
     "AzureLocation"        = "${var.azure_location}"
-    "AzureAccountID"       = "${var.azure_account_id}"
-    "AzureSubscriptionKey" = "${var.azure_subscription_key}"
+    "AzureVideoIndexerAccountID"       = "${var.azure_account_id}"
+    "AzureVideoIndexerSubscriptionKey" = "${var.azure_subscription_key}"
     "DeploymentHash"       = "${sha256(file("./services/azure-ai-service.tf"))}"
   }
 }

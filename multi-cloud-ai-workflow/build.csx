@@ -19,9 +19,9 @@ Build.ReadInputs(defaults: new Dictionary<string, string>
     ["awsInstanceType"] = "t2.micro",
     ["awsInstanceCount"] = "1",
     ["AzureLocation"] = "trial",
-    ["AzureAccountID"] = "undefined",
-    ["AzureSubscriptionKey"] = "undefined",
-    ["AzureApiUrl"] = "https://api.videoindexer.ai"
+    ["AzureVideoIndexerAccountID"] = "undefined",
+    ["AzureVideoIndexerSubscriptionKey"] = "undefined",
+    ["AzureVideoIndexerApiUrl"] = "https://api.videoindexer.ai"
 });
 
 // Windows seems to require full paths to the executables when using ProcessStartInfo

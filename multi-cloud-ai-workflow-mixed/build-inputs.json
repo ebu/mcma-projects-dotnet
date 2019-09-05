@@ -1,0 +1,19 @@
+{
+    "environmentName": "triskel",
+    "environmentType": "devhyb",
+
+    "awsAccountId": "213450902387",
+    "awsAccessKey": "AKIAIT3LCODD5QOJ5WPQ",
+    "awsSecretKey": "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",
+    "awsRegion": "us-east-1",
+
+    "azureClientId": "ab79c9dd-e3b8-4fa0-929f-aa1670567e98",
+    "azureClientSecret": "4OKofLOApxcQprCKtdHBoNybDdMhISjaT1IM+riWADQ=",
+    "azureTenantId": "40e1b75f-bb2f-4862-b34e-2d990ae2d92a",
+    "azureTenantName": "evanverneyfinklive.onmicrosoft.com",
+    "azureSubscriptionId": "79d21867-c847-4bb1-ac8d-9d9883a6a542",
+    "azureLocation": "East US",
+
+    "azureVideoIndexerAccountId": "0af5a721-5d3c-451a-88b0-e658114bdea4",
+    "azureVideoIndexerSubscriptionKey": "e8700f0d224645a7b05c1a4f3b80b498"
+}

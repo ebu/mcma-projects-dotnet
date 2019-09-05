@@ -36,9 +36,9 @@ awsInstanceType=<EC2_TRANSFORM_SERVICE_INSTANCE_TYPE - DEFAULTS TO "t2.micro">
 awsInstanceCount=<EC2_TRANSFORM_SERVICE_INSTANCE_COUNT - DEFAULTS TO "1">
 
 AzureLocation =  <YOUR AZURE REGION - USE "trial" FOR TESTING>
-AzureAccountID = <YOUR AZURE Video Indexer Account ID> 
-AzureSubscriptionKey = <YOUR AZURE SUBSCRIPTION KEY>
-AzureApiUrl = <AZURE VIDEO API END[POINT DEFAULT IS: https://api.videoindexer.ai>
+AzureVideoIndexerAccountID = <YOUR AZURE Video Indexer Account ID> 
+AzureVideoIndexerSubscriptionKey = <YOUR AZURE SUBSCRIPTION KEY>
+AzureVideoIndexerApiUrl = <AZURE VIDEO API END[POINT DEFAULT IS: https://api.videoindexer.ai>
 
 ```
 

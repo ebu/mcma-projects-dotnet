@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Mcma.Core" Version="0.5.3" />
-    <PackageReference Include="Mcma.Client" Version="0.5.3" />
+    <PackageReference Include="Mcma.Core" Version="0.5.3.2" />
+    <PackageReference Include="Mcma.Client" Version="0.5.3.2" />
 
-    <PackageReference Include="Mcma.Aws.Client" Version="0.5.3" />
-    <PackageReference Include="Mcma.Aws.Lambda" Version="0.5.3" />
-    <PackageReference Include="Mcma.Aws.S3" Version="0.5.3" />
+    <PackageReference Include="Mcma.Aws.Client" Version="0.5.3.2" />
+    <PackageReference Include="Mcma.Aws.Lambda" Version="0.5.3.2" />
+    <PackageReference Include="Mcma.Aws.S3" Version="0.5.3.2" />
 
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.1.3" />
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />

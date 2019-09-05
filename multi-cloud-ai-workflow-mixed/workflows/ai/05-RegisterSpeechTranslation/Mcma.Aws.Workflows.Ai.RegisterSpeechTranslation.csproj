@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Mcma.Core" Version="0.5.3.56" />
+    <PackageReference Include="Mcma.Client" Version="0.5.3.56" />
+    <PackageReference Include="Mcma.Aws.Client" Version="0.5.3.56" />
+    <PackageReference Include="Mcma.Aws.Lambda" Version="0.5.3.56" />
+    <PackageReference Include="Mcma.Aws.S3" Version="0.5.3.56" />
+    <PackageReference Include="Mcma.Azure.Client" Version="0.5.3.56" />
+ 
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.4.0" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.104.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <OutputPath>dist\staging</OutputPath>
+    <PublishDir>dist\staging</PublishDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+</Project>

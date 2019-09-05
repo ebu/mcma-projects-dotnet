@@ -20,15 +20,14 @@ namespace Mcma.Aws.MediaRepository.ApiHandler
     public class Function
     {
         static Function() => McmaTypes.Add<S3Locator>();
-        private static IDbTableProvider<BMContent> ContentDbTableProvider { get; } = new DynamoDbTableProvider<BMContent>();
-        
-        private static IDbTableProvider<BMEssence> EssenceDbTableProvider { get; } = new DynamoDbTableProvider<BMEssence>();
+
+        private static IDbTableProvider DbTableProvider { get; } = new DynamoDbTableProvider();
 
         private static McmaApiRouteCollection ContentRoutes { get; } =
-            new DefaultRouteCollectionBuilder<BMContent>(ContentDbTableProvider, "bm-contents").AddAll().Build();
+            new DefaultRouteCollectionBuilder<BMContent>(DbTableProvider, "bm-contents").AddAll().Build();
 
         private static McmaApiRouteCollection EssenceRoutes { get; } =
-            new DefaultRouteCollectionBuilder<BMEssence>(EssenceDbTableProvider, "bm-essences").AddAll().Build();
+            new DefaultRouteCollectionBuilder<BMEssence>(DbTableProvider, "bm-essences").AddAll().Build();
 
         private static ApiGatewayApiController Controller { get; } =
             new McmaApiRouteCollection()

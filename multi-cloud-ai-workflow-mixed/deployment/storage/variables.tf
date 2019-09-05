@@ -1,0 +1,16 @@
+variable "global_prefix" {}
+variable "global_prefix_lower_only" {}
+variable "upload_bucket" {}
+variable "temp_bucket" {}
+variable "repository_bucket" {}
+variable "website_bucket" {}
+variable "aws_account_id" {}
+variable "aws_access_key" {}
+variable "aws_secret_key" {}
+variable "aws_region" {}
+variable "azure_client_id" {}
+variable "azure_client_secret" {}
+variable "azure_tenant_name" {}
+variable "azure_location" {}
+variable "resource_group_name" {}
+variable "deploy_container" {}

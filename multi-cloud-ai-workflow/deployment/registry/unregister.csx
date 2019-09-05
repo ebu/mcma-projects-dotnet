@@ -4,9 +4,9 @@
 #r "nuget:AWSSDK.Core, 3.3.103.20"
 #r "nuget:Newtonsoft.Json, 12.0.2"
 
-#r "nuget:Mcma.Core, 0.5.3"
-#r "nuget:Mcma.Client, 0.5.3"
-#r "nuget:Mcma.Aws.Client, 0.5.3"
+#r "nuget:Mcma.Core, 0.5.3.2"
+#r "nuget:Mcma.Client, 0.5.3.2"
+#r "nuget:Mcma.Aws.Client, 0.5.3.2"
 
 using System.Threading.Tasks;
 using Amazon;

@@ -1,0 +1,22 @@
+{
+  "resourceManager": {
+    "servicesUrl": "https://w7eijekmuf.execute-api.us-east-2.amazonaws.com/dev/services",
+    "servicesAuthType": "AWS4",
+    "servicesAuthContext": "x"
+  },
+  "aws": {
+    "region": "us-east-2",
+    "s3": {
+      "uploadBucket": "triskel.mcma.us-east-2.dev.upload"
+    },
+    "cognito": {
+      "userPool": {
+        "UserPoolId": "us-east-2_FMbuj6qlV",
+        "ClientId": "3tu7rsilf7r7l66qltfoude4cq"
+      },
+      "identityPool": {
+        "id": "us-east-2:6b59e80c-6a45-44e7-b2eb-c3b0a2c96c98"
+      }
+    }
+  }
+}

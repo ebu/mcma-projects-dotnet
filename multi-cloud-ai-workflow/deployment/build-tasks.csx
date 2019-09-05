@@ -26,9 +26,9 @@ public class GenerateTerraformTfVars : BuildTask
                     .AppendLine($"website_bucket = \"{Build.Inputs.environmentName}.{Build.Inputs.awsRegion}.{Build.Inputs.environmentType}.website\"")
                     .AppendLine(($"global_prefix = \"{Build.Inputs.environmentName}.{Build.Inputs.environmentType}\"").Replace(".", "-"))
                     .AppendLine($"azure_location = \"{Build.Inputs.AzureLocation}\"")
-                    .AppendLine($"azure_account_id = \"{Build.Inputs.AzureAccountID}\"")
-                    .AppendLine($"azure_subscription_key = \"{Build.Inputs.AzureSubscriptionKey}\"")
-                    .AppendLine($"azure_api_url = \"{Build.Inputs.AzureApiUrl}\"")
+                    .AppendLine($"azure_account_id = \"{Build.Inputs.AzureVideoIndexerAccountID}\"")
+                    .AppendLine($"azure_subscription_key = \"{Build.Inputs.AzureVideoIndexerSubscriptionKey}\"")
+                    .AppendLine($"azure_api_url = \"{Build.Inputs.AzureVideoIndexerApiUrl}\"")
                     .ToString()))
             .ContinueWith(t => true);
 }

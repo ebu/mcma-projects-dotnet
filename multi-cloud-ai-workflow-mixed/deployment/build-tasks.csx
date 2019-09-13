@@ -4,7 +4,7 @@
 #load "../build/terraform.csx"
 #load "./registry/register.csx"
 
-#r "nuget:Mcma.Azure.Client, 0.5.3.56"
+#r "nuget:Mcma.Azure.Client, 0.5.5.2"
 
 using System.IO;
 using Mcma.Azure.Client;
@@ -42,7 +42,7 @@ public class GenerateTerraformTfVars : BuildTask
                 .AppendLine($"environment_name                      = \"{Build.Inputs.environmentName}\"")
                 .AppendLine($"environment_type                      = \"{Build.Inputs.environmentType}\"")
                 .AppendLine($"global_prefix                         = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}\"")
-                .AppendLine($"global_prefix_lower_only              = \"{Build.Inputs.environmentName.ToLower()}{Build.Inputs.environmentType.ToLower()}\"")
+                .AppendLine($"global_prefix_lower_only              = \"{Build.Inputs.environmentName.ToLower().Replace("-", "").Replace("_", "")}{Build.Inputs.environmentType.ToLower().Replace("-", "").Replace("_", "")}\"")
 
                 // AWS vars
                 .AppendLine($"aws_account_id                        = \"{Build.Inputs.awsAccountId}\"")

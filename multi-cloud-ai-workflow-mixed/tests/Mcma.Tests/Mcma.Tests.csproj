@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mcma.Core" Version="0.5.3.56" />
-    <PackageReference Include="Mcma.Aws" Version="0.5.3.56" />
+    <PackageReference Include="Mcma.Core" Version="0.5.5.2" />
+    <PackageReference Include="Mcma.Aws" Version="0.5.5.2" />
  
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>

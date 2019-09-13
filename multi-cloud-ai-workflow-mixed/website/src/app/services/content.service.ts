@@ -10,12 +10,14 @@ import { ContentViewModel } from "../view-models/content-vm";
 export class ContentService {
     constructor(private mcmaClientService: McmaClientService) {}
 
+    private getContentUrlWithToken = (contentUrl: string): string => `${contentUrl}?code=${encodeURIComponent("11lMug4iR5ahuVaT4RaRAREcgIJ1hbWFpNlEmgAdrw43Q4wz/YpN2g==")}`;
+
     getContent(contentUrl: string): Observable<BMContent> {
         //console.log("getting content at " + contentUrl);
         return this.mcmaClientService.resourceManager$.pipe(
             switchMap(resourceManager => {
                 console.log("using auth http to get content at " + contentUrl);
-                return from(resourceManager.resolve<BMContent>(contentUrl)).pipe(
+                return from(resourceManager.resolve<BMContent>(this.getContentUrlWithToken(contentUrl))).pipe(
                     tap(data => {
                         console.log("got content (tap 1)", data);
                     })
@@ -44,7 +46,7 @@ export class ContentService {
         const sub1 =
             timer(0, 3000).pipe(
                 switchMap(() => this.mcmaClientService.resourceManager$),
-                switchMap(resourceManager => from(resourceManager.resolve<BMContent>(bmContentId))),
+                switchMap(resourceManager => from(resourceManager.resolve<BMContent>(this.getContentUrlWithToken(bmContentId)))),
                 takeWhile(() => !stop)
             ).subscribe(
                 content => {

@@ -5,10 +5,10 @@
 #r "nuget:AWSSDK.CognitoIdentityProvider, 3.3.102.40"
 #r "nuget:AWSSDK.Extensions.CognitoAuthentication, 0.9.4"
 #r "nuget:AWSSDK.S3, 3.3.104.5"
-#r "nuget:Mcma.Core, 0.5.3.56"
-#r "nuget:Mcma.Client, 0.5.3.56"
-#r "nuget:Mcma.Aws.Client, 0.5.3.56"
-#r "nuget:Mcma.Azure.Client, 0.5.3.56"
+#r "nuget:Mcma.Core, 0.5.5.2"
+#r "nuget:Mcma.Client, 0.5.5.2"
+#r "nuget:Mcma.Aws.Client, 0.5.5.2"
+#r "nuget:Mcma.Azure.Client, 0.5.5.2"
 
 using Amazon;
 using Amazon.Runtime;

@@ -41,7 +41,7 @@ namespace Mcma.Azure.ServiceRegistry.ApiHandler
                 .AddRoutes(EssenceRoutes)
                 .ToAzureFunctionApiController();
 
-        [FunctionName("ServiceRegistryApiHandler")]
+        [FunctionName("MediaRepositoryApiHandler")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, Route = "{*resourcePath}")] HttpRequest request,
             string resourcePath,

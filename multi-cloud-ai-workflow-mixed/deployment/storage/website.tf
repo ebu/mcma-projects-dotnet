@@ -32,10 +32,10 @@ resource "aws_s3_bucket_object" "file_3" {
 
 resource "aws_s3_bucket_object" "file_4" {
   bucket       = "${aws_s3_bucket.website.bucket}"
-  key          = "main.709d571198474daedfb7.js"
-  source       = "../website/dist/website/main.709d571198474daedfb7.js"
+  key          = "main.9b722aa2c52c950f381e.js"
+  source       = "../website/dist/website/main.9b722aa2c52c950f381e.js"
   content_type = "application/javascript"
-  etag         = "${filemd5("../website/dist/website/main.709d571198474daedfb7.js")}"
+  etag         = "${filemd5("../website/dist/website/main.9b722aa2c52c950f381e.js")}"
 }
 
 resource "aws_s3_bucket_object" "file_5" {

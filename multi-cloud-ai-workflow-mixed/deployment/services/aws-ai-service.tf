@@ -3,11 +3,11 @@
 #################################
 
 resource "aws_lambda_function" "aws-ai-service-api-handler" {
-  filename         = "./../services/Mcma.Aws.AwsAiService/ApiHandler/dist/lambda.zip"
+  filename         = "./../services/Mcma.Aws.AwsAiService/ApiHandler/dist/function.zip"
   function_name    = "${format("%.64s", "${var.global_prefix}-aws-ai-service-api-handler")}"
   role             = "${aws_iam_role.iam_for_exec_lambda.arn}"
   handler          = "Mcma.Aws.AwsAiService.ApiHandler::Mcma.Aws.AwsAiService.ApiHandler.Function::Handler"
-  source_code_hash = "${filesha256("./../services/Mcma.Aws.AwsAiService/ApiHandler/dist/lambda.zip")}"
+  source_code_hash = "${filesha256("./../services/Mcma.Aws.AwsAiService/ApiHandler/dist/function.zip")}"
   runtime          = "dotnetcore2.1"
   timeout          = "30"
   memory_size      = "256"
@@ -18,11 +18,11 @@ resource "aws_lambda_function" "aws-ai-service-api-handler" {
 #################################
 
 resource "aws_lambda_function" "aws-ai-service-s3-trigger" {
-  filename         = "./../services/Mcma.Aws.AwsAiService/S3Trigger/dist/lambda.zip"
+  filename         = "./../services/Mcma.Aws.AwsAiService/S3Trigger/dist/function.zip"
   function_name    = "${format("%.64s", "${var.global_prefix}-aws-ai-service-s3-trigger")}"
   role             = "${aws_iam_role.iam_for_exec_lambda.arn}"
   handler          = "Mcma.Aws.AwsAiService.S3Trigger::Mcma.Aws.AwsAiService.S3Trigger.Function::Handler"
-  source_code_hash = "${filesha256("./../services/Mcma.Aws.AwsAiService/S3Trigger/dist/lambda.zip")}"
+  source_code_hash = "${filesha256("./../services/Mcma.Aws.AwsAiService/S3Trigger/dist/function.zip")}"
   runtime          = "dotnetcore2.1"
   timeout          = "30"
   memory_size      = "256"
@@ -68,11 +68,11 @@ resource "aws_s3_bucket_notification" "aws-ai-service-output-bucket-notification
 #################################
 
 resource "aws_lambda_function" "aws-ai-service-sns-trigger" {
-  filename         = "./../services/Mcma.Aws.AwsAiService/SnsTrigger/dist/lambda.zip"
+  filename         = "./../services/Mcma.Aws.AwsAiService/SnsTrigger/dist/function.zip"
   function_name    = "${format("%.64s", "${var.global_prefix}-aws-ai-service-sns-trigger")}"
   role             = "${aws_iam_role.iam_for_exec_lambda.arn}"
   handler          = "Mcma.Aws.AwsAiService.SnsTrigger::Mcma.Aws.AwsAiService.SnsTrigger.Function::Handler"
-  source_code_hash = "${filesha256("./../services/Mcma.Aws.AwsAiService/SnsTrigger/dist/lambda.zip")}"
+  source_code_hash = "${filesha256("./../services/Mcma.Aws.AwsAiService/SnsTrigger/dist/function.zip")}"
   runtime          = "dotnetcore2.1"
   timeout          = "30"
   memory_size      = "256"
@@ -94,11 +94,11 @@ resource "aws_lambda_function" "aws-ai-service-sns-trigger" {
 #################################
 
 resource "aws_lambda_function" "aws-ai-service-worker" {
-  filename         = "./../services/Mcma.Aws.AwsAiService/Worker/dist/lambda.zip"
+  filename         = "./../services/Mcma.Aws.AwsAiService/Worker/dist/function.zip"
   function_name    = "${format("%.64s", "${var.global_prefix}-aws-ai-service-worker")}"
   role             = "${aws_iam_role.iam_for_exec_lambda.arn}"
   handler          = "Mcma.Aws.AwsAiService.Worker::Mcma.Aws.AwsAiService.Worker.Function::Handler"
-  source_code_hash = "${filesha256("./../services/Mcma.Aws.AwsAiService/Worker/dist/lambda.zip")}"
+  source_code_hash = "${filesha256("./../services/Mcma.Aws.AwsAiService/Worker/dist/function.zip")}"
   runtime          = "dotnetcore2.1"
   timeout          = "300"
   memory_size      = "3008"

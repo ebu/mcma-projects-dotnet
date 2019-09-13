@@ -8,11 +8,11 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Mcma.Aws.S3" Version="0.5.3.56" />
-    <PackageReference Include="Mcma.Azure.CosmosDb" Version="0.5.3.56" />
-    <PackageReference Include="Mcma.Azure.Functions.Api" Version="0.5.3.56" />
-    <PackageReference Include="Mcma.Azure.Functions.Logging" Version="0.5.3.56" />
-    <PackageReference Include="Mcma.Core" Version="0.5.3.56" />
+    <PackageReference Include="Mcma.Aws.S3" Version="0.5.5.2" />
+    <PackageReference Include="Mcma.Azure.CosmosDb" Version="0.5.5.2" />
+    <PackageReference Include="Mcma.Azure.Functions.Api" Version="0.5.5.2" />
+    <PackageReference Include="Mcma.Azure.Functions.Logging" Version="0.5.5.2" />
+    <PackageReference Include="Mcma.Core" Version="0.5.5.2" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.29" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>

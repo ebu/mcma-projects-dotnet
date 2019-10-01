@@ -2,18 +2,18 @@
 #load "../../build/task.csx"
 
 #r "nuget:AWSSDK.Core, 3.3.103.20"
-#r "nuget:Newtonsoft.Json, 12.0.2"
+#r "nuget:Newtonsoft.Json, 11.0.2"
 
-#r "nuget:Mcma.Core, 0.5.3.53"
-#r "nuget:Mcma.Client, 0.5.3.53"
-#r "nuget:Mcma.Aws.Client, 0.5.3.53"
+#r "nuget:Mcma.Core, 0.5.5.31"
+#r "nuget:Mcma.Client, 0.5.5.31"
+#r "nuget:Mcma.Azure.Client, 0.5.5.31"
 
 using System.Threading.Tasks;
 using Amazon;
 using Amazon.Runtime;
 using Mcma.Core;
 using Mcma.Client;
-using Mcma.Aws.Client;
+using Mcma.Azure.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

@@ -1,46 +1,14 @@
 locals {
-  zip_file = "./../services/Mcma.Azure.ServiceRegistry/ApiHandler/dist/function.zip"
+  service_registry_api_zip_file = "./../services/Mcma.Azure.ServiceRegistry/ApiHandler/dist/function.zip"
 }
 
 resource "azurerm_storage_blob" "service_registry_api_function_zip" {
-  name                   = "service-registry/function_${filesha256("${local.zip_file}")}.zip"
+  name                   = "service-registry/function_${filesha256("${local.service_registry_api_zip_file}")}.zip"
   resource_group_name    = "${var.resource_group_name}"
   storage_account_name   = "${var.app_storage_account_name}"
   storage_container_name = "${var.deploy_container}"
   type                   = "block"
-  source                 = "${local.zip_file}"
-}
-
-data "azurerm_storage_account_sas" "service_registry_api_function_sas" {
-  connection_string = "${var.app_storage_connection_string}"
-  https_only        = true
-
-  resource_types {
-    service   = false
-    container = false
-    object    = true
-  }
-
-  services {
-    blob  = true
-    queue = false
-    table = false
-    file  = false
-  }
-
-  start  = "2019-08-19"
-  expiry = "2020-08-19"
-
-  permissions {
-    read    = true
-    write   = false
-    delete  = false
-    list    = false
-    add     = false
-    create  = false
-    update  = false
-    process = false
-  }
+  source                 = "${local.service_registry_api_zip_file}"
 }
 
 resource "azurerm_application_insights" "service_registry_api_appinsights" {
@@ -58,12 +26,21 @@ resource "azurerm_function_app" "service_registry_api_function" {
   storage_connection_string = "${var.app_storage_connection_string}"
   version                   = "~2"
 
+  site_config {
+    cors {
+      allowed_origins = [
+        "https://${var.global_prefix_lower_only}website.azurewebsites.net/"
+      ]
+      support_credentials = true
+    }
+  }
+
   app_settings = {
     FUNCTIONS_WORKER_RUNTIME       = "dotnet"
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
-    HASH                           = "${filesha256("${local.zip_file}")}"
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.service_registry_api_function_zip.name}${data.azurerm_storage_account_sas.service_registry_api_function_sas.sas}"
+    HASH                           = "${filesha256("${local.service_registry_api_zip_file}")}"
+    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.service_registry_api_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = "${azurerm_application_insights.service_registry_api_appinsights.instrumentation_key}"
 
     FunctionKeyEncryptionKey = "${var.private_encryption_key}"
@@ -106,14 +83,21 @@ resource "azurerm_template_deployment" "service_registry_function_key" {
   BODY
 }
 
+locals {
+  service_registry_url  = "https://${azurerm_function_app.service_registry_api_function.default_hostname}/"
+  service_registry_key  = "${lookup(azurerm_template_deployment.service_registry_function_key.outputs, "functionkey")}"
+  services_url          = "${local.service_registry_url}services"
+}
+
+
 output service_registry_url {
-  value = "https://${azurerm_function_app.service_registry_api_function.default_hostname}/"
+  value = "${local.service_registry_url}"
 }
 
 output "service_registry_key" {
-  value = "${lookup(azurerm_template_deployment.service_registry_function_key.outputs, "functionkey")}"
+  value = "${local.service_registry_key}"
 }
 
 output services_url {
-  value = "https://${azurerm_function_app.service_registry_api_function.default_hostname}/services"
+  value = "${local.services_url}"
 }

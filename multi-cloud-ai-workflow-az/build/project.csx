@@ -23,12 +23,12 @@ public class CheckProjectForChanges : BuildTask
 
     protected override async Task<bool> ExecuteTask()
     {
-        var checks = new List<IBuildTask> {new CheckForFileChanges(Project, $"{Project}/dist/lambda.zip", BinFolderRegex, ObjFolderRegex)};
+        var checks = new List<IBuildTask> {new CheckForFileChanges(Project, $"{Project}/dist/function.zip", BinFolderRegex, ObjFolderRegex)};
 
         checks.AddRange(
             Directory.EnumerateFiles(Project, "*.csproj")
                 .SelectMany(GetProjectDependencies).Distinct()
-                .Select(projFile => new CheckForFileChanges(new FileInfo(projFile).Directory.FullName, $"{Project}/dist/lambda.zip", BinFolderRegex, ObjFolderRegex)));
+                .Select(projFile => new CheckForFileChanges(new FileInfo(projFile).Directory.FullName, $"{Project}/dist/function.zip", BinFolderRegex, ObjFolderRegex)));
 
         foreach (var check in checks)
             if (await check.Run())
@@ -71,6 +71,7 @@ public class BuildProject : BuildTask
         ProjectFolder = projectFolder;
         DistFullPath = $"{projectFolder}/{DistFolder}";
         StagingFullPath = $"{projectFolder}/{StagingFolder}";
+        OutputZipFile = $"{DistFullPath}/function.zip";
 
         if (clean)
             Clean = new DeleteFiles(StagingFullPath);
@@ -85,7 +86,7 @@ public class BuildProject : BuildTask
                     DotNetCli.Publish(projectFolder, StagingFolder));
         }
         else
-            CheckForOutputChanges = new CheckForFileChanges(StagingFullPath, $"{DistFullPath}/lambda.zip", "\\.json");
+            CheckForOutputChanges = new CheckForFileChanges(StagingFullPath, OutputZipFile, StagingFolderChangeCheckExcludes);
 
         var csprojFiles = Directory.GetFiles(projectFolder, "*.csproj");
         if (csprojFiles.Length == 0)
@@ -94,33 +95,39 @@ public class BuildProject : BuildTask
             throw new Exception($"More than 1 .csproj file found in {projectFolder}.");
 
         ProjectFile = csprojFiles[0];
-        ProjectName = ProjectFile.Replace(".csproj", "");
+        ProjectName = ProjectFile.Replace(".csproj", ""); 
         
         // set json files with read permissions for all for builds on Linux boxes
-        Zip = new ZipTask(StagingFullPath, $"{DistFullPath}/function.zip");
+        Zip = new ZipTask(StagingFullPath, OutputZipFile, externalAttributes: ZipFileExternalAttributes);
     }
 
-    private string ProjectFolder { get; }
+    protected string ProjectFolder { get; }
 
-    private string ProjectFile { get; }
+    protected string ProjectFile { get; }
 
-    private string ProjectName { get; }
+    protected string ProjectName { get; }
 
-    private string DistFullPath { get; }
+    protected string DistFullPath { get; }
 
-    private string StagingFullPath { get; }
+    protected string OutputZipFile { get; }
 
-    private IBuildTask CheckForSourceChanges { get; }
+    protected string StagingFullPath { get; }
 
-    private IBuildTask CheckForOutputChanges { get; }
+    protected IBuildTask CheckForSourceChanges { get; }
 
-    private IBuildTask Clean { get; }
+    protected IBuildTask CheckForOutputChanges { get; }
 
-    private IBuildTask ProjectBuild { get; }
+    protected IBuildTask Clean { get; }
+
+    protected IBuildTask ProjectBuild { get; }
 
     public IDictionary<string, string> PostBuildCopies { get; } = new Dictionary<string, string>();
 
     public ZipTask Zip { get; }
+
+    protected virtual string[] StagingFolderChangeCheckExcludes { get; } = new string[] {".*.deps.json$", "extensions.json$", "function.json$"};
+
+    protected virtual IDictionary<string, int> ZipFileExternalAttributes { get; } = new Dictionary<string, int>();
 
     protected override async Task<bool> ExecuteTask()
     {

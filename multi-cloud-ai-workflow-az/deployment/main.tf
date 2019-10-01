@@ -3,7 +3,7 @@
 #########################
 
 provider "azurerm" {
-  version = "~> 1.28.0"
+  version = "~> 1.33.0"
 
   client_id       = "${var.azure_client_id}"
   client_secret   = "${var.azure_client_secret}"
@@ -67,12 +67,14 @@ module "services" {
 
   app_storage_connection_string = "${module.storage.app_storage_connection_string}"
   app_storage_account_name      = "${module.storage.app_storage_account_name}"
+  app_storage_sas               = "${module.storage.app_storage_sas}"
   deploy_container              = "${var.deploy_container}"
 
-  upload_container     = "${var.upload_container}"
-  temp_container       = "${var.temp_container}"
-  repository_container = "${var.repository_container}"
-  website_container    = "${var.website_container}"
+  media_storage_connection_string = "${module.storage.media_storage_connection_string}"
+  upload_container                = "${var.upload_container}"
+  temp_container                  = "${var.temp_container}"
+  repository_container            = "${var.repository_container}"
+  website_container               = "${var.website_container}"
 
   azure_videoindexer_location         = "${var.azure_videoindexer_location}"
   azure_videoindexer_account_id       = "${var.azure_videoindexer_account_id}"
@@ -101,4 +103,20 @@ output "job_repository_url" {
 
 output "job_repository_key" {
   value = "${module.services.job_repository_key}"
+}
+
+output "job_processor_url" {
+  value = "${module.services.job_processor_url}"
+}
+
+output "job_processor_key" {
+  value = "${module.services.job_processor_key}"
+}
+
+output "ame_service_url" {
+  value = "${module.services.ame_service_url}"
+}
+
+output "ame_service_key" {
+  value = "${module.services.ame_service_key}"
 }

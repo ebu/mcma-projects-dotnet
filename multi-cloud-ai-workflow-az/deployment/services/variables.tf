@@ -9,12 +9,15 @@ variable "cosmosdb_key" {}
 
 variable "app_storage_connection_string" {}
 variable "app_storage_account_name" {}
+variable "app_storage_sas" {}
 variable "deploy_container" {}
 
+variable "media_storage_connection_string" {}
 variable "upload_container" {}
 variable "temp_container" {}
 variable "repository_container" {}
 variable "website_container" {}
+
 variable "azure_videoindexer_location" {}
 variable "azure_videoindexer_account_id" {}
 variable "azure_videoindexer_subscription_key" {}

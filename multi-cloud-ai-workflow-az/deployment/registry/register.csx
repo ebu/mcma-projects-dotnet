@@ -1,10 +1,10 @@
 #load "../../build/task.csx"
 #load "../../build/build.csx"
 
-#r "nuget:Newtonsoft.Json, 12.0.2"
-#r "nuget:Mcma.Core, 0.5.3.53"
-#r "nuget:Mcma.Client, 0.5.3.53"
-#r "nuget:Mcma.Azure.Client, 0.5.3.53"
+#r "nuget:Newtonsoft.Json, 11.0.2"
+#r "nuget:Mcma.Core, 0.5.5.31"
+#r "nuget:Mcma.Client, 0.5.5.31"
+#r "nuget:Mcma.Azure.Client, 0.5.5.31"
 
 using System;
 using System.Security.Cryptography;
@@ -247,7 +247,7 @@ public class UpdateServiceRegistry : BuildTask
             var resourceArray = serviceJson["resources"];
             if (resourceArray != null)
                 foreach (var resourceJson in resourceArray)
-                    resourceJson["httpEndpoint"] = url + resourceJson["httpEndpoint"].Value<string>();
+                    resourceJson["httpEndpoint"] = url.TrimEnd('/') + "/" + resourceJson["httpEndpoint"].Value<string>().TrimStart('/');
 
             var jobProfileArray = serviceJson["jobProfiles"] as JArray;
             if (jobProfileArray != null)

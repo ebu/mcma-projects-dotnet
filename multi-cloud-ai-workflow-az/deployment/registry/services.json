@@ -62,7 +62,7 @@
             "AzureExtractAllAIMetadata"
         ]
     },
-    "job_processor_service_url":{
+    "job_processor_url":{
         "@type": "Service",
         "name": "Job Processor Service",
         "resources": [
@@ -132,7 +132,7 @@
             {
                 "@type": "ResourceEndpoint",
                 "resourceType": "JobAssignment",
-                "httpEndpoint": "{serviceRoot/job-assignments"
+                "httpEndpoint": "/job-assignments"
             }
         ],
         "jobType": "TransformJob",
@@ -155,8 +155,6 @@
         "jobProfiles": [
             "ConformWorkflow",
             "AiWorkflow"
-        ],
-        "authType": "AzureFunctionKey",
-        "authContext": ""
+        ]
     }
 }

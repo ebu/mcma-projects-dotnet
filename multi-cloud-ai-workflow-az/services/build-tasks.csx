@@ -1,34 +1,18 @@
 #load "../build/project.csx"
 
 public static AggregateTask BuildServices = new AggregateTask(
-    new BuildProject("services/Mcma.Azure.ServiceRegistry/ApiHandler")/*,
+    new BuildProject("services/Mcma.Azure.ServiceRegistry/ApiHandler"),
     new BuildProject("services/Mcma.Azure.JobRepository/ApiHandler"),
     new BuildProject("services/Mcma.Azure.JobRepository/Worker"),
     new BuildProject("services/Mcma.Azure.JobProcessor/ApiHandler"),
-    new BuildProject("services/Mcma.Azure.JobProcessor/Worker"),
+    new BuildProject("services/Mcma.Azure.JobProcessor/Worker")/*,
     new BuildProject("services/Mcma.Azure.MediaRepository/ApiHandler"),
     new BuildProject("services/Mcma.Azure.WorkflowService/ApiHandler"),
-    new BuildProject("services/Mcma.Azure.WorkflowService/Worker"),
+    new BuildProject("services/Mcma.Azure.WorkflowService/Worker")*/,
     new BuildProject("services/Mcma.Azure.AmeService/ApiHandler"),
-    new BuildProject("services/Mcma.Azure.AmeService/Worker")
-    {
-        PostBuildCopies =
-        {
-            {"externals/mediainfo/18.05.x86_64.RHEL_7", "bin"},
-            {"externals/libmediainfo/18.05.x86_64.RHEL_7", "lib"},
-            {"externals/libzen/0.4.37.x86_64.RHEL_7", "lib"}
-        },
-        Zip = {ExternalAttributes = {{"bin/mediainfo", 0755}}}
-    },
+    new BuildProject("services/Mcma.Azure.AmeService/Worker")/*,
     new BuildProject("services/Mcma.Azure.TransformService/ApiHandler"),
-    new BuildProject("services/Mcma.Azure.TransformService/Worker")
-    {
-        PostBuildCopies =
-        {
-            {"externals/ffmpeg", "bin"}
-        },
-        Zip = {ExternalAttributes = {{"bin/ffmpeg", 0755}}}
-    },
+    new BuildProject("services/Mcma.Azure.TransformService/Worker"),
     new BuildProject("services/Mcma.Azure.AwsAiService/ApiHandler"),
     new BuildProject("services/Mcma.Azure.AwsAiService/S3Trigger"),
     new BuildProject("services/Mcma.Azure.AwsAiService/SnsTrigger"),
@@ -39,34 +23,18 @@ public static AggregateTask BuildServices = new AggregateTask(
 );
 
 public static AggregateTask BuildServicesSln = new AggregateTask(
-    new BuildProject("services/Mcma.Azure.ServiceRegistry/ApiHandler", false, false)/*,
+    new BuildProject("services/Mcma.Azure.ServiceRegistry/ApiHandler", false, false),
     new BuildProject("services/Mcma.Azure.JobRepository/ApiHandler", false, false),
     new BuildProject("services/Mcma.Azure.JobRepository/Worker", false, false),
     new BuildProject("services/Mcma.Azure.JobProcessor/ApiHandler", false, false),
-    new BuildProject("services/Mcma.Azure.JobProcessor/Worker", false, false),
+    new BuildProject("services/Mcma.Azure.JobProcessor/Worker", false, false)/*,
     new BuildProject("services/Mcma.Azure.MediaRepository/ApiHandler", false, false),
     new BuildProject("services/Mcma.Azure.WorkflowService/ApiHandler", false, false),
-    new BuildProject("services/Mcma.Azure.WorkflowService/Worker", false, false),
+    new BuildProject("services/Mcma.Azure.WorkflowService/Worker", false, false)*/,
     new BuildProject("services/Mcma.Azure.AmeService/ApiHandler", false, false),
-    new BuildProject("services/Mcma.Azure.AmeService/Worker", false, false)
-    {
-        PostBuildCopies =
-        {
-            {"externals/mediainfo/18.05.x86_64.RHEL_7", "bin"},
-            {"externals/libmediainfo/18.05.x86_64.RHEL_7", "lib"},
-            {"externals/libzen/0.4.37.x86_64.RHEL_7", "lib"}
-        },
-        Zip = {ExternalAttributes = {{"bin/mediainfo", 0755}}}
-    },
+    new BuildProject("services/Mcma.Azure.AmeService/Worker", false, false)/*,
     new BuildProject("services/Mcma.Azure.TransformService/ApiHandler", false, false),
-    new BuildProject("services/Mcma.Azure.TransformService/Worker", false, false)
-    {
-        PostBuildCopies =
-        {
-            {"externals/ffmpeg", "bin"}
-        },
-        Zip = {ExternalAttributes = {{"bin/ffmpeg", 0755}}}
-    },
+    new BuildProject("services/Mcma.Azure.TransformService/Worker", false, false),
     new BuildProject("services/Mcma.Azure.AwsAiService/ApiHandler", false, false),
     new BuildProject("services/Mcma.Azure.AwsAiService/S3Trigger", false, false),
     new BuildProject("services/Mcma.Azure.AwsAiService/SnsTrigger", false, false),

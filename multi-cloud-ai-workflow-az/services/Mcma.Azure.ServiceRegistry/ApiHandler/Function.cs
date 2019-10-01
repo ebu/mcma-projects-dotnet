@@ -19,11 +19,7 @@ namespace Mcma.Azure.ServiceRegistry.ApiHandler
     public static class Function
     {
         private static IDbTableProvider DbTableProvider { get; } =
-            new CosmosDbTableProvider(
-                new CosmosDbTableProviderOptions()
-                    .FromEnvironmentVariables()
-                    .WithResourceTypePartitionKey<Service>()
-                    .WithResourceTypePartitionKey<JobProfile>());
+            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
 
         private static McmaApiRouteCollection ServiceRoutes { get; } =
             new DefaultRouteCollectionBuilder<Service>(DbTableProvider).AddAll().WithSimpleQueryFiltering().Build();
@@ -41,7 +37,8 @@ namespace Mcma.Azure.ServiceRegistry.ApiHandler
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, Route = "{*resourcePath}")] HttpRequest request,
             string resourcePath,
-            ILogger log)
+            ILogger log,
+            ExecutionContext executionContext)
         {
             McmaLogger.Global = new MicrosoftLoggerWrapper(log);
 

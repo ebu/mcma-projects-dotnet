@@ -6,6 +6,38 @@ resource "azurerm_storage_account" "app_storage_account" {
   account_replication_type = "LRS"
 }
 
+data "azurerm_storage_account_sas" "app_storage_sas" {
+  connection_string = "${azurerm_storage_account.app_storage_account.primary_connection_string}"
+  https_only        = true
+
+  resource_types {
+    service   = false
+    container = false
+    object    = true
+  }
+
+  services {
+    blob  = true
+    queue = false
+    table = false
+    file  = false
+  }
+
+  start  = "2019-08-19"
+  expiry = "2020-08-19"
+
+  permissions {
+    read    = true
+    write   = false
+    delete  = false
+    list    = false
+    add     = false
+    create  = false
+    update  = false
+    process = false
+  }
+}
+
 resource "azurerm_storage_container" "deploy_container" {
   name                  = "${var.deploy_container}"
   resource_group_name   = "${var.resource_group_name}"
@@ -100,6 +132,14 @@ output "app_storage_connection_string" {
 
 output "app_storage_account_name" {
   value = "${azurerm_storage_account.app_storage_account.name}"
+}
+
+output "app_storage_sas" {
+  value = "${data.azurerm_storage_account_sas.app_storage_sas.sas}"
+}
+
+output "media_storage_connection_string" {
+  value = "${azurerm_storage_account.media_storage_account.primary_connection_string}"
 }
 
 output "upload_container_sas" {

@@ -30,8 +30,7 @@ namespace Mcma.Aws.JobRepository.ApiHandler
         private static IResourceManagerProvider ResourceManagerProvider { get; } =
             new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global));
 
-        private static IDbTableProvider DbTableProvider { get; } =
-            new DynamoDbTableProvider();
+        private static IDbTableProvider DbTableProvider { get; } = new DynamoDbTableProvider();
 
         private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker();
 

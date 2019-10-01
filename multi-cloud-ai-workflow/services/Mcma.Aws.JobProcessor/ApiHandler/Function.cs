@@ -52,7 +52,7 @@ namespace Mcma.Aws.JobProcessor.ApiHandler
         private static ApiGatewayApiController Controller { get; } =
             new McmaApiRouteCollection()
                 .AddRoutes(Routes)
-                .AddRoute(HttpMethod.Post.Method, "/job-processes/{id}/notifications", JobProcessRoutes.ProcessNotificationAsync)
+                .AddRoute(HttpMethod.Post.Method, "/job-processes/{id}/notifications", JobProcessRoutes.ProcessNotificationAsync(DbTableProvider, WorkerInvoker))
                 .ToApiGatewayApiController();
 
         public Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)

@@ -27,6 +27,8 @@ public class CheckForFileChanges : BuildTask
             File.GetAttributes(OutputPath).HasFlag(FileAttributes.Directory)
                 ? Directory.EnumerateFiles(OutputPath, "*.*", SearchOption.AllDirectories).Max(f => new FileInfo(f).LastWriteTime)
                 : new FileInfo(OutputPath).LastWriteTime;
+
+        Console.WriteLine("Ouput file last write time is " + lastWriteTime);
         
         var inputFolderInfo = new DirectoryInfo(InputFolder);
         if (!inputFolderInfo.Exists)
@@ -34,7 +36,10 @@ public class CheckForFileChanges : BuildTask
 
         foreach (var fileInfo in inputFolderInfo.EnumerateFiles("*.*", SearchOption.AllDirectories).Where(f => Excludes.All(r => !Regex.IsMatch(f.FullName, r))))
             if (fileInfo.LastWriteTime > lastWriteTime)
+            {
+                Console.WriteLine(fileInfo.FullName + " was changed at " + fileInfo.LastWriteTime);
                 return Task.FromResult(true);
+            }
         
         return Task.FromResult(false);
     }

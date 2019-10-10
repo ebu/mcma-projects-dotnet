@@ -39,7 +39,7 @@ namespace Mcma.Azure.AmeService.Worker
             
         [FunctionName("AmeServiceWorker")]
         public static async Task Run(
-            [QueueTrigger("ame-service-work-queue")] CloudQueueMessage queueMessage,
+            [QueueTrigger("ame-service-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
             ILogger log,
             ExecutionContext executionContext)
         {

@@ -4,7 +4,7 @@
 #load "../build/terraform.csx"
 //#load "./registry/register.csx"
 
-#r "nuget:Mcma.Azure.Client, 0.5.5.31"
+#r "nuget:Mcma.Azure.Client, 0.5.5.40"
 
 using System.IO;
 using System.Security.Cryptography;
@@ -50,6 +50,9 @@ public class GenerateTerraformTfVars : BuildTask
                 .AppendLine($"azure_tenant_name                     = \"{Build.Inputs.azureTenantName}\"")
                 .AppendLine($"azure_subscription_id                 = \"{Build.Inputs.azureSubscriptionId}\"")
                 .AppendLine($"azure_location                        = \"{Build.Inputs.azureLocation}\"")
+                .AppendLine($"aws_access_key                        = \"{Build.Inputs.awsAccessKey}\"")
+                .AppendLine($"aws_secret_key                        = \"{Build.Inputs.awsSecretKey}\"")
+                .AppendLine($"aws_region                            = \"{Build.Inputs.awsRegion}\"")
                 .AppendLine($"deploy_container                      = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}-deploy\"")
                 .AppendLine($"upload_container                      = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}-upload\"")
                 .AppendLine($"temp_container                        = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}-temp\"")

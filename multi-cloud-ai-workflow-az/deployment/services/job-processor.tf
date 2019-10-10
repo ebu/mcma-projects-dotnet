@@ -44,8 +44,8 @@ resource "azurerm_function_app" "job_processor_worker_function" {
     HASH                           = "${filesha256("${local.job_processor_worker_zip_file}")}"
     WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.job_processor_worker_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = "${azurerm_application_insights.job_processor_worker_appinsights.instrumentation_key}"
-    AzureWebJobsStorage            = "${var.app_storage_connection_string}"
-
+    
+    WorkQueueStorage         = "${var.app_storage_connection_string}"
     FunctionKeyEncryptionKey = "${var.private_encryption_key}"
     TableName                = "JobProcessor"
     PublicUrl                = "https://${var.global_prefix_lower_only}jobprocessorworker.azurewebsites.net/"

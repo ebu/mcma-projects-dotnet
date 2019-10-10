@@ -57,6 +57,8 @@ module "services" {
 
   private_encryption_key = "${var.private_encryption_key}"
 
+  environment_name         = "${var.environment_name}"
+  environment_type         = "${var.environment_type}"
   azure_location           = "${var.azure_location}"
   global_prefix            = "${var.global_prefix}"
   global_prefix_lower_only = "${var.global_prefix_lower_only}"
@@ -71,6 +73,7 @@ module "services" {
   deploy_container              = "${var.deploy_container}"
 
   media_storage_connection_string = "${module.storage.media_storage_connection_string}"
+  media_storage_account_name      = "${module.storage.media_storage_account_name}"
   upload_container                = "${var.upload_container}"
   temp_container                  = "${var.temp_container}"
   repository_container            = "${var.repository_container}"
@@ -80,6 +83,10 @@ module "services" {
   azure_videoindexer_account_id       = "${var.azure_videoindexer_account_id}"
   azure_videoindexer_subscription_key = "${var.azure_videoindexer_subscription_key}"
   azure_videoindexer_api_url          = "${var.azure_videoindexer_api_url}"
+
+  aws_access_key = "${var.aws_access_key}"
+  aws_secret_key = "${var.aws_secret_key}"
+  aws_region     = "${var.aws_region}"
 
   #conform_workflow_id = "${module.workflows.conform_workflow_id}"
   #ai_workflow_id      = "${module.workflows.ai_workflow_id}"
@@ -119,4 +126,12 @@ output "ame_service_url" {
 
 output "ame_service_key" {
   value = "${module.services.ame_service_key}"
+}
+
+output "aws_ai_service_url" {
+  value = "${module.services.aws_ai_service_url}"
+}
+
+output "aws_ai_service_key" {
+  value = "${module.services.aws_ai_service_key}"
 }

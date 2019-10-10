@@ -37,7 +37,7 @@ namespace Mcma.Azure.JobRepository.Worker
             
         [FunctionName("JobRepositoryWorker")]
         public static async Task Run(
-            [QueueTrigger("job-repository-work-queue", Connection = "")] CloudQueueMessage queueMessage,
+            [QueueTrigger("job-repository-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
             ILogger log)
         {
             McmaLogger.Global = new MicrosoftLoggerWrapper(log);

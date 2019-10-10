@@ -21,6 +21,14 @@ variable "azure_tenant_name" {}
 variable "azure_subscription_id" {}
 variable "azure_location" {}
 
+#########################
+# AWS Variables
+#########################
+
+variable "aws_access_key" {}
+variable "aws_secret_key" {}
+variable "aws_region" {}
+
 
 #########################
 # Storage Variables

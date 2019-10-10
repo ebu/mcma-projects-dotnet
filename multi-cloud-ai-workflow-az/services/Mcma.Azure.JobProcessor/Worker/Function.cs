@@ -38,7 +38,7 @@ namespace Mcma.Azure.JobProcessor.Worker
 
         [FunctionName("JobProcessorWorker")]
         public static async Task Run(
-            [QueueTrigger("job-processor-work-queue")] CloudQueueMessage queueMessage,
+            [QueueTrigger("job-processor-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
             ILogger log)
         {
             McmaLogger.Global = new MicrosoftLoggerWrapper(log);

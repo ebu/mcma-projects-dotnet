@@ -1,4 +1,5 @@
 
+using Amazon;
 using Amazon.Runtime;
 using Mcma.Core.ContextVariables;
 
@@ -18,13 +19,16 @@ namespace Mcma.Azure.AwsAiService
         public static string AwsSecretKey(this IContextVariableProvider contextVariableProvider)
             => contextVariableProvider.GetRequiredContextVariable(nameof(AwsSecretKey));
 
-        public static BasicAWSCredentials AwsCredentials(this IContextVariableProvider contextVariableProvider)
-            => new BasicAWSCredentials(contextVariableProvider.AwsAccessKey(), contextVariableProvider.AwsSecretKey());
+        public static RegionEndpoint AwsRegion(this IContextVariableProvider contextVariableProvider)
+            => RegionEndpoint.GetBySystemName(contextVariableProvider.GetRequiredContextVariable(nameof(AwsRegion)));
 
-        public static string RekognitionRekoSnsRoleArn(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(RekognitionRekoSnsRoleArn));
+        public static string AwsRekoSnsRoleArn(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(AwsRekoSnsRoleArn));
 
         public static string AwsAiOutputSnsTopicArn(this IContextVariableProvider contextVariableProvider)
             => contextVariableProvider.GetRequiredContextVariable(nameof(AwsAiOutputSnsTopicArn));
+
+        public static BasicAWSCredentials AwsCredentials(this IContextVariableProvider contextVariableProvider)
+            => new BasicAWSCredentials(contextVariableProvider.AwsAccessKey(), contextVariableProvider.AwsSecretKey());
     }
 }

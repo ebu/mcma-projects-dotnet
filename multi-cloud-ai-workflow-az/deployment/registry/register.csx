@@ -2,9 +2,9 @@
 #load "../../build/build.csx"
 
 #r "nuget:Newtonsoft.Json, 11.0.2"
-#r "nuget:Mcma.Core, 0.5.5.40"
-#r "nuget:Mcma.Client, 0.5.5.40"
-#r "nuget:Mcma.Azure.Client, 0.5.5.40"
+#r "nuget:Mcma.Core, 0.5.5.50"
+#r "nuget:Mcma.Client, 0.5.5.50"
+#r "nuget:Mcma.Azure.Client, 0.5.5.50"
 
 using System;
 using System.Security.Cryptography;

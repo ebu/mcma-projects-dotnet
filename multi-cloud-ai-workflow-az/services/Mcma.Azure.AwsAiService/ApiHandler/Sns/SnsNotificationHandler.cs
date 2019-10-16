@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -7,7 +8,6 @@ using Mcma.Api;
 using Mcma.Aws.S3;
 using Mcma.Client;
 using Mcma.Core.Logging;
-using Mcma.Core.Serialization;
 using Mcma.Core.Utility;
 using Mcma.Data;
 using Newtonsoft.Json.Linq;
@@ -70,82 +70,73 @@ namespace Mcma.Azure.AwsAiService.ApiHandler.Sns
         
         private static async Task HandleSnsNotificationAsync(McmaApiRequestContext requestContext, IWorkerInvoker workerInvoker)
         {
+            Logger.Debug($"Received SNS notification:{Environment.NewLine}{requestContext.Request.Body}");
+
             var notificationMessage = requestContext.Request.JsonBody.ToObject<NotificationMessage>();
 
-            var eventJson = JToken.Parse(notificationMessage.Message);
-            var @event = eventJson.ToMcmaObject<AwsEvent>();
+            var notification = JObject.Parse(notificationMessage.Message);
 
-            string operationName = null;
-            object input = null;
-            foreach (var record in @event.Records)
-            {
-                if (record.S3 != null)
-                    (operationName, input) = GetTranscribeJobResultWorkerParams(requestContext, record.S3.Bucket.Name, record.S3.Object.Key);
-                else if (record.Sns != null)
-                    (operationName, input) = GetRekognitionJobResultWorkerParams(requestContext, record.Sns.Message);
-            }
-
-            if (operationName == null)
-            {
-                Logger.Warn(
-                    "Received notification with unrecognized message content. No SNS or S3 records found." + Environment.NewLine +
-                    "JSON:" + Environment.NewLine +
-                    eventJson);
-                return;
-            }
-
-            await workerInvoker.InvokeAsync(requestContext.WorkerFunctionId(), operationName, input: input);
+            if (notification.Property("JobId") != null)
+                await HandleRekognitionJobResultAsync(requestContext, workerInvoker, notification.ToObject<RekognitionNotification>());
+            else if (notification.Property("Records") != null)
+                await HandleS3NotificationAsync(requestContext, workerInvoker, notification.ToObject<S3Notification>());
         }
 
-        private static (string, object) GetTranscribeJobResultWorkerParams(McmaApiRequestContext requestContext, string bucketName, string objectKey)
+        private static async Task HandleS3NotificationAsync(
+            McmaApiRequestContext requestContext,
+            IWorkerInvoker workerInvoker,
+            S3Notification s3Notification)
         {
-            if (!Regex.IsMatch(objectKey, "^TranscriptionJob-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.json$"))
-                throw new Exception("S3 key '" + objectKey + "' is not an expected file name for transcribe output");
+            foreach (var s3 in s3Notification.Records.Select(r => r.S3).Where(x => x.Object?.Key != null && !x.Object.Key.StartsWith(".")))
+            {
+                var bucketName = s3.Bucket.Name;
+                var objectKey = s3.Object.Key;
 
-            var transcribeJobUuid = objectKey.Substring(objectKey.IndexOf("-") + 1, objectKey.LastIndexOf(".") - objectKey.IndexOf("-") - 1);
+                if (!Regex.IsMatch(s3.Object.Key, "^TranscriptionJob-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.json$"))
+                    throw new Exception("S3 key '" + objectKey + "' is not an expected file name for transcribe output");
 
-            var jobAssignmentId = requestContext.PublicUrl() + "/job-assignments/" + transcribeJobUuid;
-            
-            return (
-                "ProcessTranscribeJobResult",
-                new
-                {
-                    jobAssignmentId,
-                    outputFile = new S3FileLocator
+                var transcribeJobUuid = objectKey.Substring(objectKey.IndexOf("-") + 1, objectKey.LastIndexOf(".") - objectKey.IndexOf("-") - 1);
+
+                var jobAssignmentId = requestContext.PublicUrl().TrimEnd('/') + "/job-assignments/" + transcribeJobUuid;
+
+                await workerInvoker.InvokeAsync(
+                    requestContext.WorkerFunctionId(),
+                    "ProcessTranscribeJobResult",
+                    input: new
                     {
-                        Bucket = bucketName,
-                        Key = objectKey
-                    }
-                }
-            );
+                        jobAssignmentId,
+                        outputFile = new S3FileLocator
+                        {
+                            Bucket = bucketName,
+                            Key = objectKey
+                        }
+                    });
+            }
         }
 
-        private static (string, object) GetRekognitionJobResultWorkerParams(McmaApiRequestContext requestContext, string messageBody)
+        private static async Task HandleRekognitionJobResultAsync(
+            McmaApiRequestContext requestContext,
+            IWorkerInvoker workerInvoker,
+            RekognitionNotification rekoNotification)
         {
-            var message = JToken.Parse(messageBody);
-            var rekoJobId = message["JobId"]?.Value<string>();
-            var rekoJobType = message["API"]?.Value<string>();
-            var status = message["Status"]?.Value<string>();
-
-            var jt = message["JobTag"]?.Value<string>();
-            if (jt == null)
+            if (rekoNotification.JobTag == null)
                 throw new Exception($"The jobAssignment couldn't be found in the SNS message");
             
-            var jobAssignmentId = jt.HexDecodeString();
+            var jobAssignmentId = rekoNotification.JobTag.HexDecodeString();
 
-            return (
+            await workerInvoker.InvokeAsync(
+                requestContext.WorkerFunctionId(),
                 "ProcessRekognitionResult",
-                new
+                input: new
                 {
                     jobAssignmentId,
                     jobInfo = new
                     {
-                        rekoJobId,
-                        rekoJobType,
-                        status
+                        rekoJobId = rekoNotification.JobId,
+                        rekoJobType = rekoNotification.API,
+                        status = rekoNotification.Status
                     }
-                }
-            );
+                });
         }
     }
 }

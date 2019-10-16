@@ -15,12 +15,14 @@ using Mcma.Worker.Builders;
 using Microsoft.WindowsAzure.Storage.Queue;
 
 using McmaLogger = Mcma.Core.Logging.Logger;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 
 namespace Mcma.Azure.AwsAiService.Worker
 {
     public static class Function
     {
-        static Function() => McmaTypes.Add<BlobStorageLocator>();
+        static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
         
         private static IResourceManagerProvider ResourceManagerProvider { get; } =
             new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());
@@ -50,5 +52,15 @@ namespace Mcma.Azure.AwsAiService.Worker
 
             await Worker.DoWorkAsync(queueMessage.ToWorkerRequest());
         }
+                
+        // [FunctionName("AwsAiServiceWorker_HttpTest")]
+        // public static async Task RunHttpTest(
+        //     [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest request,
+        //     ILogger log)
+        // {
+        //     McmaLogger.Global = new MicrosoftLoggerWrapper(log);
+            
+        //     await Worker.DoWorkAsync(await request.ToWorkerRequestAsync());
+        // }
     }
 }

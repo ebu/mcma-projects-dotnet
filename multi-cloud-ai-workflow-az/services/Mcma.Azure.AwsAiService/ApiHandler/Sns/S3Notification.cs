@@ -1,21 +1,12 @@
-using Mcma.Core;
-
 namespace Mcma.Azure.AwsAiService.ApiHandler.Sns
 {
-    public class AwsEvent : McmaObject
+    public class S3Notification
     {
-        public AwsEventRecord[] Records { get; set; }
+        public S3Records[] Records { get; set; }
 
-        public class AwsEventRecord : McmaObject
+        public class S3Records
         {
-            public Sns Sns { get; set; }
-
             public S3 S3 { get; set; }
-        }
-
-        public class Sns
-        {
-            public string Message { get; set; }
         }
 
         public class S3

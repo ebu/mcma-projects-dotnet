@@ -46,13 +46,9 @@ namespace Mcma.Azure.AwsAiService.Worker
                     if (!jobHelper.JobInput.TryGet(nameof(outputLocation), out outputLocation))
                         throw new Exception("Invalid or missing output location.");
 
-                    var outputFilePath =
-                        (!string.IsNullOrWhiteSpace(outputLocation.FolderPath) ? outputLocation.FolderPath : string.Empty)
-                        + requestInput.OutputFile.Key;
-
                     jobHelper.JobOutput["outputFile"] = 
                         await outputLocation.Proxy(request).PutAsync(
-                            outputFilePath,
+                            requestInput.OutputFile.Key,
                             await transcribeOutputClient.GetObjectStreamAsync(requestInput.OutputFile.Bucket, requestInput.OutputFile.Key, null));
 
                     await jobHelper.CompleteAsync();

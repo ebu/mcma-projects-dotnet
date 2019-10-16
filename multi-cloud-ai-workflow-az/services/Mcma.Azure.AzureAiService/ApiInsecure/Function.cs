@@ -26,7 +26,7 @@ namespace Mcma.Azure.AzureAiService.ApiInsecure
 {
     public static class Function
     {
-        static Function() => McmaTypes.Add<BlobStorageLocator>();
+        static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
         private static IResourceManagerProvider ResourceManagerProvider { get; } =
             new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());

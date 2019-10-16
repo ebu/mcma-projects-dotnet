@@ -6,6 +6,8 @@ using Mcma.Core;
 using Mcma.Worker;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.BlobStorage.Proxies;
+using Mcma.Core.Logging;
+using Mcma.Aws.S3;
 
 namespace Mcma.Azure.AwsAiService.Worker
 {
@@ -33,13 +35,27 @@ namespace Mcma.Azure.AwsAiService.Worker
             else
                 throw new Exception($"Unable to determine media format from input file '{inputFile.Url}'");
 
-            using (var transcribeService = new AmazonTranscribeServiceClient(jobHelper.Request.AwsCredentials()))
+            // create destination locator
+            var transcribeInputFile = new S3FileLocator
+            {
+                Bucket = jobHelper.Request.AwsAiInputBucket(),
+                Key = inputFile.FilePath
+            };
+            
+            // copy input file from Blob Storage to S3
+            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Request).GetAsync())
+            using (var rekoBucketClient = await transcribeInputFile.GetBucketClientAsync(jobHelper.Request.AwsAccessKey(), jobHelper.Request.AwsSecretKey()))
+            {
+                await rekoBucketClient.UploadObjectFromStreamAsync(transcribeInputFile.Bucket, transcribeInputFile.Key, blobDownloadStream, null);
+            }
+
+            using (var transcribeService = new AmazonTranscribeServiceClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
                 await transcribeService.StartTranscriptionJobAsync(
                     new StartTranscriptionJobRequest
                     {
                         TranscriptionJobName = "TranscriptionJob-" + jobHelper.JobAssignmentId.Substring(jobHelper.JobAssignmentId.LastIndexOf("/") + 1),
                         LanguageCode = "en-US",
-                        Media = new Media { MediaFileUri = publicUri.ToString() },
+                        Media = new Media { MediaFileUri = transcribeInputFile.Url },
                         MediaFormat = mediaFormat,
                         OutputBucketName = jobHelper.Request.AwsAiOutputBucket()
                     });

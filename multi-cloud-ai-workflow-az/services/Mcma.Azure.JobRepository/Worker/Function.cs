@@ -19,7 +19,7 @@ namespace Mcma.Azure.JobRepository.Worker
 {
     public static class Function
     {
-        static Function() => McmaTypes.Add<BlobStorageLocator>();
+        static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
             
         private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureFunctionKeyAuth();
 

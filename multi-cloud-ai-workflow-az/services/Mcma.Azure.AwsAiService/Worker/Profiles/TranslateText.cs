@@ -29,7 +29,7 @@ namespace Mcma.Azure.AwsAiService.Worker
             var inputText = await inputFile.Proxy(jobHelper.Request).GetAsTextAsync();
                 
             TranslateTextResponse translateResponse;
-            using (var translateService = new AmazonTranslateClient(jobHelper.Request.AwsCredentials()))
+            using (var translateService = new AmazonTranslateClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
                 translateResponse =
                     await translateService.TranslateTextAsync(
                         new TranslateTextRequest
@@ -40,8 +40,8 @@ namespace Mcma.Azure.AwsAiService.Worker
                         });
 
             // put results in file on Blob storage
-            jobHelper.JobOutput.Set("outputFile",
-                await outputLocation.Proxy(jobHelper.Request).PutAsTextAsync(Guid.NewGuid().ToString() + ".txt", translateResponse.TranslatedText));
+            jobHelper.JobOutput["outputFile"] =
+                await outputLocation.Proxy(jobHelper.Request).PutAsTextAsync("Translate-" + Guid.NewGuid().ToString() + ".txt", translateResponse.TranslatedText);
 
             await jobHelper.CompleteAsync();
         }

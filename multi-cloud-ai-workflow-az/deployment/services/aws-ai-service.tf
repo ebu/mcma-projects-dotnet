@@ -54,6 +54,46 @@ resource "aws_sns_topic" "aws_ai_output_topic" {
   POLICY
 }
 
+resource "aws_iam_role" "aws_reko_sns_role" {
+  name = "${var.global_prefix}-${var.aws_region}-reko-sns-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "rekosns",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "rekognition.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "aws_reko_sns_role_policy" {
+  name = "${var.global_prefix}-${var.aws_region}-reko-sns-role-policy"
+  role = "${aws_iam_role.aws_reko_sns_role.id}"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "sns:Publish"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+  EOF
+}
+
 resource "aws_s3_bucket_notification" "aws_ai_output_bucket_notification" {
   bucket = "${aws_s3_bucket.aws_ai_output_bucket.id}"
 
@@ -85,29 +125,36 @@ resource "aws_iam_user_policy" "aws_ai_user_policy" {
     {
       "Sid": "s3buckets",
       "Effect": "Allow",
+      "Action": "s3:GetBucketLocation",
+      "Resource": "arn:aws:s3:::${var.global_prefix}-${var.aws_region}-aws-ai-*put"
+    },
+    {
+      "Sid": "s3objects",
+      "Effect": "Allow",
       "Action": [
         "s3:GetObject",
-        "s3:PutObject"
+        "s3:PutObject",
+        "s3:DeleteObject"
       ],
       "Resource": "arn:aws:s3:::${var.global_prefix}-${var.aws_region}-aws-ai-*put/*"
     },
     {
-      "Sid": "rekognition",
+      "Sid": "aiservices",
       "Effect": "Allow",
-      "Action": "rekognition:StartCelebrityRecognition",
+      "Action": [
+        "rekognition:StartCelebrityRecognition",
+        "rekognition:GetCelebrityRecognition",
+        "transcribe:StartTranscriptionJob",
+        "translate:TranslateText",
+        "comprehend:DetectDominantLanguage"
+      ],
       "Resource": "*"
     },
     {
-      "Sid": "transcribe",
+      "Sid": "iam",
       "Effect": "Allow",
-      "Action": "transcribe:StartTranscriptionJob",
-      "Resource": "*"
-    },
-    {
-      "Sid": "translate",
-      "Effect": "Allow",
-      "Action": "translate:TranslateText",
-      "Resource": "*"
+      "Action": "iam:PassRole",
+      "Resource": "${aws_iam_role.aws_reko_sns_role.arn}"
     }
   ]
 }
@@ -185,6 +232,11 @@ resource "azurerm_function_app" "aws_ai_service_worker_function" {
     MediaStorageConnectionString = "${var.media_storage_connection_string}"
     AwsAccessKey                 = "${aws_iam_access_key.aws_ai_user_access_key.id}"
     AwsSecretKey                 = "${aws_iam_access_key.aws_ai_user_access_key.secret}"
+    AwsRegion                    = "${var.aws_region}"
+    AwsAiOutputSnsTopicArn       = "${aws_sns_topic.aws_ai_output_topic.arn}"
+    AwsAiInputBucket             = "${aws_s3_bucket.aws_ai_input_bucket.id}"
+    AwsAiOutputBucket            = "${aws_s3_bucket.aws_ai_output_bucket.id}"
+    AwsRekoSnsRoleArn            = "${aws_iam_role.aws_reko_sns_role.arn}"
   }
 }
 

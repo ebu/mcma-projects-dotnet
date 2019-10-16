@@ -7,6 +7,7 @@ using Mcma.Aws.S3;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.BlobStorage.Proxies;
 using Mcma.Core;
+using Mcma.Core.Logging;
 using Mcma.Core.Utility;
 using Mcma.Worker;
 
@@ -42,8 +43,9 @@ namespace Mcma.Azure.AwsAiService.Worker
                 await rekoBucketClient.UploadObjectFromStreamAsync(rekoInputFile.Bucket, rekoInputFile.Key, blobDownloadStream, null);
             }
 
-            using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Request.AwsCredentials()))
-                await rekognitionClient.StartCelebrityRecognitionAsync(
+            StartCelebrityRecognitionResponse response;
+            using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
+                response = await rekognitionClient.StartCelebrityRecognitionAsync(
                     new StartCelebrityRecognitionRequest
                     {
                         Video = new Video
@@ -58,10 +60,12 @@ namespace Mcma.Azure.AwsAiService.Worker
                         JobTag = base64JobId,
                         NotificationChannel = new NotificationChannel
                         {
-                            RoleArn = jobHelper.Request.RekognitionRekoSnsRoleArn(),
+                            RoleArn = jobHelper.Request.AwsRekoSnsRoleArn(),
                             SNSTopicArn = jobHelper.Request.AwsAiOutputSnsTopicArn()
                         }
                     });
+            
+            Logger.Debug($"Started Rekognition job {response.JobId}.");
         }
     }
 }

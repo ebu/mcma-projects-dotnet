@@ -15,7 +15,6 @@ using Mcma.Core.Serialization;
 using Mcma.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
@@ -26,7 +25,7 @@ namespace Mcma.Azure.JobRepository.ApiHandler
 {
     public static class Function
     {
-        static Function() => McmaTypes.Add<BlobStorageLocator>();
+        static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
         private static IResourceManagerProvider ResourceManagerProvider { get; } =
             new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());

@@ -28,7 +28,7 @@ namespace Mcma.Azure.AwsAiService.Worker
 
         protected override async Task ExecuteAsync(WorkerRequest request, ProcessRekognitionResultRequest requestInput)
         {
-            var workerJobHelper =
+            var jobHelper =
                 new WorkerJobHelper<AIJob>(
                     DbTableProvider.Table<JobAssignment>(request.TableName()),
                     ResourceManagerProvider.Get(request),
@@ -36,9 +36,9 @@ namespace Mcma.Azure.AwsAiService.Worker
                     requestInput.JobAssignmentId);
             try
             {
-                await workerJobHelper.InitializeAsync();
+                await jobHelper.InitializeAsync();
 
-                var jobInput = workerJobHelper.JobInput;
+                var jobInput = jobHelper.JobInput;
 
                 BlobStorageFolderLocator outputLocation;
                 if (!jobInput.TryGet(nameof(outputLocation), out outputLocation))
@@ -57,7 +57,7 @@ namespace Mcma.Azure.AwsAiService.Worker
                 switch (rekoJobType)
                 {
                     case "StartCelebrityRecognition":
-                        using (var rekognitionClient = new AmazonRekognitionClient(workerJobHelper.Request.AwsCredentials()))
+                        using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
                             data = await rekognitionClient.GetCelebrityRecognitionAsync(new GetCelebrityRecognitionRequest
                             {
                                 JobId = rekoJobId, /* required */
@@ -83,17 +83,17 @@ namespace Mcma.Azure.AwsAiService.Worker
                 if (data == null)
                     throw new Exception($"No data was returned by AWS Rekognition");
 
-                workerJobHelper.JobOutput["outputFile"] =
-                    await outputLocation.Proxy(workerJobHelper.Request).PutAsTextAsync($"reko_{Guid.NewGuid()}.json", data.ToMcmaJson().ToString());
+                jobHelper.JobOutput["outputFile"] =
+                    await outputLocation.Proxy(jobHelper.Request).PutAsTextAsync($"Rekognition-{Guid.NewGuid()}.json", data.ToMcmaJson().ToString());
 
-                await workerJobHelper.CompleteAsync();
+                await jobHelper.CompleteAsync();
             }
             catch (Exception ex)
             {
                 Logger.Exception(ex);
                 try
                 {
-                    await workerJobHelper.FailAsync(ex.ToString());
+                    await jobHelper.FailAsync(ex.ToString());
                 }
                 catch (Exception innerEx)
                 {

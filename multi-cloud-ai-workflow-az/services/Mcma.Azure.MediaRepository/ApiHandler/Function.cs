@@ -20,7 +20,7 @@ namespace Mcma.Azure.MediaRepository.ApiHandler
 {
     public static class Function
     {
-        static Function() => McmaTypes.Add<BlobStorageLocator>();
+        static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
         private static IDbTableProvider DbTableProvider { get; } =
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());

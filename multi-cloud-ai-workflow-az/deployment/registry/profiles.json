@@ -9,13 +9,13 @@
             },
             {
                 "parameterName": "inputFile",
-                "parameterType": "Locator"
+                "parameterType": "BlobStorageFileLocator"
             }
         ],
         "outputParameters": [
             {
                 "parameterName": "websiteMediaFile",
-                "parameterType": "Locator"
+                "parameterType": "BlobStorageFileLocator"
             },
             {
                 "parameterName": "aiWorkflow",

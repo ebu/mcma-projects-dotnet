@@ -1,33 +1,51 @@
-using System;
-using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+using Mcma.Azure.BlobStorage;
+using Mcma.Azure.Client;
+using Mcma.Azure.CosmosDb;
+using Mcma.Azure.Functions.Logging;
+using Mcma.Azure.Functions.Worker;
+using Mcma.Client;
+using Mcma.Core;
+using Mcma.Core.Serialization;
+using Mcma.Data;
+using Mcma.Worker;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Microsoft.WindowsAzure.Storage.Queue;
+
+using McmaLogger = Mcma.Core.Logging.Logger;
 
 namespace Mcma.Azure.TransformService.Worker
 {
     public static class Function
     {
-        [FunctionName("Function")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
+        static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; } =
+            new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());
+
+        private static IDbTableProvider DbTableProvider { get; } =
+            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
+
+        private static IWorker Worker =
+            new Mcma.Worker.Builders.WorkerBuilder()
+                .HandleJobsOfType<TransformJob>(
+                    DbTableProvider,
+                    ResourceManagerProvider,
+                    x => x.AddProfile<CreateProxyLambda>())
+                .Build();
+            
+        [FunctionName("TransformServiceWorker")]
+        public static async Task Run(
+            [QueueTrigger("transform-service-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
+            ILogger log,
+            ExecutionContext executionContext)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
 
-            string name = req.Query["name"];
+            FFmpegProcess.HostRootDir = executionContext.FunctionAppDirectory;
 
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
-
-            return name != null
-                ? (ActionResult)new OkObjectResult($"Hello, {name}")
-                : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+            await Worker.DoWorkAsync(queueMessage.ToWorkerRequest());
         }
     }
 }

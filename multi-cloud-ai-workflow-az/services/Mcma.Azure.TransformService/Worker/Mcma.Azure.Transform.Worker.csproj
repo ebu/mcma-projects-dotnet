@@ -25,5 +25,9 @@
     <None Update="local.settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="externals/ffmpeg.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>exe\%(Filename)%(Extension)</Link>
+    </None>
   </ItemGroup>
 </Project>

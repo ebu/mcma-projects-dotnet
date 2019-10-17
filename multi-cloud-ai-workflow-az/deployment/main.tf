@@ -143,3 +143,19 @@ output "azure_ai_service_url" {
 output "azure_ai_service_key" {
   value = "${module.services.azure_ai_service_key}"
 }
+
+output "transform_service_url" {
+  value = "${module.services.transform_service_url}"
+}
+
+output "transform_service_key" {
+  value = "${module.services.transform_service_key}"
+}
+
+output "workflow_service_url" {
+  value = "${module.services.workflow_service_url}"
+}
+
+output "workflow_service_key" {
+  value = "${module.services.workflow_service_key}"
+}

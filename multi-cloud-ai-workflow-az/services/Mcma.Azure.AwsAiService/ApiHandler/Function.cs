@@ -32,12 +32,13 @@ namespace Mcma.Azure.AwsAiService.ApiHandler
         private static IDbTableProvider DbTableProvider { get; } =
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
 
-        private static IWorkerInvoker WorkerInvoker { get; } = new QueueWorkerInvoker();
-
         private static AzureFunctionApiController Controller { get; } =
-            new DefaultRouteCollectionBuilder<JobAssignment>(DbTableProvider)
-                .ForJobAssignments((ctx, _) => new QueueWorkerInvoker(ctx))
-                .AddRoute(HttpMethod.Post, "sns-notifications", SnsNotificationHandler.Create(ResourceManagerProvider, DbTableProvider, WorkerInvoker))
+            DefaultRoutes.ForJobAssignments(DbTableProvider, (reqCtx, _) => new QueueWorkerInvoker(reqCtx))
+                .AddAdditionalRoute(
+                    HttpMethod.Post,
+                    "sns-notifications",
+                    SnsNotificationHandler.Create(ResourceManagerProvider, DbTableProvider, reqCtx => new QueueWorkerInvoker(reqCtx)))
+                .Build()
                 .ToAzureFunctionApiController();
 
         [FunctionName("AwsAiServiceApiHandler")]

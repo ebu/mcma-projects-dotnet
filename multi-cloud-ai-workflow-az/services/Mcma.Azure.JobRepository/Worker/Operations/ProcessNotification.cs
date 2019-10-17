@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Mcma.Client;
 using Mcma.Core;
-using Mcma.Core.ContextVariables;
+using Mcma.Core.Context;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
 using Mcma.Data;
@@ -22,20 +22,20 @@ namespace Mcma.Azure.JobRepository.Worker
 
         private IDbTableProvider DbTableProvider { get; }
 
-        protected override async Task ExecuteAsync(WorkerRequest @event, ProcessNotificationRequest notificationRequest)
+        protected override async Task ExecuteAsync(WorkerRequest request, ProcessNotificationRequest notificationRequest)
         {
             var jobId = notificationRequest.JobId;
             var notification = notificationRequest.Notification;
             var notificationJob = notification.Content.ToMcmaObject<JobBase>();
 
-            var table = DbTableProvider.Table<Job>(@event.TableName());
+            var table = DbTableProvider.Table<Job>(request.Variables.TableName());
 
             var job = await table.GetAsync(jobId);
 
             // not updating job if it already was marked as completed or failed.
             if (job.Status == JobStatus.Completed || job.Status == JobStatus.Failed)
             {
-                Logger.Warn("Ignoring update of job that tried to change state from " + job.Status + " to " + notificationJob.Status);
+                request.Logger.Warn("Ignoring update of job that tried to change state from " + job.Status + " to " + notificationJob.Status);
                 return;
             }
 
@@ -47,7 +47,7 @@ namespace Mcma.Azure.JobRepository.Worker
 
             await table.PutAsync(jobId, job);
 
-            var resourceManager = ResourceManagerProvider.Get(@event);
+            var resourceManager = ResourceManagerProvider.Get(request.Variables);
 
             await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint);
         }

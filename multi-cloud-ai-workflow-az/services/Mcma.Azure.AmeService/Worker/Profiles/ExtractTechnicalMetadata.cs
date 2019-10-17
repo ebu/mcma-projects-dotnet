@@ -16,36 +16,36 @@ namespace Mcma.Azure.AmeService.Worker
     {
         public const string Name = nameof(ExtractTechnicalMetadata);
 
-        public async Task ExecuteAsync(WorkerJobHelper<AmeJob> job)
+        public async Task ExecuteAsync(WorkerJobHelper<AmeJob> jobHelper)
         {
             BlobStorageFileLocator inputFile;
-            if (!job.JobInput.TryGet(nameof(inputFile), out inputFile))
+            if (!jobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
                 throw new Exception("Unable to parse input file as S3Locator");
 
             BlobStorageFolderLocator outputLocation;
-            if (!job.JobInput.TryGet(nameof(outputLocation), out outputLocation))
+            if (!jobHelper.JobInput.TryGet(nameof(outputLocation), out outputLocation))
                 throw new Exception("Unable to parse output location as S3Locator");
 
             MediaInfoProcess mediaInfoProcess;
             if (inputFile is IUrlLocator urlLocator && !string.IsNullOrWhiteSpace(urlLocator.Url))
             {
-                Logger.Debug("Running MediaInfo against " + urlLocator.Url);
-                mediaInfoProcess = await MediaInfoProcess.RunAsync("--Output=EBUCore_JSON", urlLocator.Url);
+                jobHelper.Logger.Debug("Running MediaInfo against " + urlLocator.Url);
+                mediaInfoProcess = await MediaInfoProcess.RunAsync(jobHelper, "--Output=EBUCore_JSON", urlLocator.Url);
             } 
             else if (!string.IsNullOrWhiteSpace(inputFile.Container) && !string.IsNullOrWhiteSpace(inputFile.FilePath))
             {
-                var inputFileStream = await inputFile.Proxy(job.Request).GetAsync();
+                var inputFileStream = await inputFile.Proxy(jobHelper.Variables).GetAsync();
 
                 var localFileName = @"D:\local\temp\" + Guid.NewGuid().ToString() + ".tmp";
                 using (var localFileStream = File.Open(localFileName, FileMode.Create))
                     await inputFileStream.CopyToAsync(localFileStream);
 
-                Logger.Debug("Running MediaInfo against " + localFileName);
-                mediaInfoProcess = await MediaInfoProcess.RunAsync("--Output=EBUCore_JSON", localFileName);
+                jobHelper.Logger.Debug("Running MediaInfo against " + localFileName);
+                mediaInfoProcess = await MediaInfoProcess.RunAsync(jobHelper, "--Output=EBUCore_JSON", localFileName);
 
-                Logger.Debug($"MediaInfo completed. Deleting temp file {localFileName}...");
+                jobHelper.Logger.Debug($"MediaInfo completed. Deleting temp file {localFileName}...");
                 File.Delete(localFileName);
-                Logger.Debug($"Temp file {localFileName} deleted.");
+                jobHelper.Logger.Debug($"Temp file {localFileName} deleted.");
             }
             else
                 throw new Exception("Not able to obtain input file");
@@ -55,20 +55,15 @@ namespace Mcma.Azure.AmeService.Worker
 
             var outputPath = (outputLocation.FolderPath ?? string.Empty) + Guid.NewGuid().ToString() + ".json";
 
-            Logger.Debug($"Writing MediaInfo output to container {outputLocation.Container} with path {outputPath}...");
+            jobHelper.Logger.Debug($"Writing MediaInfo output to container {outputLocation.Container} with path {outputPath}...");
 
-            var container = outputLocation.Proxy(job.Request);
-            await container.PutAsync(outputPath, new MemoryStream(Encoding.UTF8.GetBytes(mediaInfoProcess.StdOut)));
+            var outputFile = await outputLocation.Proxy(jobHelper.Variables).PutAsync(outputPath, new MemoryStream(Encoding.UTF8.GetBytes(mediaInfoProcess.StdOut)));
 
-            Logger.Debug($"Successfully wrote MediaInfo output to container {outputLocation.Container} with path {outputPath}");
+            jobHelper.Logger.Debug($"Successfully wrote MediaInfo output to container {outputLocation.Container} with path {outputPath}");
 
-            job.JobOutput.Set("outputFile", new BlobStorageFileLocator
-            {
-                Container = outputLocation.Container,
-                FilePath = outputPath
-            });
+            jobHelper.JobOutput[nameof(outputFile)] = outputFile;
 
-            await job.CompleteAsync();
+            await jobHelper.CompleteAsync();
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Mcma.Api;
 using Mcma.Core;
-using Mcma.Core.ContextVariables;
+using Mcma.Core.Context;
 using Mcma.Data;
 
 namespace Mcma.Azure.JobProcessor.ApiHandler
@@ -26,9 +26,9 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                     return;
                 }
 
-                var table = dbTableProvider.Table<JobProcess>(requestContext.TableName());
+                var table = dbTableProvider.Table<JobProcess>(requestContext.Variables.TableName());
 
-                var jobProcess = await table.GetAsync(requestContext.PublicUrl().TrimEnd('/') + "/job-processes/" + request.PathVariables["id"]);
+                var jobProcess = await table.GetAsync(requestContext.Variables.PublicUrl().TrimEnd('/') + "/job-processes/" + request.PathVariables["id"]);
                 
                 if (jobProcess == null)
                 {
@@ -44,9 +44,9 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                 }
 
                 await workerInvoker(requestContext).InvokeAsync(
-                    requestContext.WorkerFunctionId(),
+                    requestContext.Variables.WorkerFunctionId(),
                     "ProcessNotification",
-                    requestContext.GetAllContextVariables().ToDictionary(),
+                    requestContext.Variables.GetAll().ToDictionary(),
                     new
                     {
                         jobProcessId = jobProcess.Id,

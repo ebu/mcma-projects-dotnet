@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Mcma.Core.Context;
 using Mcma.Core.Logging;
 
 namespace Mcma.Azure.AmeService.Worker
@@ -12,15 +13,16 @@ namespace Mcma.Azure.AmeService.Worker
 
         public static string HostRootDir { get; set; }
 
-        public static async Task<MediaInfoProcess> RunAsync(params string[] args)
+        public static async Task<MediaInfoProcess> RunAsync(IContext context, params string[] args)
         {
-            var mediaInfoProcess = new MediaInfoProcess(args);
+            var mediaInfoProcess = new MediaInfoProcess(context, args);
             await mediaInfoProcess.RunAsync();
             return mediaInfoProcess;
         }
 
-        public MediaInfoProcess(params string[] args)
+        private MediaInfoProcess(IContext context, params string[] args)
         {
+            Context = context;
             ProcessStartInfo = 
                 new ProcessStartInfo(Path.Combine(HostRootDir, MediaInfoFolder, "MediaInfo.exe"), string.Join(" ", args))
                 {
@@ -29,6 +31,8 @@ namespace Mcma.Azure.AmeService.Worker
                     RedirectStandardError = true,
                 };
         }
+
+        private IContext Context { get; }
 
         private ProcessStartInfo ProcessStartInfo { get; }
 
@@ -40,13 +44,13 @@ namespace Mcma.Azure.AmeService.Worker
         {
             using (var process = Process.Start(ProcessStartInfo))
             {
-                Logger.Debug("MediaInfo process started. Reading stdout and stderr...");
+                Context.Logger.Debug("MediaInfo process started. Reading stdout and stderr...");
                 StdOut = await process.StandardOutput.ReadToEndAsync();
                 StdErr = await process.StandardError.ReadToEndAsync();
 
-                Logger.Debug("Waiting for MediaInfo process to exit...");
+                Context.Logger.Debug("Waiting for MediaInfo process to exit...");
                 process.WaitForExit();
-                Logger.Debug($"MediaInfo process exited with code {process.ExitCode}.");
+                Context.Logger.Debug($"MediaInfo process exited with code {process.ExitCode}.");
 
                 if (process.ExitCode != 0)
                     throw new Exception($"MediaInfo process exited with code {process.ExitCode}:\r\nStdOut:\r\n{StdOut}StdErr:\r\n{StdErr}");

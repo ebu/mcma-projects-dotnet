@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Mcma.Api;
 using Mcma.Aws.S3;
 using Mcma.Client;
+using Mcma.Core.Context;
 using Mcma.Core.Logging;
 using Mcma.Core.Utility;
 using Mcma.Data;
@@ -20,7 +21,7 @@ namespace Mcma.Azure.AwsAiService.ApiHandler.Sns
         public static Func<McmaApiRequestContext, Task> Create(
             IResourceManagerProvider resourceManagerProvider,
             IDbTableProvider dbTableProvider,
-            IWorkerInvoker workerInvoker)
+            Func<IContext, IWorkerInvoker> createWorkerInvoker)
         {
             var httpClient = new HttpClient();
 
@@ -39,7 +40,7 @@ namespace Mcma.Azure.AwsAiService.ApiHandler.Sns
                         await HandleSnsSubscriptionConfirmationAsync(requestContext, httpClient);
                         break;
                     case SnsConstants.MessageTypes.Notification:
-                        await HandleSnsNotificationAsync(requestContext, workerInvoker);
+                        await HandleSnsNotificationAsync(requestContext, createWorkerInvoker(requestContext));
                         break;
                     default:
                         requestContext.SetResponseStatusCode(HttpStatusCode.BadRequest, "Request does not have a valid SNS message type.");
@@ -70,7 +71,7 @@ namespace Mcma.Azure.AwsAiService.ApiHandler.Sns
         
         private static async Task HandleSnsNotificationAsync(McmaApiRequestContext requestContext, IWorkerInvoker workerInvoker)
         {
-            Logger.Debug($"Received SNS notification:{Environment.NewLine}{requestContext.Request.Body}");
+            requestContext.Logger.Debug($"Received SNS notification:{Environment.NewLine}{requestContext.Request.Body}");
 
             var notificationMessage = requestContext.Request.JsonBody.ToObject<NotificationMessage>();
 
@@ -97,10 +98,10 @@ namespace Mcma.Azure.AwsAiService.ApiHandler.Sns
 
                 var transcribeJobUuid = objectKey.Substring(objectKey.IndexOf("-") + 1, objectKey.LastIndexOf(".") - objectKey.IndexOf("-") - 1);
 
-                var jobAssignmentId = requestContext.PublicUrl().TrimEnd('/') + "/job-assignments/" + transcribeJobUuid;
+                var jobAssignmentId = requestContext.Variables.PublicUrl().TrimEnd('/') + "/job-assignments/" + transcribeJobUuid;
 
                 await workerInvoker.InvokeAsync(
-                    requestContext.WorkerFunctionId(),
+                    requestContext.Variables.WorkerFunctionId(),
                     "ProcessTranscribeJobResult",
                     input: new
                     {
@@ -125,7 +126,7 @@ namespace Mcma.Azure.AwsAiService.ApiHandler.Sns
             var jobAssignmentId = rekoNotification.JobTag.HexDecodeString();
 
             await workerInvoker.InvokeAsync(
-                requestContext.WorkerFunctionId(),
+                requestContext.Variables.WorkerFunctionId(),
                 "ProcessRekognitionResult",
                 input: new
                 {

@@ -21,7 +21,7 @@ namespace Mcma.Azure.AwsAiService.Worker
             if (!jobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
                 throw new Exception("Invalid or missing input file.");
 
-            var publicUri = new Uri(inputFile.Proxy(jobHelper.Request).GetPublicReadOnlyUrl());
+            var publicUri = new Uri(inputFile.Proxy(jobHelper.Variables).GetPublicReadOnlyUrl());
 
             string mediaFormat;
             if (publicUri.AbsolutePath.EndsWith("mp3", StringComparison.OrdinalIgnoreCase))
@@ -38,18 +38,18 @@ namespace Mcma.Azure.AwsAiService.Worker
             // create destination locator
             var transcribeInputFile = new S3FileLocator
             {
-                Bucket = jobHelper.Request.AwsAiInputBucket(),
+                Bucket = jobHelper.Variables.AwsAiInputBucket(),
                 Key = inputFile.FilePath
             };
             
             // copy input file from Blob Storage to S3
-            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Request).GetAsync())
-            using (var rekoBucketClient = await transcribeInputFile.GetBucketClientAsync(jobHelper.Request.AwsAccessKey(), jobHelper.Request.AwsSecretKey()))
+            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Variables).GetAsync())
+            using (var rekoBucketClient = await transcribeInputFile.GetBucketClientAsync(jobHelper.Variables.AwsAccessKey(), jobHelper.Variables.AwsSecretKey()))
             {
                 await rekoBucketClient.UploadObjectFromStreamAsync(transcribeInputFile.Bucket, transcribeInputFile.Key, blobDownloadStream, null);
             }
 
-            using (var transcribeService = new AmazonTranscribeServiceClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
+            using (var transcribeService = new AmazonTranscribeServiceClient(jobHelper.Variables.AwsCredentials(), jobHelper.Variables.AwsRegion()))
                 await transcribeService.StartTranscriptionJobAsync(
                     new StartTranscriptionJobRequest
                     {
@@ -57,7 +57,7 @@ namespace Mcma.Azure.AwsAiService.Worker
                         LanguageCode = "en-US",
                         Media = new Media { MediaFileUri = transcribeInputFile.Url },
                         MediaFormat = mediaFormat,
-                        OutputBucketName = jobHelper.Request.AwsAiOutputBucket()
+                        OutputBucketName = jobHelper.Variables.AwsAiOutputBucket()
                     });
         }
     }

@@ -1,34 +1,34 @@
 
 using Amazon;
 using Amazon.Runtime;
-using Mcma.Core.ContextVariables;
+using Mcma.Core.Context;
 
 namespace Mcma.Azure.AwsAiService
 {
-    public static class AwsContextVariableProviderExtensions
+    public static class AwscontextVariablesExtensions
     {
-        public static string AwsAiInputBucket(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AwsAiInputBucket));
+        public static string AwsAiInputBucket(this IContextVariables contextVariables)
+            => contextVariables.GetRequired(nameof(AwsAiInputBucket));
 
-        public static string AwsAiOutputBucket(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AwsAiOutputBucket));
+        public static string AwsAiOutputBucket(this IContextVariables contextVariables)
+            => contextVariables.GetRequired(nameof(AwsAiOutputBucket));
 
-        public static string AwsAccessKey(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AwsAccessKey));
+        public static string AwsAccessKey(this IContextVariables contextVariables)
+            => contextVariables.GetRequired(nameof(AwsAccessKey));
 
-        public static string AwsSecretKey(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AwsSecretKey));
+        public static string AwsSecretKey(this IContextVariables contextVariables)
+            => contextVariables.GetRequired(nameof(AwsSecretKey));
 
-        public static RegionEndpoint AwsRegion(this IContextVariableProvider contextVariableProvider)
-            => RegionEndpoint.GetBySystemName(contextVariableProvider.GetRequiredContextVariable(nameof(AwsRegion)));
+        public static RegionEndpoint AwsRegion(this IContextVariables contextVariables)
+            => RegionEndpoint.GetBySystemName(contextVariables.GetRequired(nameof(AwsRegion)));
 
-        public static string AwsRekoSnsRoleArn(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AwsRekoSnsRoleArn));
+        public static string AwsRekoSnsRoleArn(this IContextVariables contextVariables)
+            => contextVariables.GetRequired(nameof(AwsRekoSnsRoleArn));
 
-        public static string AwsAiOutputSnsTopicArn(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AwsAiOutputSnsTopicArn));
+        public static string AwsAiOutputSnsTopicArn(this IContextVariables contextVariables)
+            => contextVariables.GetRequired(nameof(AwsAiOutputSnsTopicArn));
 
-        public static BasicAWSCredentials AwsCredentials(this IContextVariableProvider contextVariableProvider)
-            => new BasicAWSCredentials(contextVariableProvider.AwsAccessKey(), contextVariableProvider.AwsSecretKey());
+        public static BasicAWSCredentials AwsCredentials(this IContextVariables contextVariables)
+            => new BasicAWSCredentials(contextVariables.AwsAccessKey(), contextVariables.AwsSecretKey());
     }
 }

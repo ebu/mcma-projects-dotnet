@@ -6,7 +6,6 @@ using Mcma.Azure.CosmosDb;
 using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
 using Mcma.Client;
-using Mcma.Core;
 using Mcma.Core.Serialization;
 using Mcma.Data;
 using Microsoft.AspNetCore.Http;
@@ -30,8 +29,8 @@ namespace Mcma.Azure.TransformService.ApiHandler
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
 
         private static AzureFunctionApiController Controller { get; } =
-            new DefaultRouteCollectionBuilder<JobAssignment>(DbTableProvider)
-                .ForJobAssignments((ctx, _) => new QueueWorkerInvoker(ctx))
+            DefaultRoutes.ForJobAssignments(DbTableProvider ,(ctx, _) => new QueueWorkerInvoker(ctx))
+                .Build()
                 .ToAzureFunctionApiController();
 
         [FunctionName("TransformServiceApiHandler")]

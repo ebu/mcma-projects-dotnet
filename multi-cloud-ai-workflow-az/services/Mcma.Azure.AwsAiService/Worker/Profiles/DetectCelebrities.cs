@@ -32,19 +32,19 @@ namespace Mcma.Azure.AwsAiService.Worker
             // create destination locator
             var rekoInputFile = new S3FileLocator
             {
-                Bucket = jobHelper.Request.AwsAiInputBucket(),
+                Bucket = jobHelper.Variables.AwsAiInputBucket(),
                 Key = inputFile.FilePath
             };
             
             // copy input file from Blob Storage to S3
-            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Request).GetAsync())
-            using (var rekoBucketClient = await rekoInputFile.GetBucketClientAsync(jobHelper.Request.AwsAccessKey(), jobHelper.Request.AwsSecretKey()))
+            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Variables).GetAsync())
+            using (var rekoBucketClient = await rekoInputFile.GetBucketClientAsync(jobHelper.Variables.AwsAccessKey(), jobHelper.Variables.AwsSecretKey()))
             {
                 await rekoBucketClient.UploadObjectFromStreamAsync(rekoInputFile.Bucket, rekoInputFile.Key, blobDownloadStream, null);
             }
 
             StartCelebrityRecognitionResponse response;
-            using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
+            using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Variables.AwsCredentials(), jobHelper.Variables.AwsRegion()))
                 response = await rekognitionClient.StartCelebrityRecognitionAsync(
                     new StartCelebrityRecognitionRequest
                     {
@@ -60,12 +60,12 @@ namespace Mcma.Azure.AwsAiService.Worker
                         JobTag = base64JobId,
                         NotificationChannel = new NotificationChannel
                         {
-                            RoleArn = jobHelper.Request.AwsRekoSnsRoleArn(),
-                            SNSTopicArn = jobHelper.Request.AwsAiOutputSnsTopicArn()
+                            RoleArn = jobHelper.Variables.AwsRekoSnsRoleArn(),
+                            SNSTopicArn = jobHelper.Variables.AwsAiOutputSnsTopicArn()
                         }
                     });
             
-            Logger.Debug($"Started Rekognition job {response.JobId}.");
+            jobHelper.Logger.Debug($"Started Rekognition job {response.JobId}.");
         }
     }
 }

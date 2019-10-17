@@ -6,7 +6,7 @@ using Mcma.Azure.BlobStorage;
 using Mcma.Azure.BlobStorage.Proxies;
 using Mcma.Client;
 using Mcma.Core;
-using Mcma.Core.ContextVariables;
+using Mcma.Core.Context;
 using Mcma.Core.Logging;
 using Mcma.Data;
 using Mcma.Worker;
@@ -29,12 +29,12 @@ namespace Mcma.Azure.AwsAiService.Worker
         {
             var jobHelper =
                 new WorkerJobHelper<AIJob>(
-                    DbTableProvider.Table<JobAssignment>(request.TableName()),
-                    ResourceManagerProvider.Get(request),
+                    DbTableProvider.Table<JobAssignment>(request.Variables.TableName()),
+                    ResourceManagerProvider.Get(request.Variables),
                     request,
                     requestInput.JobAssignmentId);
 
-            var transcribeOutputClient = await requestInput.OutputFile.GetBucketClientAsync(jobHelper.Request.AwsAccessKey(), jobHelper.Request.AwsSecretKey());
+            var transcribeOutputClient = await requestInput.OutputFile.GetBucketClientAsync(jobHelper.Variables.AwsAccessKey(), jobHelper.Variables.AwsSecretKey());
 
             try
             {
@@ -47,7 +47,7 @@ namespace Mcma.Azure.AwsAiService.Worker
                         throw new Exception("Invalid or missing output location.");
 
                     jobHelper.JobOutput["outputFile"] = 
-                        await outputLocation.Proxy(request).PutAsync(
+                        await outputLocation.Proxy(request.Variables).PutAsync(
                             requestInput.OutputFile.Key,
                             await transcribeOutputClient.GetObjectStreamAsync(requestInput.OutputFile.Bucket, requestInput.OutputFile.Key, null));
 
@@ -55,14 +55,14 @@ namespace Mcma.Azure.AwsAiService.Worker
                 }
                 catch (Exception ex)
                 {
-                    Logger.Exception(ex);
+                    jobHelper.Logger.Exception(ex);
                     try
                     {
                         await jobHelper.FailAsync(ex.ToString());
                     }
                     catch (Exception innerEx)
                     {
-                        Logger.Exception(innerEx);
+                        jobHelper.Logger.Exception(innerEx);
                     }
                 }
 
@@ -76,8 +76,8 @@ namespace Mcma.Azure.AwsAiService.Worker
                 }
                 catch (Exception error)
                 {
-                    Logger.Error("Failed to cleanup transcribe output file.");
-                    Logger.Exception(error);
+                    jobHelper.Logger.Error("Failed to cleanup transcribe output file.");
+                    jobHelper.Logger.Exception(error);
                 }
             }
             finally

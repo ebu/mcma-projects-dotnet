@@ -16,19 +16,19 @@ namespace Mcma.Azure.JobRepository.Worker
 
         private IResourceManagerProvider ResourceManagerProvider { get; }
 
-        protected override async Task ExecuteAsync(WorkerRequest @event, DeleteJobProcessRequest deleteRequest)
+        protected override async Task ExecuteAsync(WorkerRequest request, DeleteJobProcessRequest deleteRequest)
         {
             var jobProcessId = deleteRequest.JobProcessId;
 
             try
             {
-                var resourceManager = ResourceManagerProvider.Get(@event);
+                var resourceManager = ResourceManagerProvider.Get(request.Variables);
 
                 await resourceManager.DeleteAsync<JobProcess>(jobProcessId);
             }
             catch (Exception error)
             {
-                Logger.Exception(error);
+                request.Logger.Exception(error);
             }
         }
     }

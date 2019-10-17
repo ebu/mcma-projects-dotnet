@@ -3,7 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Mcma.Api;
 using Mcma.Core;
-using Mcma.Core.ContextVariables;
+using Mcma.Core.Context;
 using Mcma.Core.Logging;
 using Mcma.Data;
 
@@ -29,7 +29,7 @@ namespace Mcma.Azure.JobRepository.ApiHandler
             =>
             async requestContext =>
             {
-                var table = dbTableProvider.Table<Job>(requestContext.TableName());
+                var table = dbTableProvider.Table<Job>(requestContext.Variables.TableName());
 
                 var notification = requestContext.GetRequestBody<Notification>();
                 if (notification == null)
@@ -38,7 +38,7 @@ namespace Mcma.Azure.JobRepository.ApiHandler
                     return;
                 }
 
-                var job = await table.GetAsync(requestContext.PublicUrl().TrimEnd('/') + "/jobs/" + requestContext.Request.PathVariables["id"]);
+                var job = await table.GetAsync(requestContext.Variables.PublicUrl().TrimEnd('/') + "/jobs/" + requestContext.Request.PathVariables["id"]);
                 if (job == null)
                 {
                     requestContext.SetResponseResourceNotFound();
@@ -53,9 +53,9 @@ namespace Mcma.Azure.JobRepository.ApiHandler
                 }
 
                 await createWorkerInvoker(requestContext).InvokeAsync(
-                    requestContext.WorkerFunctionId(),
+                    requestContext.Variables.WorkerFunctionId(),
                     "ProcessNotification",
-                    requestContext.GetAllContextVariables().ToDictionary(),
+                    requestContext.Variables.GetAll().ToDictionary(),
                     new
                     {
                         jobId = job.Id,

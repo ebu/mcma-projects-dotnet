@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Amazon.Rekognition;
 using Amazon.Rekognition.Model;
 using Mcma.Core;
-using Mcma.Core.ContextVariables;
+using Mcma.Core.Context;
 using Mcma.Core.Logging;
 using Mcma.Data;
 using Mcma.Worker;
@@ -30,8 +30,8 @@ namespace Mcma.Azure.AwsAiService.Worker
         {
             var jobHelper =
                 new WorkerJobHelper<AIJob>(
-                    DbTableProvider.Table<JobAssignment>(request.TableName()),
-                    ResourceManagerProvider.Get(request),
+                    DbTableProvider.Table<JobAssignment>(request.Variables.TableName()),
+                    ResourceManagerProvider.Get(request.Variables),
                     request,
                     requestInput.JobAssignmentId);
             try
@@ -57,7 +57,7 @@ namespace Mcma.Azure.AwsAiService.Worker
                 switch (rekoJobType)
                 {
                     case "StartCelebrityRecognition":
-                        using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
+                        using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Variables.AwsCredentials(), jobHelper.Variables.AwsRegion()))
                             data = await rekognitionClient.GetCelebrityRecognitionAsync(new GetCelebrityRecognitionRequest
                             {
                                 JobId = rekoJobId, /* required */
@@ -84,20 +84,20 @@ namespace Mcma.Azure.AwsAiService.Worker
                     throw new Exception($"No data was returned by AWS Rekognition");
 
                 jobHelper.JobOutput["outputFile"] =
-                    await outputLocation.Proxy(jobHelper.Request).PutAsTextAsync($"Rekognition-{Guid.NewGuid()}.json", data.ToMcmaJson().ToString());
+                    await outputLocation.Proxy(jobHelper.Variables).PutAsTextAsync($"Rekognition-{Guid.NewGuid()}.json", data.ToMcmaJson().ToString());
 
                 await jobHelper.CompleteAsync();
             }
             catch (Exception ex)
             {
-                Logger.Exception(ex);
+                jobHelper.Logger.Exception(ex);
                 try
                 {
                     await jobHelper.FailAsync(ex.ToString());
                 }
                 catch (Exception innerEx)
                 {
-                    Logger.Exception(innerEx);
+                    jobHelper.Logger.Exception(innerEx);
                 }
             }
         }

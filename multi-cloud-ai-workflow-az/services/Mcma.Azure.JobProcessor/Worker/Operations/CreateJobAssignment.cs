@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Mcma.Client;
 using Mcma.Core;
-using Mcma.Core.ContextVariables;
+using Mcma.Core.Context;
 using Mcma.Core.Logging;
 using Mcma.Data;
 using Mcma.Worker;
@@ -26,9 +26,9 @@ namespace Mcma.Azure.JobProcessor.Worker
 
         protected override async Task ExecuteAsync(WorkerRequest request, CreateJobAssignmentRequest createRequest)
         {
-            var resourceManager = ResourceManagerProvider.Get(request);
+            var resourceManager = ResourceManagerProvider.Get(request.Variables);
 
-            var table = DbTableProvider.Table<JobProcess>(request.TableName());
+            var table = DbTableProvider.Table<JobProcess>(request.Variables.TableName());
 
             var jobProcessId = createRequest.JobProcessId;
             var jobProcess = await table.GetAsync(jobProcessId);
@@ -108,8 +108,8 @@ namespace Mcma.Azure.JobProcessor.Worker
             }
             catch (Exception error)
             {
-                Logger.Error("Failed to create job assignment");
-                Logger.Exception(error);
+                request.Logger.Error("Failed to create job assignment");
+                request.Logger.Exception(error);
 
                 jobProcess.Status = JobStatus.Failed;
                 jobProcess.StatusMessage = error.ToString();

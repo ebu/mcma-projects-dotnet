@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Mcma.Api;
 using Mcma.Api.Routes.Defaults;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.Client;
@@ -30,8 +31,8 @@ namespace Mcma.Azure.AmeService.ApiHandler
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
 
         private static AzureFunctionApiController Controller { get; } =
-            new DefaultRouteCollectionBuilder<JobAssignment>(DbTableProvider)
-                .ForJobAssignments((ctx, _) => new QueueWorkerInvoker(ctx))
+            DefaultRoutes.ForJobAssignments(DbTableProvider, (reqCtx, _) => new QueueWorkerInvoker(reqCtx))
+                .Build()
                 .ToAzureFunctionApiController();
 
         [FunctionName("AmeServiceApiHandler")]

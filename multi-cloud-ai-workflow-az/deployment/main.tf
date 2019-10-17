@@ -135,3 +135,11 @@ output "aws_ai_service_url" {
 output "aws_ai_service_key" {
   value = "${module.services.aws_ai_service_key}"
 }
+
+output "azure_ai_service_url" {
+  value = "${module.services.azure_ai_service_url}"
+}
+
+output "azure_ai_service_key" {
+  value = "${module.services.azure_ai_service_key}"
+}

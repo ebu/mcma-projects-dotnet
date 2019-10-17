@@ -10,7 +10,6 @@ using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
 using Mcma.Client;
 using Mcma.Core;
-using Mcma.Core.ContextVariables;
 using Mcma.Core.Serialization;
 using Mcma.Data;
 using Microsoft.AspNetCore.Http;
@@ -43,7 +42,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                             var workerInvoker = new QueueWorkerInvoker(requestContext);
                             
                             await workerInvoker.InvokeAsync(
-                                requestContext.WorkerFunctionId(),
+                                requestContext.Variables.WorkerFunctionId(),
                                 "CreateJobAssignment",
                                 input: new { jobProcessId = jobProcess.Id });
                         }

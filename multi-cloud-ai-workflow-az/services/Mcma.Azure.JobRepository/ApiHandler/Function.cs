@@ -40,12 +40,12 @@ namespace Mcma.Azure.JobRepository.ApiHandler
                     r.OnCompleted(
                         async (ctx, job) =>
                         {
-                            McmaLogger.Info("Invoking worker at {0}", ctx.WorkerFunctionId());
+                            McmaLogger.Info("Invoking worker at {0}", ctx.Variables.WorkerFunctionId());
 
                             var workerInvoker = new QueueWorkerInvoker(ctx);
 
                             await workerInvoker.InvokeAsync(
-                                ctx.WorkerFunctionId(),
+                                ctx.Variables.WorkerFunctionId(),
                                 "CreateJobProcess",
                                 input: new { jobId = job.Id }
                             );
@@ -60,7 +60,7 @@ namespace Mcma.Azure.JobRepository.ApiHandler
 
                             if (!string.IsNullOrWhiteSpace(job.JobProcess))
                                 await workerInvoker.InvokeAsync(
-                                    ctx.WorkerFunctionId(),
+                                    ctx.Variables.WorkerFunctionId(),
                                     "DeleteJobProcess",
                                     input: new { jobProcessId = job.JobProcess }
                                 );

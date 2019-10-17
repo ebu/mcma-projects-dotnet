@@ -22,13 +22,13 @@ namespace Mcma.Azure.JobProcessor.Worker
 
             try
             {
-                var resourceManager = ResourceManagerProvider.Get(request);
+                var resourceManager = ResourceManagerProvider.Get(request.Variables);
 
                 await resourceManager.DeleteAsync<JobAssignment>(jobAssignmentId);
             }
             catch (Exception error)
             {
-                Logger.Exception(error);
+                request.Logger.Exception(error);
             }
         }
     }

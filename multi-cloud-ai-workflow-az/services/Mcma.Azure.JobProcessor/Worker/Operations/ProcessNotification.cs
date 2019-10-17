@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Mcma.Client;
 using Mcma.Core;
-using Mcma.Core.ContextVariables;
+using Mcma.Core.Context;
 using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
 using Mcma.Data;
@@ -28,14 +28,14 @@ namespace Mcma.Azure.JobProcessor.Worker
             var notification = @event.Notification;
             var notificationJobData = notification.Content.ToMcmaObject<JobBase>();
 
-            var table = DbTableProvider.Table<JobProcess>(request.TableName());
+            var table = DbTableProvider.Table<JobProcess>(request.Variables.TableName());
 
             var jobProcess = await table.GetAsync(jobProcessId);
 
             // not updating job if it already was marked as completed or failed.
             if (jobProcess.Status == JobStatus.Completed || jobProcess.Status == JobStatus.Failed)
             {
-                Logger.Warn("Ignoring update of job process that tried to change state from " + jobProcess.Status + " to " + notificationJobData.Status);
+                request.Logger.Warn("Ignoring update of job process that tried to change state from " + jobProcess.Status + " to " + notificationJobData.Status);
                 return;
             }
 
@@ -47,7 +47,7 @@ namespace Mcma.Azure.JobProcessor.Worker
 
             await table.PutAsync(jobProcessId, jobProcess);
 
-            var resourceManager = ResourceManagerProvider.Get(request);
+            var resourceManager = ResourceManagerProvider.Get(request.Variables);
 
             await resourceManager.SendNotificationAsync(jobProcess, jobProcess.NotificationEndpoint);
         }

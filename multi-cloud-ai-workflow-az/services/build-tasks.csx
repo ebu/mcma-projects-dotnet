@@ -14,10 +14,9 @@ public static AggregateTask BuildServices = new AggregateTask(
     new BuildProject("services/Mcma.Azure.TransformService/ApiHandler"),
     new BuildProject("services/Mcma.Azure.TransformService/Worker")*/,
     new BuildProject("services/Mcma.Azure.AwsAiService/ApiHandler"),
-    new BuildProject("services/Mcma.Azure.AwsAiService/Worker")/*,
+    new BuildProject("services/Mcma.Azure.AwsAiService/Worker"),
     new BuildProject("services/Mcma.Azure.AzureAiService/ApiHandler"),
-    new BuildProject("services/Mcma.Azure.AzureAiService/ApiInsecure"),
-    new BuildProject("services/Mcma.Azure.AzureAiService/Worker")*/
+    new BuildProject("services/Mcma.Azure.AzureAiService/Worker")
 );
 
 public static AggregateTask BuildServicesSln = new AggregateTask(
@@ -34,8 +33,7 @@ public static AggregateTask BuildServicesSln = new AggregateTask(
     new BuildProject("services/Mcma.Azure.TransformService/ApiHandler", false, false),
     new BuildProject("services/Mcma.Azure.TransformService/Worker", false, false)*/,
     new BuildProject("services/Mcma.Azure.AwsAiService/ApiHandler", false, false),
-    new BuildProject("services/Mcma.Azure.AwsAiService/Worker", false, false)/*,
+    new BuildProject("services/Mcma.Azure.AwsAiService/Worker", false, false),
     new BuildProject("services/Mcma.Azure.AzureAiService/ApiHandler", false, false),
-    new BuildProject("services/Mcma.Azure.AzureAiService/ApiInsecure", false, false),
-    new BuildProject("services/Mcma.Azure.AzureAiService/Worker", false, false)*/
+    new BuildProject("services/Mcma.Azure.AzureAiService/Worker", false, false)
 );

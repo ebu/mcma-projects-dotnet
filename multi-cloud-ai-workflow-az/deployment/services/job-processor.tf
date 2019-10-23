@@ -83,7 +83,8 @@ resource "azurerm_template_deployment" "job_processor_worker_function_key" {
       "outputs": {
           "functionkey": {
               "type": "string",
-              "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').functionKeys.default]"                                                                                }
+              "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').functionKeys.default]"
+          }
       }
   }
   BODY
@@ -160,7 +161,8 @@ resource "azurerm_template_deployment" "job_processor_api_function_key" {
       "outputs": {
           "functionkey": {
               "type": "string",
-              "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').functionKeys.default]"                                                                                }
+              "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').functionKeys.default]"
+          }
       }
   }
   BODY

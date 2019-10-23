@@ -49,15 +49,24 @@ resource "azurerm_function_app" "workflow_service_worker_function" {
     FunctionKeyEncryptionKey     = "${var.private_encryption_key}"
     TableName                    = "WorkflowService"
     PublicUrl                    = "https://${var.global_prefix_lower_only}workflowserviceworker.azurewebsites.net/"
+    AzureClientId                = "${var.azure_client_id}"
+    AzureClientSecret            = "${var.azure_client_secret}"
+    AzureSubscriptionId          = "${var.azure_subscription_id}"
+    AzureTenantId                = "${var.azure_tenant_id}"
+    AzureTenantName              = "${var.azure_tenant_name}"
+    AzureResourceGroupName       = "${var.resource_group_name}"
     CosmosDbEndpoint             = "${var.cosmosdb_endpoint}"
     CosmosDbKey                  = "${var.cosmosdb_key}"
     CosmosDbDatabaseId           = "${var.global_prefix_lower_only}db"
     CosmosDbRegion               = "${var.azure_location}"
     ServicesUrl                  = "${local.services_url}"
+    ServiceRegistryUrl           = "${local.service_registry_url}"
+    ServiceRegistryKey           = "${local.service_registry_key}"
     ServicesAuthType             = "AzureFunctionKey"
     ServicesAuthContext          = "{ \"functionKey\": \"${local.service_registry_key}\", \"isEncrypted\": false }"
     MediaStorageAccountName      = "${var.media_storage_account_name}"
     MediaStorageConnectionString = "${var.media_storage_connection_string}"
+    ApiHandlerKey                = "${lookup(azurerm_template_deployment.workflow_service_api_function_key.outputs, "functionkey")}"
   }
 }
 
@@ -85,7 +94,8 @@ resource "azurerm_template_deployment" "workflow_service_worker_function_key" {
       "outputs": {
           "functionkey": {
               "type": "string",
-              "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').functionKeys.default]"                                                                                }
+              "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').functionKeys.default]"
+          }
       }
   }
   BODY
@@ -135,6 +145,9 @@ resource "azurerm_function_app" "workflow_service_api_function" {
     CosmosDbDatabaseId       = "${var.global_prefix_lower_only}db"
     CosmosDbRegion           = "${var.azure_location}"
     WorkerFunctionId         = "${azurerm_storage_queue.workflow_service_worker_function_queue.name}"
+    ServicesUrl              = "${local.services_url}"
+    ServicesAuthType         = "AzureFunctionKey"
+    ServicesAuthContext      = "{ \"functionKey\": \"${local.service_registry_key}\", \"isEncrypted\": false }"
   }
 }
 
@@ -162,7 +175,8 @@ resource "azurerm_template_deployment" "workflow_service_api_function_key" {
       "outputs": {
           "functionkey": {
               "type": "string",
-              "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').functionKeys.default]"                                                                                }
+              "value": "[listkeys(concat(variables('functionAppId'), '/host/default'), '2018-11-01').functionKeys.default]"
+          }
       }
   }
   BODY

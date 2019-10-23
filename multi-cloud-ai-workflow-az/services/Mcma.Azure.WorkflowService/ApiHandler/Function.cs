@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Threading.Tasks;
 using Mcma.Api.Routes.Defaults;
 using Mcma.Azure.BlobStorage;
@@ -30,6 +31,18 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
 
         private static AzureFunctionApiController Controller { get; } =
             DefaultRoutes.ForJobAssignments(DbTableProvider, (ctx, _) => new QueueWorkerInvoker(ctx))
+                .AddAdditionalRoute(
+                    HttpMethod.Post,
+                    "/job-assignments/{id}/notifications",
+                    Notifications.Handler(DbTableProvider, reqCtx => new QueueWorkerInvoker(reqCtx)))
+                .AddAdditionalRoute(
+                    HttpMethod.Post,
+                    "/resources",
+                    Resources.ResourceHandler(ResourceManagerProvider))
+                .AddAdditionalRoute(
+                    HttpMethod.Post,
+                    "/resource-notifications",
+                    Resources.ResourceNotificationHandler())
                 .Build()
                 .ToAzureFunctionApiController();
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Threading.Tasks;
 using Mcma.Api;
@@ -8,9 +8,9 @@ using Mcma.Data;
 
 namespace Mcma.Azure.JobProcessor.ApiHandler
 {
-    public static class JobProcessRoutes
+    public static class Notifications
     {
-        public static Func<McmaApiRequestContext, Task> ProcessNotificationAsync(
+        public static Func<McmaApiRequestContext, Task> Handler(
             IDbTableProvider dbTableProvider,
             Func<McmaApiRequestContext, IWorkerInvoker> workerInvoker) 
             =>

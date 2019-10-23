@@ -25,18 +25,23 @@ namespace Mcma.Azure.WorkflowService.Worker
         {
             var jobAssignmentId = notificationRequest.JobAssignmentId;
             var notification = notificationRequest.Notification;
-            var notificationJobPayload = notification.Content.ToMcmaObject<JobBase>();
+
+            var workflowStatePayload = notification.Content.ToMcmaObject<WorkflowState>();
 
             var table = DbTableProvider.Table<JobAssignment>(request.Variables.TableName());
 
             var jobAssignment = await table.GetAsync(jobAssignmentId);
 
-            jobAssignment.Status = notificationJobPayload.Status;
-            jobAssignment.StatusMessage = notificationJobPayload.StatusMessage;
-            if (notificationJobPayload.Progress != null)
-                jobAssignment.Progress = notificationJobPayload.Progress;
+            jobAssignment.Status = workflowStatePayload.Status?.ToUpper();
+            jobAssignment.StatusMessage = workflowStatePayload.Errors?.ToString();
 
-            jobAssignment.JobOutput = notificationJobPayload.JobOutput;
+            if (workflowStatePayload.Progress != null)
+                jobAssignment.Progress = workflowStatePayload.Progress;
+
+            if (workflowStatePayload.Output != null)
+                foreach (var output in workflowStatePayload.Output)
+                    jobAssignment.JobOutput[output.Key] = output.Value;
+
             jobAssignment.DateModified = DateTime.UtcNow;
 
             await table.PutAsync(jobAssignmentId, jobAssignment);

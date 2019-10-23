@@ -52,14 +52,32 @@ module "storage" {
   website_container    = "${var.website_container}"
 }
 
+module "workflows" {
+  source = "./workflows"
+
+  azure_subscription_id = "${var.azure_subscription_id}"
+  azure_location        = "${var.azure_location}"
+  resource_group_name   = "${azurerm_resource_group.resource_group.name}"
+
+  media_storage_account_name = "${module.storage.media_storage_account_name}"
+  media_storage_access_key   = "${module.storage.media_storage_access_key}"
+  repository_container       = "${var.repository_container}"
+}
+
 module "services" {
   source = "./services"
 
   private_encryption_key = "${var.private_encryption_key}"
+  
+  azure_client_id       = "${var.azure_client_id}"
+  azure_client_secret   = "${var.azure_client_secret}"
+  azure_subscription_id = "${var.azure_subscription_id}"
+  azure_tenant_id       = "${var.azure_tenant_id}"
+  azure_tenant_name     = "${var.azure_tenant_name}"
+  azure_location        = "${var.azure_location}"
 
   environment_name         = "${var.environment_name}"
   environment_type         = "${var.environment_type}"
-  azure_location           = "${var.azure_location}"
   global_prefix            = "${var.global_prefix}"
   global_prefix_lower_only = "${var.global_prefix_lower_only}"
   resource_group_name      = "${azurerm_resource_group.resource_group.name}"
@@ -87,9 +105,6 @@ module "services" {
   aws_access_key = "${var.aws_access_key}"
   aws_secret_key = "${var.aws_secret_key}"
   aws_region     = "${var.aws_region}"
-
-  #conform_workflow_id = "${module.workflows.conform_workflow_id}"
-  #ai_workflow_id      = "${module.workflows.ai_workflow_id}"
 }
 
 output "services_url" {
@@ -158,4 +173,12 @@ output "workflow_service_url" {
 
 output "workflow_service_key" {
   value = "${module.services.workflow_service_key}"
+}
+
+output "media_repository_url" {
+  value = "${module.services.media_repository_url}"
+}
+
+output "media_repository_key" {
+  value = "${module.services.media_repository_key}"
 }

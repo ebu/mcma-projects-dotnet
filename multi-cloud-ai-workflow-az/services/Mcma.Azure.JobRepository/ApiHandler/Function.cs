@@ -74,9 +74,9 @@ namespace Mcma.Azure.JobRepository.ApiHandler
         private static McmaApiRouteCollection AllRoutes { get; } =
             new McmaApiRouteCollection()
                 .AddRoutes(DefaultRoutes)
-                .AddRoute(HttpMethod.Post, "/jobs/{id}/stop", JobRoutes.StopJobAsync())
-                .AddRoute(HttpMethod.Post, "/jobs/{id}/cancel", JobRoutes.CancelJobAsync())
-                .AddRoute(HttpMethod.Post, "/jobs/{id}/notifications", JobRoutes.ProcessNotificationAsync(DbTableProvider, reqCtx => new QueueWorkerInvoker(reqCtx)));
+                .AddRoute(HttpMethod.Post, "/jobs/{id}/stop", Actions.StopHandler())
+                .AddRoute(HttpMethod.Post, "/jobs/{id}/cancel", Actions.CancelHandler())
+                .AddRoute(HttpMethod.Post, "/jobs/{id}/notifications", Notifications.Handler(DbTableProvider, reqCtx => new QueueWorkerInvoker(reqCtx)));
         
         private static AzureFunctionApiController Controller { get; } = AllRoutes.ToAzureFunctionApiController();
 

@@ -1,31 +1,16 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Threading.Tasks;
 using Mcma.Api;
 using Mcma.Core;
 using Mcma.Core.Context;
-using Mcma.Core.Logging;
 using Mcma.Data;
 
 namespace Mcma.Azure.JobRepository.ApiHandler
 {
-    public static class JobRoutes
+    public static class Notifications
     {
-        public static Func<McmaApiRequestContext, Task> StopJobAsync() => requestContext =>
-        {
-            requestContext.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
-            requestContext.Response.StatusMessage = "Stopping job is not implemented";
-            return Task.CompletedTask;
-        };
-        
-        public static Func<McmaApiRequestContext, Task> CancelJobAsync() => requestContext =>
-        {
-            requestContext.Response.StatusCode = (int)HttpStatusCode.NotImplemented;
-            requestContext.Response.StatusMessage = "Stopping job is not implemented";
-            return Task.CompletedTask;
-        };
-
-        public static Func<McmaApiRequestContext, Task> ProcessNotificationAsync(IDbTableProvider dbTableProvider, Func<McmaApiRequestContext, IWorkerInvoker> createWorkerInvoker)
+        public static Func<McmaApiRequestContext, Task> Handler(IDbTableProvider dbTableProvider, Func<McmaApiRequestContext, IWorkerInvoker> createWorkerInvoker)
             =>
             async requestContext =>
             {

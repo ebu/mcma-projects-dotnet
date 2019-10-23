@@ -1,25 +1,25 @@
 locals {
-  service_registry_api_zip_file = "./../services/Mcma.Azure.ServiceRegistry/ApiHandler/dist/function.zip"
+  media_repository_api_zip_file = "./../services/Mcma.Azure.MediaRepository/ApiHandler/dist/function.zip"
 }
 
-resource "azurerm_storage_blob" "service_registry_api_function_zip" {
-  name                   = "service-registry/function_${filesha256("${local.service_registry_api_zip_file}")}.zip"
+resource "azurerm_storage_blob" "media_repository_api_function_zip" {
+  name                   = "media-repository/function_${filesha256("${local.media_repository_api_zip_file}")}.zip"
   resource_group_name    = "${var.resource_group_name}"
   storage_account_name   = "${var.app_storage_account_name}"
   storage_container_name = "${var.deploy_container}"
   type                   = "block"
-  source                 = "${local.service_registry_api_zip_file}"
+  source                 = "${local.media_repository_api_zip_file}"
 }
 
-resource "azurerm_application_insights" "service_registry_api_appinsights" {
-  name                = "${var.global_prefix_lower_only}serviceregistry"
+resource "azurerm_application_insights" "media_repository_api_appinsights" {
+  name                = "${var.global_prefix_lower_only}mediarepository"
   resource_group_name = "${var.resource_group_name}"
   location            = "${var.azure_location}"
   application_type    = "Web"
 }
 
-resource "azurerm_function_app" "service_registry_api_function" {
-  name                      = "${var.global_prefix_lower_only}serviceregistryapi"
+resource "azurerm_function_app" "media_repository_api_function" {
+  name                      = "${var.global_prefix_lower_only}mediarepositoryapi"
   location                  = "${var.azure_location}"
   resource_group_name       = "${var.resource_group_name}"
   app_service_plan_id       = "${azurerm_app_service_plan.mcma_services.id}"
@@ -39,13 +39,13 @@ resource "azurerm_function_app" "service_registry_api_function" {
     FUNCTIONS_WORKER_RUNTIME       = "dotnet"
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
-    HASH                           = "${filesha256("${local.service_registry_api_zip_file}")}"
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.service_registry_api_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = "${azurerm_application_insights.service_registry_api_appinsights.instrumentation_key}"
+    HASH                           = "${filesha256("${local.media_repository_api_zip_file}")}"
+    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.media_repository_api_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = "${azurerm_application_insights.media_repository_api_appinsights.instrumentation_key}"
 
     FunctionKeyEncryptionKey = "${var.private_encryption_key}"
-    TableName                = "ServiceRegistry"
-    PublicUrl                = "https://${var.global_prefix_lower_only}serviceregistryapi.azurewebsites.net/"
+    TableName                = "MediaRepository"
+    PublicUrl                = "https://${var.global_prefix_lower_only}mediarepositoryapi.azurewebsites.net/"
     CosmosDbEndpoint         = "${var.cosmosdb_endpoint}"
     CosmosDbKey              = "${var.cosmosdb_key}"
     CosmosDbDatabaseId       = "${var.global_prefix_lower_only}db"
@@ -53,13 +53,13 @@ resource "azurerm_function_app" "service_registry_api_function" {
   }
 }
 
-resource "azurerm_template_deployment" "service_registry_function_key" {
-  name                = "serviceregistryfunckeys"
+resource "azurerm_template_deployment" "media_repository_function_key" {
+  name                = "mediarepositoryfunckeys"
   resource_group_name = "${var.resource_group_name}"
   deployment_mode     = "Incremental"
 
   parameters = {
-    "functionApp" = "${azurerm_function_app.service_registry_api_function.name}"
+    "functionApp" = "${azurerm_function_app.media_repository_api_function.name}"
   }
 
   template_body = <<BODY
@@ -84,21 +84,10 @@ resource "azurerm_template_deployment" "service_registry_function_key" {
   BODY
 }
 
-locals {
-  service_registry_url  = "https://${azurerm_function_app.service_registry_api_function.default_hostname}/"
-  service_registry_key  = "${lookup(azurerm_template_deployment.service_registry_function_key.outputs, "functionkey")}"
-  services_url          = "${local.service_registry_url}services"
+output media_repository_url {
+  value = "https://${azurerm_function_app.media_repository_api_function.default_hostname}/"
 }
 
-
-output service_registry_url {
-  value = "${local.service_registry_url}"
-}
-
-output "service_registry_key" {
-  value = "${local.service_registry_key}"
-}
-
-output services_url {
-  value = "${local.services_url}"
+output "media_repository_key" {
+  value = "${lookup(azurerm_template_deployment.media_repository_function_key.outputs, "functionkey")}"
 }

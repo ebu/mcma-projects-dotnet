@@ -5,7 +5,6 @@ using Mcma.Azure.BlobStorage;
 using Mcma.Azure.BlobStorage.Proxies;
 using Mcma.Client;
 using Mcma.Core;
-using Mcma.Core.Logging;
 using Mcma.Worker;
 
 namespace Mcma.Azure.AzureAiService.Worker

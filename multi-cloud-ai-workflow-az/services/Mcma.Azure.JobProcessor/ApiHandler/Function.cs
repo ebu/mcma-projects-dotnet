@@ -57,7 +57,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                 .AddRoute(
                     HttpMethod.Post.Method,
                     "/job-processes/{id}/notifications",
-                    JobProcessRoutes.ProcessNotificationAsync(DbTableProvider, ctx => new QueueWorkerInvoker(ctx)))
+                    Notifications.Handler(DbTableProvider, ctx => new QueueWorkerInvoker(ctx)))
                 .ToAzureFunctionApiController();
 
         [FunctionName("JobProcessorApiHandler")]

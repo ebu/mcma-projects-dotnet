@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Mcma.Client;
 using Mcma.Core;
 using Mcma.Core.Context;
-using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
 using Mcma.Data;
 using Mcma.Worker;

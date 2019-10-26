@@ -61,29 +61,9 @@
             }
         ]
     },
-    "CreateProxyLambda": {
+    "CreateProxy": {
         "@type": "JobProfile",
-        "name": "CreateProxyLambda",
-        "inputParameters": [
-            {
-                "parameterName": "inputFile",
-                "parameterType": "Locator"
-            },
-            {
-                "parameterName": "outputLocation",
-                "parameterType": "Locator"
-            }
-        ],
-        "outputParameters": [
-            {
-                "parameterName": "outputFile",
-                "parameterType": "Locator"
-            }
-        ]
-    },
-    "CreateProxyEC2": {
-        "@type": "JobProfile",
-        "name": "CreateProxyEC2",
+        "name": "CreateProxy",
         "inputParameters": [
             {
                 "parameterName": "inputFile",

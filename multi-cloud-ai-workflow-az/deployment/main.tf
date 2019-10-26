@@ -62,6 +62,11 @@ module "workflows" {
   media_storage_account_name = "${module.storage.media_storage_account_name}"
   media_storage_access_key   = "${module.storage.media_storage_access_key}"
   repository_container       = "${var.repository_container}"
+  temp_container             = "${var.temp_container}"
+  
+  website_storage_account_name = "${module.storage.website_storage_account_name}"
+  website_storage_access_key   = "${module.storage.website_storage_access_key}"
+  website_container            = "${var.website_container}"
 }
 
 module "services" {

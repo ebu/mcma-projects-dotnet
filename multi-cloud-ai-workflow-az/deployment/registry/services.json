@@ -137,8 +137,7 @@
         ],
         "jobType": "TransformJob",
         "jobProfiles": [
-            "CreateProxyLambda",
-            "CreateProxyEC2"
+            "CreateProxy"
         ]
     },
     "workflow_service_url":{

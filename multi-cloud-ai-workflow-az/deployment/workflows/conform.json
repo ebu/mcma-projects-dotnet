@@ -1,0 +1,1204 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "mediaStorageConnectionId": { "type": "string" },
+        "mediaStorageAccountName": { "type": "string" },
+        "repositoryContainerName": { "type": "string" },
+        "tempContainerName": { "type": "string" },
+        "websiteStorageConnectionId": { "type": "string" },
+        "websiteStorageAccountName": { "type": "string" },
+        "websiteContainerName": { "type": "string" }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "ConformWorkflow",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "state": "Enabled",
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "azureblob-media": {
+                                "connectionId": "[parameters('mediaStorageConnectionId')]",
+                                "connectionName": "[parameters('mediaStorageAccountName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/azureblob')]"
+                            },
+                            "azureblob-website": {
+                                "connectionId": "[parameters('websiteStorageConnectionId')]",
+                                "connectionName": "[parameters('websiteStorageAccountName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/azureblob')]"
+                            }
+                        }
+                    },
+                    "mediaStorageAccountName": {
+                        "value": "[parameters('mediaStorageAccountName')]"
+                    },
+                    "repositoryContainerName": {
+                        "value": "[parameters('repositoryContainerName')]"
+                    },
+                    "tempContainerName": {
+                        "value": "[parameters('tempContainerName')]"
+                    },
+                    "websiteStorageAccountName": {
+                        "value": "[parameters('websiteStorageAccountName')]"
+                    },
+                    "websiteContainerName": {
+                        "value": "[parameters('websiteContainerName')]"
+                    }
+                },
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "actions": {
+                        "Execute": {
+                            "actions": {
+                                "GetInputFileMetadata": {
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                            }
+                                        },
+                                        "method": "get",
+                                        "path": "/datasets/default/GetFileByPath",
+                                        "queries": {
+                                            "path": "@variables('InputFilePath')",
+                                            "queryParametersSingleEncoded": true
+                                        }
+                                    },
+                                    "runAfter": {},
+                                    "type": "ApiConnection"
+                                },
+                                "IsMetadataDescriptionMissing": {
+                                    "actions": {
+                                        "AddMissingMetadataDescriptionError": {
+                                            "inputs": {
+                                                "name": "Errors",
+                                                "value": "@json('{ \"actionName\": \"IsMetadataDescriptionMissing\", \"errorMessage\": \"input.metadata.description is missing.\" }')"
+                                            },
+                                            "runAfter": {},
+                                            "type": "AppendToArrayVariable"
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@triggerBody()?['input']?['metadata']?['description']",
+                                                    null
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "runAfter": {
+                                        "IsMetadataNameMissing": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "If"
+                                },
+                                "IsMetadataNameMissing": {
+                                    "actions": {
+                                        "AddMissingMetadataNameError": {
+                                            "inputs": {
+                                                "name": "Errors",
+                                                "value": "@json('{ \"actionName\": \"IsMetadataNameMissing\", \"errorMessage\": \"input.metadata.name is missing.\" }')"
+                                            },
+                                            "runAfter": {},
+                                            "type": "AppendToArrayVariable"
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@triggerBody()?['input']?['metadata']?['name']",
+                                                    "@null"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "runAfter": {
+                                        "GetInputFileMetadata": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "If"
+                                },
+                                "PassedValidation": {
+                                    "actions": {
+                                        "CopySourceToRepositoryStorage": {
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "path": "/datasets/default/copyFile",
+                                                "queries": {
+                                                    "destination": "@{concat(parameters('repositoryContainerName'), '/', variables('RepFilePath'))}",
+                                                    "overwrite": false,
+                                                    "queryParametersSingleEncoded": true,
+                                                    "source": "@variables('InputFilePath')"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo9": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection"
+                                        },
+                                        "CreateBMContent": {
+                                            "inputs": {
+                                                "body": "@addProperty(addProperty(variables('BMContent'), 'name', triggerBody()?['input']?['metadata']?['name']), 'description', triggerBody()?['input']?['metadata']?['description'])",
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo18": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "CreateSourceEssence": {
+                                            "inputs": {
+                                                "body": "@addProperty(addProperty(addProperty(json('{ \"@type\": \"BMEssence\" }'), 'bmContent', body('CreateBMContent')?['id']), 'locations', array(variables('SourceLocator'))), 'technicalMetadata', json(base64ToString(body('GetTechnicalMetadataFromStorage').$content)))",
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "GetTechnicalMetadataFromStorage": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "DecideIfTranscodeNeeded": {
+                                            "actions": {
+                                                "SetDecideTranscodeResultNone": {
+                                                    "inputs": {
+                                                        "name": "DecideTranscodeResult",
+                                                        "value": "none"
+                                                    },
+                                                    "runAfter": {},
+                                                    "type": "SetVariable"
+                                                }
+                                            },
+                                            "else": {
+                                                "actions": {
+                                                    "IsDurationInPlaytimeFormat": {
+                                                        "actions": {
+                                                            "CheckPTDuration": {
+                                                                "actions": {
+                                                                    "SetDecideTranscodeResultPTShort": {
+                                                                        "inputs": {
+                                                                            "name": "DecideTranscodeResult",
+                                                                            "value": "short"
+                                                                        },
+                                                                        "runAfter": {},
+                                                                        "type": "SetVariable"
+                                                                    }
+                                                                },
+                                                                "else": {
+                                                                    "actions": {
+                                                                        "SetDecideTranscodeResultPTLong": {
+                                                                            "inputs": {
+                                                                                "name": "DecideTranscodeResult",
+                                                                                "value": "long"
+                                                                            },
+                                                                            "runAfter": {},
+                                                                            "type": "SetVariable"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "expression": {
+                                                                    "and": [
+                                                                        {
+                                                                            "lessOrEquals": [
+                                                                                "@float(substring(variables('TechnicalMetadata')['normalPlaytime'], 3, sub(length(variables('TechnicalMetadata')['normalPlaytime']), 5)))",
+                                                                                30
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "runAfter": {},
+                                                                "type": "If"
+                                                            }
+                                                        },
+                                                        "else": {
+                                                            "actions": {
+                                                                "CheckHHMMSSDuration": {
+                                                                    "actions": {
+                                                                        "SetDecideTranscodeResultHHMMSSShort": {
+                                                                            "inputs": {
+                                                                                "name": "DecideTranscodeResult",
+                                                                                "value": "short"
+                                                                            },
+                                                                            "runAfter": {},
+                                                                            "type": "SetVariable"
+                                                                        }
+                                                                    },
+                                                                    "else": {
+                                                                        "actions": {
+                                                                            "SetDecideTranscodeResultHHMMSSLong": {
+                                                                                "inputs": {
+                                                                                    "name": "DecideTranscodeResult",
+                                                                                    "value": "long"
+                                                                                },
+                                                                                "runAfter": {},
+                                                                                "type": "SetVariable"
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "expression": {
+                                                                        "or": [
+                                                                            {
+                                                                                "and": [
+                                                                                    {
+                                                                                        "equals": [
+                                                                                            "@length(variables('TechnicalMetadata')['normalPlaytime'])",
+                                                                                            9
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "equals": [
+                                                                                            "@variables('TechnicalMetadata')['normalPlaytime'][2]",
+                                                                                            "H"
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "lessOrEquals": [
+                                                                                            "@add(mul(integer(substring(variables('TechnicalMetadata')['normalPlaytime'], 0, 2)), 3600), add(mul(integer(substring(variables('TechnicalMetadata')['normalPlaytime'], 3, 2)), 60), integer(substring(variables('TechnicalMetadata')['normalPlaytime'], 6, 2))))",
+                                                                                            30
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "and": [
+                                                                                    {
+                                                                                        "equals": [
+                                                                                            "@length(variables('TechnicalMetadata')['normalPlaytime'])",
+                                                                                            6
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "equals": [
+                                                                                            "@variables('TechnicalMetadata')['normalPlaytime'][2]",
+                                                                                            "M"
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "lessOrEquals": [
+                                                                                            "@add(mul(integer(substring(variables('TechnicalMetadata')['normalPlaytime'], 3, 2)), 60), integer(substring(variables('TechnicalMetadata')['normalPlaytime'], 6, 2)))",
+                                                                                            30
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "and": [
+                                                                                    {
+                                                                                        "equals": [
+                                                                                            "@length(variables('TechnicalMetadata')['normalPlaytime'])",
+                                                                                            3
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "equals": [
+                                                                                            "@variables('TechnicalMetadata')['normalPlaytime'][2]",
+                                                                                            "S"
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "lessOrEquals": [
+                                                                                            "@integer(substring(variables('TechnicalMetadata')['normalPlaytime'], 6, 2))",
+                                                                                            30
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    "runAfter": {},
+                                                                    "type": "If"
+                                                                }
+                                                            }
+                                                        },
+                                                        "expression": {
+                                                            "and": [
+                                                                {
+                                                                    "startsWith": [
+                                                                        "@variables('TechnicalMetadata')['normalPlayTime']",
+                                                                        "PT("
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "endsWith": [
+                                                                        "@variables('TechnicalMetadata')['normalPlayTime']",
+                                                                        ")S"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        "runAfter": {},
+                                                        "type": "If"
+                                                    }
+                                                }
+                                            },
+                                            "expression": {
+                                                "and": [
+                                                    {
+                                                        "or": [
+                                                            {
+                                                                "equals": [
+                                                                    "@variables('TechnicalMetadata')['codec']",
+                                                                    "mp42"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "equals": [
+                                                                    "@variables('TechnicalMetadata')['codec']",
+                                                                    "isom"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "equals": [
+                                                            "@variables('TechnicalMetadata')['format']",
+                                                            "AVC"
+                                                        ]
+                                                    },
+                                                    {
+                                                        "lessOrEquals": [
+                                                            "@float(variables('TechnicalMetadata')['bitRate'])",
+                                                            "@mul(mul(mul(2, 1024), 1024), 8)"
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "runAfter": {
+                                                "SetTechnicalMetadataVar": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "If"
+                                        },
+                                        "GetExtractTechnicalMetadataProfile": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=ExtractTechnicalMetadata')}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo27": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetTechnicalMetadataFromStorage": {
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "get",
+                                                "path": "/datasets/default/GetFileContentByPath",
+                                                "queries": {
+                                                    "inferContentType": true,
+                                                    "path": "@{concat(body('RunExtractTechnicalMetadataAmeJob')?['jobOutput']?['outputFile']?['container'], '/', body('RunExtractTechnicalMetadataAmeJob')?['jobOutput']?['outputFile']?['filePath'])}",
+                                                    "queryParametersSingleEncoded": true
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo36": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection"
+                                        },
+                                        "RunAiWorkflowJob": {
+                                            "inputs": {
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo90": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "RunExtractTechnicalMetadataAmeJob": {
+                                            "inputs": {
+                                                "subscribe": {
+                                                    "body": "@addProperty(addProperty(addProperty(json('{ \"@type\": \"AmeJob\" }'), 'jobProfile', body('GetExtractTechnicalMetadataProfile')?[0]?['id']), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('SourceLocator')), 'outputLocation', addProperty(addProperty(addProperty(json('{ \"@type\": \"BlobStorageFolderLocator\" }'), 'storageAccountName', parameters('mediaStorageAccountName')), 'container', parameters('repositoryContainerName')), 'folderPath', 'AmeJobResults'))), 'notificationEndpoint', json(concat('{ \"httpEndpoint\": \"', listCallbackUrl(), '\" }')))",
+                                                    "method": "POST",
+                                                    "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                },
+                                                "unsubscribe": {}
+                                            },
+                                            "runAfter": {
+                                                "GetExtractTechnicalMetadataProfile": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "HttpWebhook"
+                                        },
+                                        "SetTechnicalMetadataVar": {
+                                            "inputs": {
+                                                "name": "TechnicalMetadata",
+                                                "value": "@addProperty(addProperty(addProperty(addProperty(json('{}'), 'normalPlayTime', body('CreateSourceEssence')?['technicalMetadata']?['ebucore:ebuCoreMain']?['ebucore:coreMetadata']?[0]?['ebucore:format']?[0]?['ebucore:duration']?[0]?['ebucore:normalPlayTime']?[0]?['#value']), 'codec', body('CreateSourceEssence')?['technicalMetadata']?['ebucore:ebuCoreMain']?['ebucore:coreMetadata']?[0]?['ebucore:format']?[0]?['ebucore:containerFormat']?[0]?['ebucore:codec']?[0]?['ebucore:codecIdentifier']?[0]?['dc:identifier']?[0]?['#value']), 'bitRate', body('CreateSourceEssence')?['technicalMetadata']?['ebucore:ebuCoreMain']?['ebucore:coreMetadata']?[0]?['ebucore:format']?[0]?['ebucore:videoFormat']?[0]?['ebucore:bitRate']?[0]?['#value'] ), 'format', body('CreateSourceEssence')?['technicalMetadata']?['ebucore:ebuCoreMain']?['ebucore:coreMetadata']?[0]?['ebucore:format']?[0]?['ebucore:videoFormat']?[0]?['@videoFormatName'])"
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo45": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "SetVariable"
+                                        },
+                                        "TranscodeIfNecessary": {
+                                            "cases": {
+                                                "Long": {
+                                                    "actions": {},
+                                                    "case": "long"
+                                                },
+                                                "Short": {
+                                                    "actions": {
+                                                        "GetCreateProxyProfile": {
+                                                            "inputs": {
+                                                                "method": "GET",
+                                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=CreateProxy')}"
+                                                            },
+                                                            "runAfter": {
+                                                                "UpdateProgressTo54": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type": "Http"
+                                                        },
+                                                        "RunCreateProxyTransformJob": {
+                                                            "inputs": {
+                                                                "subscribe": {
+                                                                    "body": "@addProperty(addProperty(addProperty(json('{ \"@type\": \"TransformJob\" }'), 'jobProfile', body('GetCreateProxyProfile')?[0]?['id']), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('SourceLocator')), 'outputLocation', addProperty(addProperty(addProperty(json('{ \"@type\": \"BlobStorageFolderLocator\" }'), 'storageAccountName', parameters('mediaStorageAccountName')), 'container', parameters('repositoryContainerName')), 'folderPath', 'TransformJobResults'))), 'notificationEndpoint', json(concat('{ \"httpEndpoint\": \"', listCallbackUrl(), '\" }')))",
+                                                                    "method": "POST",
+                                                                    "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                                },
+                                                                "unsubscribe": {}
+                                                            },
+                                                            "runAfter": {
+                                                                "GetCreateProxyProfile": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type": "HttpWebhook"
+                                                        },
+                                                        "SetProxyLocatorVar": {
+                                                            "inputs": {
+                                                                "name": "ProxyLocator",
+                                                                "value": "@body('RunCreateProxyTransformJob')?['jobOutput']?['outputFile']"
+                                                            },
+                                                            "runAfter": {
+                                                                "RunCreateProxyTransformJob": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type": "SetVariable"
+                                                        },
+                                                        "UpdateProgressTo54": {
+                                                            "inputs": {
+                                                                "body": {
+                                                                    "progress": 54,
+                                                                    "status": "Running"
+                                                                },
+                                                                "method": "POST",
+                                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                                            },
+                                                            "runAfter": {},
+                                                            "type": "Http"
+                                                        }
+                                                    },
+                                                    "case": "short"
+                                                }
+                                            },
+                                            "default": {
+                                                "actions": {}
+                                            },
+                                            "expression": "@variables('DecideTranscodeResult')",
+                                            "runAfter": {
+                                                "DecideIfTranscodeNeeded": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Switch"
+                                        },
+                                        "UpdateProgressTo18": {
+                                            "inputs": {
+                                                "body": {
+                                                    "progress": 18,
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "CopySourceToRepositoryStorage": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateProgressTo27": {
+                                            "inputs": {
+                                                "body": {
+                                                    "progress": 27,
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "CreateBMContent": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateProgressTo36": {
+                                            "inputs": {
+                                                "body": {
+                                                    "progress": 36,
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "RunExtractTechnicalMetadataAmeJob": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateProgressTo45": {
+                                            "inputs": {
+                                                "body": {
+                                                    "progress": 45,
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "CreateSourceEssence": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateProgressTo63": {
+                                            "inputs": {
+                                                "body": {
+                                                    "progress": 63,
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "TranscodeIfNecessary": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateProgressTo81": {
+                                            "inputs": {
+                                                "body": {
+                                                    "progress": 81,
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "WasProxyGenerated": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateProgressTo9": {
+                                            "inputs": {
+                                                "body": {
+                                                    "progress": 9,
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {},
+                                            "type": "Http"
+                                        },
+                                        "UpdateProgressTo90": {
+                                            "inputs": {
+                                                "body": {
+                                                    "progress": 90,
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo81": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "WasProxyGenerated": {
+                                            "actions": {
+                                                "AddWebsiteLocatorToProxyEssence": {
+                                                    "inputs": {
+                                                        "method": "POST",
+                                                        "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                    },
+                                                    "runAfter": {
+                                                        "CreateProxyBlobInWebsiteStorage": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "Http"
+                                                },
+                                                "CreateProxyBlobInWebsiteStorage": {
+                                                    "inputs": {
+                                                        "body": "@body('GetProxyBlobContent')",
+                                                        "host": {
+                                                            "connection": {
+                                                                "name": "@parameters('$connections')['azureblob-website']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method": "post",
+                                                        "path": "/datasets/default/files",
+                                                        "queries": {
+                                                            "folderPath": "@{concat(variables('WebsiteLocator')['container'], '/', substring(variables('WebsiteLocator')['filePath'], 0, lastIndexOf(variables('WebsiteLocator')['filePath'], '/')))}",
+                                                            "name": "@{substring(variables('WebsiteLocator')['filePath'], add(lastIndexOf(variables('WebsiteLocator')['filePath'], '/'), 1))}",
+                                                            "queryParametersSingleEncoded": true
+                                                        }
+                                                    },
+                                                    "runAfter": {
+                                                        "GetProxyBlobContent": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "runtimeConfiguration": {
+                                                        "contentTransfer": {
+                                                            "transferMode": "Chunked"
+                                                        }
+                                                    },
+                                                    "type": "ApiConnection"
+                                                },
+                                                "CreateProxyEssence": {
+                                                    "inputs": {
+                                                        "body": "@addProperty(addProperty(json('{ \"@type\": \"BMEssence\" }'), 'bmContent', body('CreateBMContent')?['id']), 'locations', array(variables('ProxyLocator')))",
+                                                        "method": "POST",
+                                                        "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                    },
+                                                    "runAfter": {},
+                                                    "type": "Http"
+                                                },
+                                                "GetProxyBlobContent": {
+                                                    "inputs": {
+                                                        "host": {
+                                                            "connection": {
+                                                                "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method": "get",
+                                                        "path": "/datasets/default/GetFileContentByPath",
+                                                        "queries": {
+                                                            "inferContentType": true,
+                                                            "path": "@{concat(variables('ProxyLocator')['container'], '/', variables('ProxyLocator')['filePath'])}",
+                                                            "queryParametersSingleEncoded": true
+                                                        }
+                                                    },
+                                                    "runAfter": {
+                                                        "UpdateProgressTo72": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "ApiConnection"
+                                                },
+                                                "UpdateProgressTo72": {
+                                                    "inputs": {
+                                                        "body": {
+                                                            "progress": 72,
+                                                            "status": "Running"
+                                                        },
+                                                        "method": "POST",
+                                                        "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                                    },
+                                                    "runAfter": {
+                                                        "CreateProxyEssence": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "Http"
+                                                }
+                                            },
+                                            "else": {
+                                                "actions": {
+                                                    "AddWebsiteLocatorToSourceEssence": {
+                                                        "inputs": {
+                                                            "method": "POST",
+                                                            "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                        },
+                                                        "runAfter": {
+                                                            "CreateRepBlobInWebsiteStorage": [
+                                                                "Succeeded"
+                                                            ]
+                                                        },
+                                                        "type": "Http"
+                                                    },
+                                                    "CreateRepBlobInWebsiteStorage": {
+                                                        "inputs": {
+                                                            "body": "@body('GetRepBlobContent')",
+                                                            "host": {
+                                                                "connection": {
+                                                                    "name": "@parameters('$connections')['azureblob-website']['connectionId']"
+                                                                }
+                                                            },
+                                                            "method": "post",
+                                                            "path": "/datasets/default/files",
+                                                            "queries": {
+                                                                "folderPath": "@{concat(variables('WebsiteLocator')['container'], '/', substring(variables('WebsiteLocator')['filePath'], 0, lastIndexOf(variables('WebsiteLocator')['filePath'], '/')))}",
+                                                                "name": "@{substring(variables('WebsiteLocator')['filePath'], add(lastIndexOf(variables('WebsiteLocator')['filePath'], '/'), 1))}",
+                                                                "queryParametersSingleEncoded": true
+                                                            }
+                                                        },
+                                                        "runAfter": {
+                                                            "GetRepBlobContent": [
+                                                                "Succeeded"
+                                                            ]
+                                                        },
+                                                        "runtimeConfiguration": {
+                                                            "contentTransfer": {
+                                                                "transferMode": "Chunked"
+                                                            }
+                                                        },
+                                                        "type": "ApiConnection"
+                                                    },
+                                                    "GetRepBlobContent": {
+                                                        "inputs": {
+                                                            "host": {
+                                                                "connection": {
+                                                                    "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                                }
+                                                            },
+                                                            "method": "get",
+                                                            "path": "/datasets/default/GetFileContentByPath",
+                                                            "queries": {
+                                                                "inferContentType": true,
+                                                                "path": "@{concat(variables('SourceLocator')['container'], '/', variables('SourceLocator')['filePath'])}",
+                                                                "queryParametersSingleEncoded": true
+                                                            }
+                                                        },
+                                                        "runAfter": {},
+                                                        "type": "ApiConnection"
+                                                    }
+                                                }
+                                            },
+                                            "expression": {
+                                                "and": [
+                                                    {
+                                                        "not": {
+                                                            "equals": [
+                                                                "@variables('ProxyLocator')",
+                                                                "@null"
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo63": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "If"
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@length(variables('Errors'))",
+                                                    0
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "runAfter": {
+                                        "IsMetadataDescriptionMissing": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "If"
+                                }
+                            },
+                            "runAfter": {
+                                "InitializeWebsiteLocatorVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Scope"
+                        },
+                        "HandleErrors": {
+                            "actions": {
+                                "Compose": {
+                                    "inputs": "@union(variables('Errors'), body('SelectActionErrors'))",
+                                    "runAfter": {
+                                        "SelectActionErrors": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose"
+                                },
+                                "FilterForFailedActions": {
+                                    "inputs": {
+                                        "from": "@result('Execute')",
+                                        "where": "@and(equals(item()['status'], 'Failed'), notEquals(item()['outputs']?['body'], null))"
+                                    },
+                                    "runAfter": {},
+                                    "type": "Query"
+                                },
+                                "SelectActionErrors": {
+                                    "inputs": {
+                                        "from": "@body('FilterForFailedActions')",
+                                        "select": "@addProperty(item()['outputs']['body'], 'actionName', item()['name'])"
+                                    },
+                                    "runAfter": {
+                                        "FilterForFailedActions": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Select"
+                                },
+                                "Set_variable": {
+                                    "inputs": {
+                                        "name": "Errors",
+                                        "value": "@outputs('Compose')"
+                                    },
+                                    "runAfter": {
+                                        "Compose": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "SetVariable"
+                                }
+                            },
+                            "runAfter": {
+                                "Execute": [
+                                    "Failed"
+                                ]
+                            },
+                            "type": "Scope"
+                        },
+                        "HasErrors": {
+                            "actions": {
+                                "NotifyOnError": {
+                                    "inputs": {
+                                        "body": "@concat('{ \"status\": \"Failed\", \"errors\": ', variables('Errors'), ' }')",
+                                        "method": "POST",
+                                        "uri": "@triggerBody()?['notificationEndpoint']"
+                                    },
+                                    "runAfter": {},
+                                    "type": "Http"
+                                }
+                            },
+                            "else": {
+                                "actions": {
+                                    "NotifyOnSuccess": {
+                                        "inputs": {
+                                            "body": {
+                                                "progress": "100",
+                                                "status": "COMPLETED"
+                                            },
+                                            "method": "POST",
+                                            "uri": "@triggerBody()?['notificationEndpoint']"
+                                        },
+                                        "runAfter": {},
+                                        "type": "Http"
+                                    }
+                                }
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "not": {
+                                            "equals": [
+                                                "@variables('Errors')",
+                                                null
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "greater": [
+                                            "@length(variables('Errors'))",
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "HandleErrors": [
+                                    "Succeeded",
+                                    "Skipped"
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "InitializeBMContentVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "BMContent",
+                                        "type": "Object",
+                                        "value": "@json('{ \"@type\": \"BMContent\", \"awsAiMetadata\": {}, \"azureAiMetadata\": {} }')"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeRepFilePathVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeDecideTranscodeResultVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "DecideTranscodeResult",
+                                        "type": "String"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeTechnicalMetadataVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeErrorsVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "Errors",
+                                        "type": "Array",
+                                        "value": "@json('[]')"
+                                    }
+                                ]
+                            },
+                            "runAfter": {},
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeInputFilePathVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "InputFilePath",
+                                        "type": "String",
+                                        "value": "@{concat(triggerBody()?['input']?['inputFile']?['container'], '/', triggerBody()?['input']?['inputFile']?['filePath'])}"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeErrorsVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeProxyLocatorVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "ProxyLocator",
+                                        "type": "Object"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeDecideTranscodeResultVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeRepFilePathVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "RepFilePath",
+                                        "type": "String",
+                                        "value": "@{concat(formatDateTime(utcNow(), 'yyMMdd'), '/', guid(), if(greaterOrEquals(lastIndexOf(variables('InputFilePath'), '.'), 0), substring(variables('InputFilePath'), lastIndexOf(variables('InputFilePath'), '.')), ''))}"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeInputFilePathVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeSourceLocatorVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "SourceLocator",
+                                        "type": "Object",
+                                        "value": "@json(concat('{ \"@type\": \"BlobStorageFileLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('repositoryContainerName'), '\", \"filePath\": \"', variables('RepFilePath'), '\" }'))"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeBMContentVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeTechnicalMetadataVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "TechnicalMetadata",
+                                        "type": "Object",
+                                        "value": "@json('{}')"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeSourceLocatorVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeWebsiteLocatorVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "WebsiteLocator",
+                                        "type": "Object",
+                                        "value": "@json(concat('{ \"@type\": \"BlobStorageFileLocator\", \"storageAccountName\": \"', parameters('websiteStorageAccountName'), '\", \"container\": \"', parameters('websiteContainerName'), '\", \"filePath\": \"media/', guid(), '.mp4\" }'))"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeProxyLocatorVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        }
+                    },
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "mediaStorageAccountName": {
+                            "type": "String"
+                        },
+                        "repositoryContainerName": {
+                            "type": "String"
+                        },
+                        "tempContainerName": {
+                            "type": "String"
+                        },
+                        "websiteStorageAccountName": {
+                            "type": "String"
+                        },
+                        "websiteContainerName": {
+                            "type": "String"
+                        }
+                    },
+                    "triggers": {
+                        "HttpTrigger": {
+                            "inputs": {
+                                "schema": {
+                                    "properties": {
+                                        "input": {
+                                            "properties": {
+                                                "@@type": {
+                                                    "type": "string"
+                                                },
+                                                "inputFile": {
+                                                    "properties": {
+                                                        "@@type": {
+                                                            "type": "string"
+                                                        },
+                                                        "container": {
+                                                            "type": "string"
+                                                        },
+                                                        "filePath": {
+                                                            "type": "string"
+                                                        },
+                                                        "storageAccountName": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "metadata": {
+                                                    "properties": {
+                                                        "@@type": {
+                                                            "type": "string"
+                                                        },
+                                                        "description": {
+                                                            "type": "string"
+                                                        },
+                                                        "title": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "jobProfilesEndpoint": {
+                                            "type": "string"
+                                        },
+                                        "notificationEndpoint": {
+                                            "type": "string"
+                                        },
+                                        "resourceEndpoint": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "kind": "Http",
+                            "type": "Request"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

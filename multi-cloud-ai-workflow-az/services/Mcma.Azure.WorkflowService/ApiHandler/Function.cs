@@ -35,14 +35,7 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
                     HttpMethod.Post,
                     "/job-assignments/{id}/notifications",
                     Notifications.Handler(DbTableProvider, reqCtx => new QueueWorkerInvoker(reqCtx)))
-                .AddAdditionalRoute(
-                    HttpMethod.Post,
-                    "/resources",
-                    Resources.ResourceHandler(ResourceManagerProvider))
-                .AddAdditionalRoute(
-                    HttpMethod.Post,
-                    "/resource-notifications",
-                    Resources.ResourceNotificationHandler())
+                .AddAdditionalRoutes(ResourceRoutes.Get(ResourceManagerProvider))
                 .Build()
                 .ToAzureFunctionApiController();
 

@@ -153,3 +153,11 @@ output "media_storage_access_key" {
 output "upload_container_sas" {
   value ="${data.azurerm_storage_account_sas.upload_container_sas.sas}"
 }
+
+output "website_storage_account_name" {
+  value = "${azurerm_storage_account.website_storage_account.name}"
+}
+
+output "website_storage_access_key" {
+  value = "${azurerm_storage_account.website_storage_account.primary_access_key}"
+}

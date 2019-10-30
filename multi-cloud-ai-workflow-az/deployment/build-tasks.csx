@@ -4,7 +4,7 @@
 #load "../build/terraform.csx"
 //#load "./registry/register.csx"
 
-#r "nuget:Mcma.Azure.Client, 0.5.5.56"
+#r "nuget:Mcma.Azure.Client, 0.5.5.57"
 
 using System.IO;
 using System.Security.Cryptography;

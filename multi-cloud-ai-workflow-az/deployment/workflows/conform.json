@@ -55,6 +55,27 @@
                     "actions": {
                         "Execute": {
                             "actions": {
+                                "BuildErrorsObjectInternal": {
+                                    "inputs": "@union(variables('Errors'), body('SelectActionErrorsInternal'))",
+                                    "runAfter": {
+                                        "SelectActionErrorsInternal": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose"
+                                },
+                                "FilterForFailedActionsInternal": {
+                                    "inputs": {
+                                        "from": "@result('PassedValidation')",
+                                        "where": "@and(equals(item()['status'], 'Failed'), or(not(equals(item()?['outputs']?['body'], null)), not(equals(item()?['error'], null))))"
+                                    },
+                                    "runAfter": {
+                                        "PassedValidation": [
+                                            "Failed"
+                                        ]
+                                    },
+                                    "type": "Query"
+                                },
                                 "GetInputFileMetadata": {
                                     "inputs": {
                                         "host": {
@@ -130,6 +151,19 @@
                                 },
                                 "PassedValidation": {
                                     "actions": {
+                                        "AddSourceEssenceToBMContent": {
+                                            "inputs": {
+                                                "body": "@setProperty(body('CreateBMContent'), 'bmEssences', union(body('CreateBMContent')?['bmEssences'], createArray(body('CreateSourceEssence')?['id'])))",
+                                                "method": "PUT",
+                                                "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "CreateSourceEssence": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
                                         "CopySourceToRepositoryStorage": {
                                             "inputs": {
                                                 "host": {
@@ -391,6 +425,18 @@
                                             },
                                             "type": "If"
                                         },
+                                        "GetAiWorkflowProfile": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AiWorkflow')}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateProgressTo90": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
                                         "GetExtractTechnicalMetadataProfile": {
                                             "inputs": {
                                                 "method": "GET",
@@ -427,11 +473,12 @@
                                         },
                                         "RunAiWorkflowJob": {
                                             "inputs": {
+                                                "body": "@addProperty(addProperty(json('{ \"@type\": \"WorkflowJob\" }'), 'jobProfile', body('GetAiWorkflowProfile')?[0]?['id']), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'bmContent', body('CreateBMContent')?['id']), 'bmEssence', variables('AiWorkflowInputEssenceId')))",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
                                             },
                                             "runAfter": {
-                                                "UpdateProgressTo90": [
+                                                "GetAiWorkflowProfile": [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -540,6 +587,19 @@
                                             },
                                             "type": "Switch"
                                         },
+                                        "UpdateOutputs": {
+                                            "inputs": {
+                                                "body": "@json(concat('{ \"progress\": 99, \"status\": \"Running\", \"output\": { \"aiEssence\": \"', variables('AiWorkflowInputEssenceId'), '\", \"workflowJobId\": \"', body('RunAiWorkflowJob')?['id'], '\" } }'))",
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "RunAiWorkflowJob": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
                                         "UpdateProgressTo18": {
                                             "inputs": {
                                                 "body": {
@@ -558,10 +618,7 @@
                                         },
                                         "UpdateProgressTo27": {
                                             "inputs": {
-                                                "body": {
-                                                    "progress": 27,
-                                                    "status": "Running"
-                                                },
+                                                "body": "@json(concat('{ \"progress\": 27, \"status\": \"Running\", \"output\": { \"bmContent\": \"', body('CreateBMContent')?['id'], '\" } }'))",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['notificationEndpoint']}"
                                             },
@@ -598,7 +655,7 @@
                                                 "uri": "@{triggerBody()?['notificationEndpoint']}"
                                             },
                                             "runAfter": {
-                                                "CreateSourceEssence": [
+                                                "AddSourceEssenceToBMContent": [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -615,22 +672,6 @@
                                             },
                                             "runAfter": {
                                                 "TranscodeIfNecessary": [
-                                                    "Succeeded"
-                                                ]
-                                            },
-                                            "type": "Http"
-                                        },
-                                        "UpdateProgressTo81": {
-                                            "inputs": {
-                                                "body": {
-                                                    "progress": 81,
-                                                    "status": "Running"
-                                                },
-                                                "method": "POST",
-                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
-                                            },
-                                            "runAfter": {
-                                                "WasProxyGenerated": [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -658,7 +699,7 @@
                                                 "uri": "@{triggerBody()?['notificationEndpoint']}"
                                             },
                                             "runAfter": {
-                                                "UpdateProgressTo81": [
+                                                "WasProxyGenerated": [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -666,13 +707,27 @@
                                         },
                                         "WasProxyGenerated": {
                                             "actions": {
-                                                "AddWebsiteLocatorToProxyEssence": {
+                                                "AddProxyEssenceToBMContent": {
                                                     "inputs": {
-                                                        "method": "POST",
+                                                        "body": "@setProperty(body('AddSourceEssenceToBMContent'), 'locations', union(body('AddSourceEssenceToBMContent')?['locations'], createArray(body('CreateProxyEssence')?['id'])))",
+                                                        "method": "PUT",
                                                         "uri": "@{triggerBody()?['resourceEndpoint']}"
                                                     },
                                                     "runAfter": {
-                                                        "CreateProxyBlobInWebsiteStorage": [
+                                                        "CreateProxyEssence": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "Http"
+                                                },
+                                                "AddWebsiteLocatorToProxyEssence": {
+                                                    "inputs": {
+                                                        "body": "@setProperty(body('CreateProxyEssence'), 'locators', union(body('CreateProxyEssence')['locations'], createArray(variables('WebsiteLocator'))))",
+                                                        "method": "PUT",
+                                                        "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                    },
+                                                    "runAfter": {
+                                                        "UpdateProgressTo81Proxy": [
                                                             "Succeeded"
                                                         ]
                                                     },
@@ -737,6 +792,18 @@
                                                     },
                                                     "type": "ApiConnection"
                                                 },
+                                                "SetAiWorkflowInputEssenceIdToProxy": {
+                                                    "inputs": {
+                                                        "name": "AiWorkflowInputEssenceId",
+                                                        "value": "@{body('AddWebsiteLocatorToProxyEssence')?['id']}"
+                                                    },
+                                                    "runAfter": {
+                                                        "AddWebsiteLocatorToProxyEssence": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "SetVariable"
+                                                },
                                                 "UpdateProgressTo72": {
                                                     "inputs": {
                                                         "body": {
@@ -747,7 +814,23 @@
                                                         "uri": "@{triggerBody()?['notificationEndpoint']}"
                                                     },
                                                     "runAfter": {
-                                                        "CreateProxyEssence": [
+                                                        "AddProxyEssenceToBMContent": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "Http"
+                                                },
+                                                "UpdateProgressTo81Proxy": {
+                                                    "inputs": {
+                                                        "body": {
+                                                            "progress": 81,
+                                                            "status": "Running"
+                                                        },
+                                                        "method": "POST",
+                                                        "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                                    },
+                                                    "runAfter": {
+                                                        "CreateProxyBlobInWebsiteStorage": [
                                                             "Succeeded"
                                                         ]
                                                     },
@@ -758,11 +841,12 @@
                                                 "actions": {
                                                     "AddWebsiteLocatorToSourceEssence": {
                                                         "inputs": {
-                                                            "method": "POST",
+                                                            "body": "@setProperty(body('CreateSourceEssence'), 'locations', union(body('CreateSourceEssence')['locations'], createArray(variables('WebsiteLocator'))))",
+                                                            "method": "PUT",
                                                             "uri": "@{triggerBody()?['resourceEndpoint']}"
                                                         },
                                                         "runAfter": {
-                                                            "CreateRepBlobInWebsiteStorage": [
+                                                            "UpdateProgressTo81Source": [
                                                                 "Succeeded"
                                                             ]
                                                         },
@@ -813,6 +897,34 @@
                                                         },
                                                         "runAfter": {},
                                                         "type": "ApiConnection"
+                                                    },
+                                                    "SetAiWorkflowInputEssenceIdToSource": {
+                                                        "inputs": {
+                                                            "name": "AiWorkflowInputEssenceId",
+                                                            "value": "@{body('AddWebsiteLocatorToSourceEssence')?['id']}"
+                                                        },
+                                                        "runAfter": {
+                                                            "AddWebsiteLocatorToSourceEssence": [
+                                                                "Succeeded"
+                                                            ]
+                                                        },
+                                                        "type": "SetVariable"
+                                                    },
+                                                    "UpdateProgressTo81Source": {
+                                                        "inputs": {
+                                                            "body": {
+                                                                "progress": 81,
+                                                                "status": "Running"
+                                                            },
+                                                            "method": "POST",
+                                                            "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                                        },
+                                                        "runAfter": {
+                                                            "CreateRepBlobInWebsiteStorage": [
+                                                                "Succeeded"
+                                                            ]
+                                                        },
+                                                        "type": "Http"
                                                     }
                                                 }
                                             },
@@ -852,10 +964,34 @@
                                         ]
                                     },
                                     "type": "If"
+                                },
+                                "SelectActionErrorsInternal": {
+                                    "inputs": {
+                                        "from": "@body('FilterForFailedActionsInternal')",
+                                        "select": "@addProperty(coalesce(item()?['outputs']?['body'], item()?['error']), 'actionName', item()['name'])"
+                                    },
+                                    "runAfter": {
+                                        "FilterForFailedActionsInternal": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Select"
+                                },
+                                "SetErrorsVarInternal": {
+                                    "inputs": {
+                                        "name": "Errors",
+                                        "value": "@outputs('BuildErrorsObjectInternal')"
+                                    },
+                                    "runAfter": {
+                                        "BuildErrorsObjectInternal": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "SetVariable"
                                 }
                             },
                             "runAfter": {
-                                "InitializeWebsiteLocatorVar": [
+                                "InitializeAiWorkflowInputEssenceIdVar": [
                                     "Succeeded"
                                 ]
                             },
@@ -863,7 +999,7 @@
                         },
                         "HandleErrors": {
                             "actions": {
-                                "Compose": {
+                                "BuildErrorsObject": {
                                     "inputs": "@union(variables('Errors'), body('SelectActionErrors'))",
                                     "runAfter": {
                                         "SelectActionErrors": [
@@ -875,7 +1011,7 @@
                                 "FilterForFailedActions": {
                                     "inputs": {
                                         "from": "@result('Execute')",
-                                        "where": "@and(equals(item()['status'], 'Failed'), notEquals(item()['outputs']?['body'], null))"
+                                        "where": "@and(equals(item()['status'], 'Failed'), or(not(equals(item()?['outputs']?['body'], null)), not(equals(item()?['error'], null))))"
                                     },
                                     "runAfter": {},
                                     "type": "Query"
@@ -883,7 +1019,7 @@
                                 "SelectActionErrors": {
                                     "inputs": {
                                         "from": "@body('FilterForFailedActions')",
-                                        "select": "@addProperty(item()['outputs']['body'], 'actionName', item()['name'])"
+                                        "select": "@addProperty(coalesce(item()?['outputs']?['body'], item()?['error']), 'actionName', item()['name'])"
                                     },
                                     "runAfter": {
                                         "FilterForFailedActions": [
@@ -892,13 +1028,13 @@
                                     },
                                     "type": "Select"
                                 },
-                                "Set_variable": {
+                                "SetErrorsVar": {
                                     "inputs": {
                                         "name": "Errors",
-                                        "value": "@outputs('Compose')"
+                                        "value": "@outputs('BuildErrorsObject')"
                                     },
                                     "runAfter": {
-                                        "Compose": [
+                                        "BuildErrorsObject": [
                                             "Succeeded"
                                         ]
                                     },
@@ -914,6 +1050,17 @@
                         },
                         "HasErrors": {
                             "actions": {
+                                "FailWorkflow": {
+                                    "inputs": {
+                                        "runStatus": "Failed"
+                                    },
+                                    "runAfter": {
+                                        "NotifyOnError": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Terminate"
+                                },
                                 "NotifyOnError": {
                                     "inputs": {
                                         "body": "@concat('{ \"status\": \"Failed\", \"errors\": ', variables('Errors'), ' }')",
@@ -965,6 +1112,22 @@
                                 ]
                             },
                             "type": "If"
+                        },
+                        "InitializeAiWorkflowInputEssenceIdVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "AiWorkflowInputEssenceId",
+                                        "type": "String"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeWebsiteLocatorVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
                         },
                         "InitializeBMContentVar": {
                             "inputs": {
@@ -1129,10 +1292,10 @@
                         "tempContainerName": {
                             "type": "String"
                         },
-                        "websiteStorageAccountName": {
+                        "websiteContainerName": {
                             "type": "String"
                         },
-                        "websiteContainerName": {
+                        "websiteStorageAccountName": {
                             "type": "String"
                         }
                     },

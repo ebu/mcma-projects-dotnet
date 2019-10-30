@@ -4,7 +4,6 @@
 #load "build/path-helper.csx"
 
 #load "services/build-tasks.csx"
-#load "workflows/build-tasks.csx"
 #load "website/build-tasks.csx"
 #load "deployment/build-tasks.csx"
 #load "deployment/registry/register.csx"
@@ -29,11 +28,10 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     Terraform.Path = PathHelper.Where(Terraform.Path);
 }
 
-public static readonly IBuildTask BuildAll = new AggregateTask(BuildServices, BuildWorkflows, BuildWebsite);
+public static readonly IBuildTask BuildAll = new AggregateTask(BuildServices, BuildWebsite);
 public static readonly IBuildTask BuildAllSln = new AggregateTask(DotNetCli.Publish("."), BuildServicesSln);//, BuildWorkflowsSln, BuildWebsite);
 
 Build.Tasks["buildServices"] = BuildServices;
-Build.Tasks["buildWorkflows"] = BuildWorkflows;
 Build.Tasks["buildWebsite"] = BuildWebsite;
 //Build.Tasks["build"] = BuildAll;
 Build.Tasks["build"] = BuildAllSln;
@@ -41,9 +39,7 @@ Build.Tasks["deployNoBuild"] = Deploy;
 Build.Tasks["deploy"] = new AggregateTask(BuildAllSln, Deploy);
 Build.Tasks["destroy"] = Destroy;
 Build.Tasks["register"] = new UpdateServiceRegistry();
-// Build.Tasks["unregister"] = new ClearServiceRegistry();
 Build.Tasks["tfOutput"] = new RetrieveTerraformOutput();
-//Build.Tasks["generateAwsCreds"] = new GenerateAwsCredentialsJson();
 Build.Tasks["generateTfVars"] = new GenerateTerraformTfVars();
 Build.Tasks["generateWebsiteTf"] = new GenerateTerraformWebsiteTf();
 Build.Tasks["plan"] = Plan;

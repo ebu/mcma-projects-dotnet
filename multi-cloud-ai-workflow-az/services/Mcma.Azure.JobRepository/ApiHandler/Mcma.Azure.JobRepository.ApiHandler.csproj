@@ -8,12 +8,12 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Mcma.Azure.BlobStorage" Version="0.5.5.56" />
-    <PackageReference Include="Mcma.Azure.CosmosDb" Version="0.5.5.56" />
-    <PackageReference Include="Mcma.Azure.Functions.Api" Version="0.5.5.56" />
-    <PackageReference Include="Mcma.Azure.Functions.Configuration" Version="0.5.5.56" />
-    <PackageReference Include="Mcma.Azure.Functions.Logging" Version="0.5.5.56" />
-    <PackageReference Include="Mcma.Core" Version="0.5.5.56" />
+    <PackageReference Include="Mcma.Azure.BlobStorage" Version="0.5.5.57" />
+    <PackageReference Include="Mcma.Azure.CosmosDb" Version="0.5.5.57" />
+    <PackageReference Include="Mcma.Azure.Functions.Api" Version="0.5.5.57" />
+    <PackageReference Include="Mcma.Azure.Functions.Configuration" Version="0.5.5.57" />
+    <PackageReference Include="Mcma.Azure.Functions.Logging" Version="0.5.5.57" />
+    <PackageReference Include="Mcma.Core" Version="0.5.5.57" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.29" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>

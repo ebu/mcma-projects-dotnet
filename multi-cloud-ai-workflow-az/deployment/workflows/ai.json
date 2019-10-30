@@ -1,0 +1,920 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "mediaStorageConnectionId": { "type": "string" },
+        "mediaStorageAccountName": { "type": "string" },
+        "repositoryContainerName": { "type": "string" },
+        "tempContainerName": { "type": "string" },
+        "websiteStorageConnectionId": { "type": "string" },
+        "websiteStorageAccountName": { "type": "string" },
+        "websiteContainerName": { "type": "string" }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "AiWorkflow",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "state": "Enabled",
+                "parameters": {
+                    "$connections": {
+                        "value": {
+                            "azureblob-media": {
+                                "connectionId": "[parameters('mediaStorageConnectionId')]",
+                                "connectionName": "[parameters('mediaStorageAccountName')]",
+                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/azureblob')]"
+                            }
+                        }
+                    },
+                    "mediaStorageAccountName": {
+                        "value": "[parameters('mediaStorageAccountName')]"
+                    },
+                    "repositoryContainerName": {
+                        "value": "[parameters('repositoryContainerName')]"
+                    },
+                    "tempContainerName": {
+                        "value": "[parameters('tempContainerName')]"
+                    },
+                    "websiteStorageAccountName": {
+                        "value": "[parameters('websiteStorageAccountName')]"
+                    },
+                    "websiteContainerName": {
+                        "value": "[parameters('websiteContainerName')]"
+                    }
+                },
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "actions": {
+                        "Execute": {
+                            "actions": {
+                                "BuildErrorsObjectInternal": {
+                                    "inputs": "@union(variables('Errors'), body('SelectActionErrorsInternal'))",
+                                    "runAfter": {
+                                        "SelectActionErrorsInternal": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose"
+                                },
+                                "FilterForFailedActionsInternal": {
+                                    "inputs": {
+                                        "from": "@result('PassedValidation')",
+                                        "where": "@and(equals(item()['status'], 'Failed'), or(not(equals(item()?['outputs']?['body'], null)), not(equals(item()?['error'], null))))"
+                                    },
+                                    "runAfter": {
+                                        "PassedValidation": [
+                                            "Failed"
+                                        ]
+                                    },
+                                    "type": "Query"
+                                },
+                                "IsBMContentMissing": {
+                                    "actions": {
+                                        "AddMissingBMContentError": {
+                                            "inputs": {
+                                                "name": "Errors",
+                                                "value": "@json('{ \"actionName\": \"IsBMContentMissing\", \"errorMessage\": \"input.bmContent is missing.\" }')"
+                                            },
+                                            "runAfter": {},
+                                            "type": "AppendToArrayVariable"
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@triggerBody()?['input']?['bmContent']",
+                                                    "@null"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "runAfter": {},
+                                    "type": "If"
+                                },
+                                "IsBMEssenceMissing": {
+                                    "actions": {
+                                        "AddMissingBMEssenceError": {
+                                            "inputs": {
+                                                "name": "Errors",
+                                                "value": "@json('{ \"actionName\": \"IsBMEssenceMissing\", \"errorMessage\": \"input.bmEssence is missing.\" }')"
+                                            },
+                                            "runAfter": {},
+                                            "type": "AppendToArrayVariable"
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@triggerBody()?['input']?['bmEssence']",
+                                                    "@null"
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "runAfter": {
+                                        "IsBMContentMissing": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "If"
+                                },
+                                "PassedValidation": {
+                                    "actions": {
+                                        "FilterForMediaFileLocator": {
+                                            "inputs": {
+                                                "from": "@body('GetBMEssence')?['locations']",
+                                                "where": "@equals(item()['storageAccountName'], parameters('mediaStorageAccountName'))"
+                                            },
+                                            "runAfter": {
+                                                "GetBMEssence": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Query"
+                                        },
+                                        "GetAwsDetectCelebritiesJobProfile": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AWSDetectCelebrities')}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateCelebritiesAwsProgressTo20": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetAwsTranscribeAudioJobProfile": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AWSTranscribeAudio')}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateSpeechTranslateProgressTo20": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetAwsTranslateTextJobProfile": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AWSTranslateText')}"
+                                            },
+                                            "runAfter": {
+                                                "WriteTranscriptToBlobStorage": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetAzureExtractAllAiMetadataJobProfile": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['notificationEndpoint'], '&name=AzureExtractAllAIMetadata')}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateCelebritiesAzureProgressTo20": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetBMContent": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
+                                            },
+                                            "runAfter": {},
+                                            "type": "Http"
+                                        },
+                                        "GetBMContentForAwsCelebritiesUpdate": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', body('GetBMContent')?['id'])}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateCelebritiesAwsProgressTo80": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetBMContentForAzureAiMetadataUpdate": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', body('GetBMContent')?['id'])}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateCelebritiesAzureProgressTo80": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetBMContentForTranscriptionUpdate": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
+                                            },
+                                            "runAfter": {
+                                                "SelectTranscriptsInTranscriptionOutput": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetBMContentForTranslationUpdate": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
+                                            },
+                                            "runAfter": {
+                                                "GetTranslationOutput": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetBMEssence": {
+                                            "inputs": {
+                                                "method": "GET",
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMEssence&resourceId=', triggerBody()?['input']?['bmEssence'])}"
+                                            },
+                                            "runAfter": {
+                                                "GetBMContent": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "GetTranscriptionOutput": {
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "get",
+                                                "path": "/datasets/default/GetFileContentByPath",
+                                                "queries": {
+                                                    "inferContentType": true,
+                                                    "path": "@{concat(body('RunAwsTranscribeAudioAIJob')?['jobOutput']?['outputFile']?['container'], '/', body('RunAwsTranscribeAudioAIJob')?['jobOutput']?['outputFile']?['filePath'])}",
+                                                    "queryParametersSingleEncoded": true
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "UpdateSpeechTranslateProgressTo40": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection"
+                                        },
+                                        "GetTranslationOutput": {
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "get",
+                                                "path": "/datasets/default/GetFileContentByPath",
+                                                "queries": {
+                                                    "inferContentType": true,
+                                                    "path": "@{concat(body('RunAwsTranslateTextAiJob')?['jobOutput']?['outputFile']?['container'], '/', body('RunAwsTranslateTextAiJob')?['jobOutput']?['outputFile']?['filePath'])}",
+                                                    "queryParametersSingleEncoded": true
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "UpdateSpeechTranslateProgressTo80": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection"
+                                        },
+                                        "RunAwsDetectCelebritiesAIJob": {
+                                            "inputs": {
+                                                "subscribe": {
+                                                    "method": "POST",
+                                                    "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                },
+                                                "unsubscribe": {}
+                                            },
+                                            "runAfter": {
+                                                "GetAwsDetectCelebritiesJobProfile": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "HttpWebhook"
+                                        },
+                                        "RunAwsTranscribeAudioAIJob": {
+                                            "inputs": {
+                                                "subscribe": {
+                                                    "body": "@addProperty(addProperty(json(concat('{ \"@type\": \"AIJob\", \"jobProfile\": \"', body('GetAwsTranscribeAudioJobProfile')?[0]?['id'], '\" }')), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('MediaFileLocator')), 'outputLocation', json(concat('{ \"@type\": \"BlobStorageFolderLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"folderPath\": \"AIJobResults\" }')))), 'notificationEndpoint', json(concat('{ \"@type\": \"NotificationEndpoint\", \"httpEndpoint\": \"', listCallbackURL(), '\" }')))",
+                                                    "method": "POST",
+                                                    "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                },
+                                                "unsubscribe": {}
+                                            },
+                                            "runAfter": {
+                                                "GetAwsTranscribeAudioJobProfile": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "HttpWebhook"
+                                        },
+                                        "RunAwsTranslateTextAiJob": {
+                                            "inputs": {
+                                                "subscribe": {
+                                                    "body": "@addProperty(addProperty(json(concat('{ \"@type\": \"AIJob\", \"jobProfile\": \"', body('GetAwsTranslateTextJobProfile')?[0]?['id'], '\" }')), 'jobInput', addProperty(addProperty(json(concat('{ \"@type\": \"JobParameterBag\", \"targetLanguageCode\": \"ja\" }')), 'outputLocation', json(concat('{ \"@type\": \"BlobStorageFolderLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"folderPath\": \"AIResults\" }'))), 'inputFile', json(concat('{ \"@type\": \"BlobStorageFileLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"filePath\": \"AIInput/', actions('WriteTranscriptToBlobStorage')?['inputs']?['queries']?['name'], '\" }')))), 'notificationEndpoint', json(concat('{ \"@type\": \"NotificationEndpoint\", \"httpEndpoint\": \"', listCallbackURL(), '\" }')))",
+                                                    "method": "POST",
+                                                    "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                },
+                                                "unsubscribe": {}
+                                            },
+                                            "runAfter": {
+                                                "GetAwsTranslateTextJobProfile": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "HttpWebhook"
+                                        },
+                                        "RunAzureExtractAllAiMetadataJob": {
+                                            "inputs": {
+                                                "subscribe": {
+                                                    "method": "POST",
+                                                    "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                                },
+                                                "unsubscribe": {}
+                                            },
+                                            "runAfter": {
+                                                "GetAzureExtractAllAiMetadataJobProfile": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "HttpWebhook"
+                                        },
+                                        "SelectTranscriptsInTranscriptionOutput": {
+                                            "inputs": {
+                                                "from": "@json(base64ToString(body('GetTranscriptionOutput')?['$content']))?['results']?['transcripts']",
+                                                "select": "@item()?['transcript']"
+                                            },
+                                            "runAfter": {
+                                                "GetTranscriptionOutput": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Select"
+                                        },
+                                        "SetMediaFileLocatorVar": {
+                                            "inputs": {
+                                                "name": "MediaFileLocator",
+                                                "value": "@first(body('FilterForMediaFileLocator'))"
+                                            },
+                                            "runAfter": {
+                                                "FilterForMediaFileLocator": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "SetVariable"
+                                        },
+                                        "UpdateBMContentWithAwsCelebritiesOutput": {
+                                            "inputs": {
+                                                "method": "PUT",
+                                                "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "GetBMContentForAwsCelebritiesUpdate": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateBMContentWithAzureAiMetadataOutput": {
+                                            "inputs": {
+                                                "method": "PUT",
+                                                "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "GetBMContentForAzureAiMetadataUpdate": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateBMContentWithTranscription": {
+                                            "inputs": {
+                                                "body": "@setProperty(body('GetBMContentForTranscriptionUpdate'), 'awsAiMetadata', addProperty(body('GetBMContentForTranscriptionUpdate')?['awsAiMetadata'], 'transcription', addProperty(json('{}'), 'original', join(body('SelectTranscriptsInTranscriptionOutput'), ''))))",
+                                                "method": "PUT",
+                                                "uri": "@triggerBody()?['resourceEndpoint']"
+                                            },
+                                            "runAfter": {
+                                                "GetBMContentForTranscriptionUpdate": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateBMContentWithTranslation": {
+                                            "inputs": {
+                                                "body": "@setProperty(body('GetBMContentForTranscriptionUpdate'), 'awsAiMetadata', setProperty(body('GetBMContentForTranscriptionUpdate')?['awsAiMetadata'], 'transcription', addProperty(body('GetBMContentForTranslationUpdate')?['awsAiMetadata']?['transcription'], 'translation', body('GetTranslationOutput'))))",
+                                                "method": "PUT",
+                                                "uri": "@{triggerBody()?['resourceEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "GetBMContentForTranslationUpdate": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateCelebritiesAwsProgressTo100": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "detect-celebrities-aws": 100
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateBMContentWithAwsCelebritiesOutput": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateCelebritiesAwsProgressTo20": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "detect-celebrities-aws": 20
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "SetMediaFileLocatorVar": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateCelebritiesAwsProgressTo80": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "detect-celebrities-aws": 80
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "RunAwsDetectCelebritiesAIJob": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateCelebritiesAzureProgressTo100": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "detect-celebrities-azure": 100
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateBMContentWithAzureAiMetadataOutput": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateCelebritiesAzureProgressTo20": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "detect-celebrities-azure": 20
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "SetMediaFileLocatorVar": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateCelebritiesAzureProgressTo80": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "detect-celebrities-azure": 80
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "RunAzureExtractAllAiMetadataJob": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateSpeechTranslateProgressTo100": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "speech-text-translate": 100
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateBMContentWithTranslation": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateSpeechTranslateProgressTo20": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "speech-text-translate": 20
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "SetMediaFileLocatorVar": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateSpeechTranslateProgressTo40": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "speech-text-translate": 40
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "RunAwsTranscribeAudioAIJob": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateSpeechTranslateProgressTo60": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "speech-text-translate": 60
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "UpdateBMContentWithTranscription": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "UpdateSpeechTranslateProgressTo80": {
+                                            "inputs": {
+                                                "body": {
+                                                    "parallelProgress": {
+                                                        "speech-text-translate": 80
+                                                    },
+                                                    "status": "Running"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@{triggerBody()?['notificationEndpoint']}"
+                                            },
+                                            "runAfter": {
+                                                "RunAwsTranslateTextAiJob": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "WriteTranscriptToBlobStorage": {
+                                            "inputs": {
+                                                "body": "@join(body('SelectTranscriptsInTranscriptionOutput'), '')",
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "path": "/datasets/default/files",
+                                                "queries": {
+                                                    "folderPath": "@{concat(parameters('tempContainerName'), '/AIInput')}",
+                                                    "name": "@{concat(guid(), '.txt')}",
+                                                    "queryParametersSingleEncoded": true
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "UpdateSpeechTranslateProgressTo60": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "runtimeConfiguration": {
+                                                "contentTransfer": {
+                                                    "transferMode": "Chunked"
+                                                }
+                                            },
+                                            "type": "ApiConnection"
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@length(variables('Errors'))",
+                                                    0
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "runAfter": {
+                                        "IsBMEssenceMissing": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "If"
+                                },
+                                "SelectActionErrorsInternal": {
+                                    "inputs": {
+                                        "from": "@body('FilterForFailedActionsInternal')",
+                                        "select": "@addProperty(coalesce(item()?['outputs']?['body'], item()?['error']), 'actionName', item()['name'])"
+                                    },
+                                    "runAfter": {
+                                        "FilterForFailedActionsInternal": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Select"
+                                },
+                                "SetErrorsVarInternal": {
+                                    "inputs": {
+                                        "name": "Errors",
+                                        "value": "@outputs('BuildErrorsObjectInternal')"
+                                    },
+                                    "runAfter": {
+                                        "BuildErrorsObjectInternal": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "SetVariable"
+                                }
+                            },
+                            "runAfter": {
+                                "InitializeMediaFileLocatorVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Scope"
+                        },
+                        "HandleErrors": {
+                            "actions": {
+                                "BuildErrorsObject": {
+                                    "inputs": "@union(variables('Errors'), body('SelectActionErrors'))",
+                                    "runAfter": {
+                                        "SelectActionErrors": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Compose"
+                                },
+                                "FilterForFailedActions": {
+                                    "inputs": {
+                                        "from": "@result('Execute')",
+                                        "where": "@and(equals(item()['status'], 'Failed'), or(not(equals(item()?['outputs']?['body'], null)), not(equals(item()?['error'], null))))"
+                                    },
+                                    "runAfter": {},
+                                    "type": "Query"
+                                },
+                                "SelectActionErrors": {
+                                    "inputs": {
+                                        "from": "@body('FilterForFailedActions')",
+                                        "select": "@addProperty(coalesce(item()?['outputs']?['body'], item()?['error']), 'actionName', item()['name'])"
+                                    },
+                                    "runAfter": {
+                                        "FilterForFailedActions": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Select"
+                                },
+                                "SetErrorsVar": {
+                                    "inputs": {
+                                        "name": "Errors",
+                                        "value": "@outputs('BuildErrorsObject')"
+                                    },
+                                    "runAfter": {
+                                        "BuildErrorsObject": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "SetVariable"
+                                }
+                            },
+                            "runAfter": {
+                                "Execute": [
+                                    "Failed"
+                                ]
+                            },
+                            "type": "Scope"
+                        },
+                        "HasErrors": {
+                            "actions": {
+                                "FailWorkflow": {
+                                    "inputs": {
+                                        "runStatus": "Failed"
+                                    },
+                                    "runAfter": {
+                                        "NotifyOnError": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Terminate"
+                                },
+                                "NotifyOnError": {
+                                    "inputs": {
+                                        "body": "@concat('{ \"status\": \"Failed\", \"errors\": ', variables('Errors'), ' }')",
+                                        "method": "POST",
+                                        "uri": "@triggerBody()?['notificationEndpoint']"
+                                    },
+                                    "runAfter": {},
+                                    "type": "Http"
+                                }
+                            },
+                            "else": {
+                                "actions": {
+                                    "NotifyOnSuccess": {
+                                        "inputs": {
+                                            "body": {
+                                                "progress": "100",
+                                                "status": "COMPLETED"
+                                            },
+                                            "method": "POST",
+                                            "uri": "@triggerBody()?['notificationEndpoint']"
+                                        },
+                                        "runAfter": {},
+                                        "type": "Http"
+                                    }
+                                }
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "not": {
+                                            "equals": [
+                                                "@variables('Errors')",
+                                                null
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "greater": [
+                                            "@length(variables('Errors'))",
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "HandleErrors": [
+                                    "Succeeded",
+                                    "Skipped"
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "InitializeErrorsVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "Errors",
+                                        "type": "Array",
+                                        "value": "@json('[]')"
+                                    }
+                                ]
+                            },
+                            "runAfter": {},
+                            "type": "InitializeVariable"
+                        },
+                        "InitializeMediaFileLocatorVar": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "MediaFileLocator",
+                                        "type": "Object"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "InitializeErrorsVar": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        }
+                    },
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "mediaStorageAccountName": {
+                            "type": "String"
+                        },
+                        "repositoryContainerName": {
+                            "type": "String"
+                        },
+                        "tempContainerName": {
+                            "type": "String"
+                        },
+                        "websiteContainerName": {
+                            "type": "String"
+                        },
+                        "websiteStorageAccountName": {
+                            "type": "String"
+                        }
+                    },
+                    "triggers": {
+                        "HttpTrigger": {
+                            "inputs": {
+                                "schema": {
+                                    "properties": {
+                                        "input": {
+                                            "properties": {
+                                                "@@type": {
+                                                    "type": "string"
+                                                },
+                                                "bmContent": {
+                                                    "type": "string"
+                                                },
+                                                "bmEssence": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "jobProfilesEndpoint": {
+                                            "type": "string"
+                                        },
+                                        "notificationEndpoint": {
+                                            "type": "string"
+                                        },
+                                        "resourceEndpoint": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "kind": "Http",
+                            "type": "Request"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

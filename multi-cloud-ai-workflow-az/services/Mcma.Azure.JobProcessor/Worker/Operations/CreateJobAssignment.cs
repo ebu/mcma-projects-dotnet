@@ -67,7 +67,7 @@ namespace Mcma.Azure.JobProcessor.Worker
 
                     if (service.JobType == job.Type)
                     {
-                        jobAssignmentResourceEndpoint = serviceClient.GetResourceEndpoint<JobAssignment>();
+                        jobAssignmentResourceEndpoint = serviceClient.GetResourceEndpointClient<JobAssignment>();
                         
                         if (jobAssignmentResourceEndpoint == null)
                             continue;

@@ -18,7 +18,7 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
 
         private const string WorkflowCallbackUrlParamName = "workflowCallbackUrl";
 
-        private static (Type, object) GetResourceAndType(McmaApiRequestContext requestContext)
+        private static (Type, McmaResource) GetResourceAndType(McmaApiRequestContext requestContext)
         {
             var resourceJson = requestContext.GetRequestBodyJson();
 
@@ -36,15 +36,15 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
                 return (null, null);
             }
 
-            return (resourceType, resourceJson.ToMcmaObject(resourceType));
+            return (resourceType, (McmaResource) resourceJson.ToMcmaObject(resourceType));
         }
 
         public static McmaApiRouteCollection Get(IResourceManagerProvider resourceManagerProvider) =>
             new McmaApiRouteCollection()
                 .AddRoute(HttpMethod.Post, "/resources", CreateResourceHandler(resourceManagerProvider))
-                .AddRoute(HttpMethod.Get, "/resources/{resourceType}", ResolveResourceHandler(resourceManagerProvider))
+                .AddRoute(HttpMethod.Get, "/resources", ResolveResourceHandler(resourceManagerProvider))
                 .AddRoute(HttpMethod.Put, "/resources", UpdateResourceHandler(resourceManagerProvider))
-                .AddRoute(HttpMethod.Post, "/resources/notifications", ResourceNotificationHandler());
+                .AddRoute(HttpMethod.Post, "/resource-notifications", ResourceNotificationHandler());
 
         private static Func<McmaApiRequestContext, Task> CreateResourceHandler(IResourceManagerProvider resourceManagerProvider)
             =>
@@ -62,7 +62,7 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
 
                 var resourceManager = resourceManagerProvider.Get(requestContext.Variables);
                 
-                var resource = await resourceManager.CreateResourceAsync(resourceType, resourceToCreate);
+                var resource = await resourceManager.CreateAsync(resourceType, resourceToCreate);
 
                 requestContext.SetResponseResourceCreated(resource);
             };
@@ -72,13 +72,13 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
             async requestContext =>
             {
                 var resourceTypeName =
-                    !requestContext.Request.PathVariables.ContainsKey("resourceType")
-                        ? requestContext.Request.PathVariables["resourceType"]?.ToString()
+                    requestContext.Request.QueryStringParameters.ContainsKey("resourceType")
+                        ? requestContext.Request.QueryStringParameters["resourceType"]
                         : null;
                 
                 if (string.IsNullOrWhiteSpace(resourceTypeName))
                 {
-                    requestContext.SetResponseResourceNotFound();
+                    requestContext.SetResponseStatusCode(HttpStatusCode.BadRequest, "Resource type not specified.");
                     return;
                 }
 
@@ -90,8 +90,8 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
                 }
 
                 var resourceId =
-                    requestContext.Request.QueryStringParameters.ContainsKey("resourceUrl")
-                        ? Uri.UnescapeDataString(requestContext.Request.QueryStringParameters["resourceUrl"])
+                    requestContext.Request.QueryStringParameters.ContainsKey("resourceId")
+                        ? Uri.UnescapeDataString(requestContext.Request.QueryStringParameters["resourceId"])
                         : null;
 
                 if (string.IsNullOrWhiteSpace(resourceId))
@@ -102,7 +102,7 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
 
                 var resourceManager = resourceManagerProvider.Get(requestContext.Variables);
 
-                requestContext.SetResponseBody(await resourceManager.CreateResourceAsync(resourceType, resourceId));
+                requestContext.SetResponseBody(await resourceManager.ResolveAsync(resourceType, resourceId));
             };
         
         private static Func<McmaApiRequestContext, Task> UpdateResourceHandler(IResourceManagerProvider resourceManagerProvider)
@@ -115,7 +115,7 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
 
                 var resourceManager = resourceManagerProvider.Get(requestContext.Variables);
                 
-                requestContext.SetResponseBody(await resourceManager.UpdateResourceAsync(resourceType, resourceToCreate));
+                requestContext.SetResponseBody(await resourceManager.UpdateAsync(resourceType, resourceToCreate));
             };
 
         private static Func<McmaApiRequestContext, Task> ResourceNotificationHandler()

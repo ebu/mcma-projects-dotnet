@@ -11,6 +11,7 @@ using Mcma.Client;
 using Mcma.Azure.BlobStorage;
 using Mcma.Core.Serialization;
 using Mcma.Azure.BlobStorage.Proxies;
+using System.Collections.Generic;
 
 namespace Mcma.Azure.AwsAiService.Worker
 {
@@ -58,12 +59,14 @@ namespace Mcma.Azure.AwsAiService.Worker
                 {
                     case "StartCelebrityRecognition":
                         using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Variables.AwsCredentials(), jobHelper.Variables.AwsRegion()))
-                            data = await rekognitionClient.GetCelebrityRecognitionAsync(new GetCelebrityRecognitionRequest
-                            {
-                                JobId = rekoJobId, /* required */
-                                MaxResults = 1000000,
-                                SortBy = "TIMESTAMP"
-                            });
+                            data =
+                                ProcessCelebrityRecognitionResponse(
+                                    await rekognitionClient.GetCelebrityRecognitionAsync(new GetCelebrityRecognitionRequest
+                                    {
+                                        JobId = rekoJobId, /* required */
+                                        MaxResults = 1000000,
+                                        SortBy = "TIMESTAMP"
+                                    }));
                         break;
 
                     case "StartLabelDetection":
@@ -100,6 +103,33 @@ namespace Mcma.Azure.AwsAiService.Worker
                     jobHelper.Logger.Exception(innerEx);
                 }
             }
+        }
+
+        private static object ProcessCelebrityRecognitionResponse(GetCelebrityRecognitionResponse celebritiesResult)
+        {
+            var celebrityRecognitionList = new List<CelebrityRecognition>();
+            var lastRecognitions = new Dictionary<string, long>();
+
+            foreach (var celebrity in celebritiesResult.Celebrities)
+            {
+                // get the timestamp of the last time we hit a recognition for this celebrity (if any)
+                var lastRecognized = lastRecognitions.ContainsKey(celebrity.Celebrity.Name) ? lastRecognitions[celebrity.Celebrity.Name] : default(long?);
+
+                // we only want recognitions at 3 second intervals, and only when the confidence is at least 50%
+                if ((!lastRecognized.HasValue || celebrity.Timestamp - lastRecognized.Value > 3000) && celebrity.Celebrity.Confidence > 50)
+                {
+                    // mark the timestamp of the last recognition for this celebrity
+                    lastRecognitions[celebrity.Celebrity.Name] = celebrity.Timestamp;
+
+                    // add to the list that we actually want to store
+                    celebrityRecognitionList.Add(celebrity);
+                }
+            }
+
+            // store the filtered results back on the original object
+            celebritiesResult.Celebrities = celebrityRecognitionList;
+
+            return celebritiesResult;
         }
     }
 }

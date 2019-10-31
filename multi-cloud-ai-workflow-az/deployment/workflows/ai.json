@@ -137,6 +137,28 @@
                                             },
                                             "type": "Query"
                                         },
+                                        "GetAwsCelebritiesOutput": {
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "get",
+                                                "path": "/datasets/default/GetFileContentByPath",
+                                                "queries": {
+                                                    "inferContentType": true,
+                                                    "path": "@{concat(body('RunAwsDetectCelebritiesAIJob')?['jobOutput']?['outputFile']?['container'], '/', body('RunAwsDetectCelebritiesAIJob')?['jobOutput']?['outputFile']?['filePath'])}",
+                                                    "queryParametersSingleEncoded": true
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "UpdateCelebritiesAwsProgressTo80": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection"
+                                        },
                                         "GetAwsDetectCelebritiesJobProfile": {
                                             "inputs": {
                                                 "method": "GET",
@@ -173,10 +195,32 @@
                                             },
                                             "type": "Http"
                                         },
+                                        "GetAzureAiMetadataOutput": {
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['azureblob-media']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "get",
+                                                "path": "/datasets/default/GetFileContentByPath",
+                                                "queries": {
+                                                    "inferContentType": true,
+                                                    "path": "@{concat(body('RunAzureExtractAllAiMetadataJob')?['jobOutput']?['outputFile']?['container'], '/', body('RunAzureExtractAllAiMetadataJob')?['jobOutput']?['outputFile']?['filePath'])}",
+                                                    "queryParametersSingleEncoded": true
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "UpdateCelebritiesAzureProgressTo80": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "ApiConnection"
+                                        },
                                         "GetAzureExtractAllAiMetadataJobProfile": {
                                             "inputs": {
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['notificationEndpoint'], '&name=AzureExtractAllAIMetadata')}"
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AzureExtractAllAIMetadata')}"
                                             },
                                             "runAfter": {
                                                 "UpdateCelebritiesAzureProgressTo20": [
@@ -199,7 +243,7 @@
                                                 "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', body('GetBMContent')?['id'])}"
                                             },
                                             "runAfter": {
-                                                "UpdateCelebritiesAwsProgressTo80": [
+                                                "GetAwsCelebritiesOutput": [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -211,7 +255,7 @@
                                                 "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', body('GetBMContent')?['id'])}"
                                             },
                                             "runAfter": {
-                                                "UpdateCelebritiesAzureProgressTo80": [
+                                                "GetAzureAiMetadataOutput": [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -300,6 +344,7 @@
                                         "RunAwsDetectCelebritiesAIJob": {
                                             "inputs": {
                                                 "subscribe": {
+                                                    "body": "@addProperty(addProperty(json(concat('{ \"@type\": \"AIJob\", \"jobProfile\": \"', body('GetAwsDetectCelebritiesJobProfile')?[0]?['id'], '\" }')), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('MediaFileLocator')), 'outputLocation', json(concat('{ \"@type\": \"BlobStorageFolderLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"folderPath\": \"AIJobResults\" }')))), 'notificationEndpoint', json(concat('{ \"@type\": \"NotificationEndpoint\", \"httpEndpoint\": \"', listCallbackURL(), '\" }')))",
                                                     "method": "POST",
                                                     "uri": "@{triggerBody()?['resourceEndpoint']}"
                                                 },
@@ -347,6 +392,7 @@
                                         "RunAzureExtractAllAiMetadataJob": {
                                             "inputs": {
                                                 "subscribe": {
+                                                    "body": "@addProperty(addProperty(json(concat('{ \"@type\": \"AIJob\", \"jobProfile\": \"', body('GetAzureExtractAllAiMetadataJobProfile')?[0]?['id'], '\" }')), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('MediaFileLocator')), 'outputLocation', json(concat('{ \"@type\": \"BlobStorageFolderLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"folderPath\": \"AIJobResults\" }')))), 'notificationEndpoint', json(concat('{ \"@type\": \"NotificationEndpoint\", \"httpEndpoint\": \"', listCallbackURL(), '\" }')))",
                                                     "method": "POST",
                                                     "uri": "@{triggerBody()?['resourceEndpoint']}"
                                                 },
@@ -385,6 +431,7 @@
                                         },
                                         "UpdateBMContentWithAwsCelebritiesOutput": {
                                             "inputs": {
+                                                "body": "@setProperty(body('GetBMContentForAwsCelebritiesUpdate'), 'awsAiMetadata', addProperty(body('GetBMContentForAwsCelebritiesUpdate')?['awsAiMetadata'], 'celebrities', json(base64ToString(body('GetAwsCelebritiesOutput')?['$content']))))",
                                                 "method": "PUT",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
                                             },
@@ -397,6 +444,7 @@
                                         },
                                         "UpdateBMContentWithAzureAiMetadataOutput": {
                                             "inputs": {
+                                                "body": "@setProperty(body('GetBMContentForAzureAiMetadataUpdate'), 'azureAiMetadata', json(base64ToString(body('GetAzureAiMetadataOutput')?['$content'])))",
                                                 "method": "PUT",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
                                             },

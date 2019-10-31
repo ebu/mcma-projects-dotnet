@@ -39,8 +39,13 @@ namespace Mcma.Azure.WorkflowService.Worker
                 jobAssignment.Progress = workflowStatePayload.Progress;
 
             if (workflowStatePayload.Output != null)
+            {
+                if (jobAssignment.JobOutput == null)
+                    jobAssignment.JobOutput = new JobParameterBag();
+
                 foreach (var output in workflowStatePayload.Output)
                     jobAssignment.JobOutput[output.Key] = output.Value;
+            }
 
             jobAssignment.DateModified = DateTime.UtcNow;
 

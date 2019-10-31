@@ -425,6 +425,18 @@
                                             },
                                             "type": "If"
                                         },
+                                        "FilterForWebsiteLocator": {
+                                            "inputs": {
+                                                "from": "@variables('AiWorkflowInputEssence')['locations']",
+                                                "where": "@equals(item()['storageAccountName'], parameters('websiteStorageAccountName'))"
+                                            },
+                                            "runAfter": {
+                                                "RunAiWorkflowJob": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Query"
+                                        },
                                         "GetAiWorkflowProfile": {
                                             "inputs": {
                                                 "method": "GET",
@@ -473,7 +485,7 @@
                                         },
                                         "RunAiWorkflowJob": {
                                             "inputs": {
-                                                "body": "@addProperty(addProperty(json('{ \"@type\": \"WorkflowJob\" }'), 'jobProfile', body('GetAiWorkflowProfile')?[0]?['id']), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'bmContent', body('CreateBMContent')?['id']), 'bmEssence', variables('AiWorkflowInputEssenceId')))",
+                                                "body": "@addProperty(addProperty(json('{ \"@type\": \"WorkflowJob\" }'), 'jobProfile', body('GetAiWorkflowProfile')?[0]?['id']), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'bmContent', body('CreateBMContent')?['id']), 'bmEssence', variables('AiWorkflowInputEssence')['id']))",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
                                             },
@@ -589,12 +601,12 @@
                                         },
                                         "UpdateOutputs": {
                                             "inputs": {
-                                                "body": "@json(concat('{ \"progress\": 99, \"status\": \"Running\", \"output\": { \"aiEssence\": \"', variables('AiWorkflowInputEssenceId'), '\", \"workflowJobId\": \"', body('RunAiWorkflowJob')?['id'], '\" } }'))",
+                                                "body": "@addProperty(json('{ \"progress\": 99, \"status\": \"Running\" }'), 'output', addProperty(json(concat('{ \"aiWorkflow\": \"', body('RunAiWorkflowJob')?['id'], '\", \"bmContent\": \"', body('CreateBMContent')['id'], '\" }')), 'websiteMediaFile', body('FilterForWebsiteLocator')[0]))",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['notificationEndpoint']}"
                                             },
                                             "runAfter": {
-                                                "RunAiWorkflowJob": [
+                                                "FilterForWebsiteLocator": [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -792,10 +804,10 @@
                                                     },
                                                     "type": "ApiConnection"
                                                 },
-                                                "SetAiWorkflowInputEssenceIdToProxy": {
+                                                "SetAiWorkflowInputEssenceToProxy": {
                                                     "inputs": {
-                                                        "name": "AiWorkflowInputEssenceId",
-                                                        "value": "@{body('AddWebsiteLocatorToProxyEssence')?['id']}"
+                                                        "name": "AiWorkflowInputEssence",
+                                                        "value": "@body('AddWebsiteLocatorToProxyEssence')"
                                                     },
                                                     "runAfter": {
                                                         "AddWebsiteLocatorToProxyEssence": [
@@ -852,9 +864,9 @@
                                                         },
                                                         "type": "Http"
                                                     },
-                                                    "CreateRepBlobInWebsiteStorage": {
+                                                    "CreateSourceBlobInWebsiteStorage": {
                                                         "inputs": {
-                                                            "body": "@body('GetRepBlobContent')",
+                                                            "body": "@body('GetSourceBlobContent')",
                                                             "host": {
                                                                 "connection": {
                                                                     "name": "@parameters('$connections')['azureblob-website']['connectionId']"
@@ -869,7 +881,7 @@
                                                             }
                                                         },
                                                         "runAfter": {
-                                                            "GetRepBlobContent": [
+                                                            "GetSourceBlobContent": [
                                                                 "Succeeded"
                                                             ]
                                                         },
@@ -880,7 +892,7 @@
                                                         },
                                                         "type": "ApiConnection"
                                                     },
-                                                    "GetRepBlobContent": {
+                                                    "GetSourceBlobContent": {
                                                         "inputs": {
                                                             "host": {
                                                                 "connection": {
@@ -898,10 +910,10 @@
                                                         "runAfter": {},
                                                         "type": "ApiConnection"
                                                     },
-                                                    "SetAiWorkflowInputEssenceIdToSource": {
+                                                    "SetAiWorkflowInputEssenceToSource": {
                                                         "inputs": {
-                                                            "name": "AiWorkflowInputEssenceId",
-                                                            "value": "@{body('AddWebsiteLocatorToSourceEssence')?['id']}"
+                                                            "name": "AiWorkflowInputEssence",
+                                                            "value": "@body('AddWebsiteLocatorToSourceEssence')"
                                                         },
                                                         "runAfter": {
                                                             "AddWebsiteLocatorToSourceEssence": [
@@ -920,7 +932,7 @@
                                                             "uri": "@{triggerBody()?['notificationEndpoint']}"
                                                         },
                                                         "runAfter": {
-                                                            "CreateRepBlobInWebsiteStorage": [
+                                                            "CreateSourceBlobInWebsiteStorage": [
                                                                 "Succeeded"
                                                             ]
                                                         },
@@ -991,7 +1003,7 @@
                                 }
                             },
                             "runAfter": {
-                                "InitializeAiWorkflowInputEssenceIdVar": [
+                                "InitializeAiWorkflowInputEssenceVar": [
                                     "Succeeded"
                                 ]
                             },
@@ -1113,12 +1125,12 @@
                             },
                             "type": "If"
                         },
-                        "InitializeAiWorkflowInputEssenceIdVar": {
+                        "InitializeAiWorkflowInputEssenceVar": {
                             "inputs": {
                                 "variables": [
                                     {
-                                        "name": "AiWorkflowInputEssenceId",
-                                        "type": "String"
+                                        "name": "AiWorkflowInputEssence",
+                                        "type": "Object"
                                     }
                                 ]
                             },

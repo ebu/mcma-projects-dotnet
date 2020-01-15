@@ -1,278 +1,140 @@
 #load "../../build/task.csx"
 #load "../../build/build.csx"
 
+#load "./terraform-output.csx"
+#load "./service-registry-populator.csx"
+#load "./website-config-uploader.csx"
+#load "./storage-api-version-setter.csx"
+
 #r "nuget:Newtonsoft.Json, 11.0.2"
-#r "nuget:Mcma.Core, 0.5.5.57"
-#r "nuget:Mcma.Client, 0.5.5.57"
-#r "nuget:Mcma.Azure.Client, 0.5.5.57"
+#r "nuget:Mcma.Core, 0.8.6-beta1"
+#r "nuget:Mcma.Client, 0.8.6-beta1"
+#r "nuget:Mcma.Azure.Client, 0.8.6-beta1"
 
 using System;
-using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Identity.Client;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+using Mcma.Azure.Client;
+using Mcma.Azure.Client.AzureAd;
 using Mcma.Core;
 using Mcma.Core.Serialization;
 using Mcma.Client;
-using Mcma.Azure.Client;
 
 public class UpdateServiceRegistry : BuildTask
 {
-    private static readonly JObject Services = JObject.Parse(File.ReadAllText("./deployment/registry/services.json"));
+    public UpdateServiceRegistry()
+    {
+        ServiceRegistryPopulator = new ServiceRegistryPopulator(TerraformOutput);
+        WebsiteConfigUploader = new WebsiteConfigUploader(TerraformOutput);
+        StorageApiVersionSetter = new StorageApiVersionSetter(TerraformOutput);
+    }
 
-    private static readonly JObject JobProfiles = JObject.Parse(File.ReadAllText("./deployment/registry/profiles.json"));
+    private IResourceManagerProvider ResourceManagerProvider { get; } =
+        new ResourceManagerProvider(
+            new AuthProvider().AddAzureAdConfidentialClientAuth(
+                (string)Build.Inputs.azureTenantId,
+                (string)Build.Inputs.azureClientId,
+                (string)Build.Inputs.azureClientSecret));
+                
+    private TerraformOutput TerraformOutput { get; } = TerraformOutput.Load();
 
-    private static readonly string PrivateEncryptionKeyJson = File.ReadAllText("./deployment/private-key.json");
+    private ServiceRegistryPopulator ServiceRegistryPopulator { get; }
 
-    private static readonly string PublicEncryptionKeyJson = File.ReadAllText("./deployment/public-key.json");
+    private WebsiteConfigUploader WebsiteConfigUploader { get; }
 
-    private static IResourceManagerProvider ResourceManagerProvider { get; } =
-        new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth(PrivateEncryptionKeyJson));
-
-    // private async Task ConfigureCognito(IDictionary<string, string> terraformOutput, string servicesUrl)
-    // {
-    //     // 2. Uploading configuration to website
-    //     Console.WriteLine("Uploading deployment configuration to website");
-    //     var config = JObject.FromObject(new
-    //     {
-    //         resourceManager = new
-    //         {
-    //             servicesUrl = terraformOutput["services_url"],
-    //             servicesAuthType = terraformOutput["services_auth_type"]
-    //         },
-    //         aws = new
-    //         {
-    //             region = terraformOutput["aws_region"],
-    //             s3 = new
-    //             {
-    //                 uploadBucket = terraformOutput["upload_bucket"]
-    //             }
-    //         }
-    //     });
-
-    //     var s3Params = new PutObjectRequest
-    //     {
-    //         BucketName = terraformOutput["website_bucket"],
-    //         Key = "config.json",
-    //         ContentBody = config.ToString(),
-    //         ContentType = "application/json"
-    //     };
-
-    //     try
-    //     {
-    //         var s3 = new AmazonS3Client(AwsCredentials, AwsRegion);
-    //         await s3.PutObjectAsync(s3Params);
-    //     }
-    //     catch (Exception error)
-    //     {
-    //         Console.WriteLine(error);
-    //         return;
-    //     }
-    // }
+    private StorageApiVersionSetter StorageApiVersionSetter { get; }
 
     protected override async Task<bool> ExecuteTask()
-    {
-        var content = File.ReadAllText($"{Build.Dirs.Deployment.TrimEnd('/')}/terraform.output");
-        var terraformOutput = ParseContent(content);
-        var serviceUrlsAndKeys = GetServiceUrlsAndKeys(terraformOutput);
-        
-        var serviceRegistryUrl = terraformOutput["service_registry_url"];
-        var serviceRegistryKey = terraformOutput["service_registry_key"];
+    {   
+        // set storage version in order to enable partial content for seeking in videos
+        StorageApiVersionSetter.SetDefaultServiceVersion(TerraformOutput.MediaStorageConnectionString);
 
-        var servicesUrl = $"{serviceRegistryUrl}services";
-        var jobProfilesUrl = $"{serviceRegistryUrl}job-profiles";
+        var resourceManager = ServiceRegistryPopulator.GetResourceManager(ResourceManagerProvider);
 
-        var serviceRegistry = new Service
-        {
-            Name = "Service Registry",
-            Resources = new[]
-            {
-                new ResourceEndpoint {ResourceType = nameof(Service), HttpEndpoint = servicesUrl},
-                new ResourceEndpoint {ResourceType = nameof(JobProfile), HttpEndpoint = jobProfilesUrl}
-            },
-            AuthType = AzureConstants.AzureFunctionKeyAuth,
-            AuthContext =
-                new AzureFunctionKeyAuthContext(EncryptionHelper.Encrypt(serviceRegistryKey, PublicEncryptionKeyJson))
-                    .ToMcmaJson()
-                    .ToString()
-        };
+        // ensure the service registry record exists
+        await InsertOrUpdateServiceRegistryAsync(resourceManager);
 
-        var resourceManager = ResourceManagerProvider.Get(servicesUrl, serviceRegistry.AuthType, serviceRegistry.AuthContext);
-        
-        Console.WriteLine("Getting existing services...");
-        var retrievedServices = await resourceManager.GetAsync<Service>();
-        
-        foreach (var retrievedService in retrievedServices)
-        {
-            if (retrievedService.Name == "Service Registry")
-            {
-                if (serviceRegistry.Id == null)
-                {
-                    serviceRegistry.Id = retrievedService.Id;
-
-                    Console.WriteLine("Updating Service Registry");
-                    await resourceManager.UpdateAsync(serviceRegistry);
-                }
-                else
-                {
-                    Console.WriteLine("Removing duplicate Service Registry '" + retrievedService.Id + "'");
-                    await resourceManager.DeleteAsync(retrievedService);
-                }
-            }
-        }
-
-        if (serviceRegistry.Id == null)
-        {
-            Console.WriteLine("Inserting Service Registry");
-            serviceRegistry = await resourceManager.CreateAsync(serviceRegistry);
-        }
-
+        // re-initialize now that the service registry records is in place
         await resourceManager.InitAsync();
 
-        var retrievedJobProfiles = await resourceManager.GetAsync<JobProfile>();
+        // populate job profiles in the registry
+        await PopulateJobProfilesAsync(resourceManager);
 
-        foreach (var retrievedJobProfile in retrievedJobProfiles)
-        {
-            var jobProfileJson = JobProfiles[retrievedJobProfile.Name];
-            if (jobProfileJson != null)
-            {
-                jobProfileJson["id"] = retrievedJobProfile.Id;
-                var jobProfile = jobProfileJson.ToMcmaObject<JobProfile>();
+        // load service data with job profile IDs populated
+        ServiceRegistryPopulator.LoadServicesWithJobProfileIds();
 
-                Console.WriteLine("Updating JobProfile '" + jobProfile.Name + "'");
-                await resourceManager.UpdateAsync(jobProfile);
-            }
-            else
-            {
-                Console.WriteLine("Removing JobProfile '" + retrievedJobProfile.Name + "'");
-                await resourceManager.DeleteAsync(retrievedJobProfile);
-            }
-        }
+        // populate services in the registry
+        await PopulateServicesAsync(resourceManager);
 
-        foreach (var jobProfileName in JobProfiles.Properties().Select(p => p.Name).ToList())
-        {
-            var jobProfileJson = JobProfiles[jobProfileName];
-            if (jobProfileJson["id"] == null)
-            {
-                var jobProfile = jobProfileJson.ToMcmaObject<JobProfile>();
-                Console.WriteLine("Inserting JobProfile '" + jobProfile.Name + "'");
-                jobProfile = await resourceManager.CreateAsync(jobProfile);
-                jobProfileJson["id"] = jobProfile.Id;
-            }
-        }
-
-        var services = CreateServices(serviceUrlsAndKeys);
-
-        retrievedServices = await resourceManager.GetAsync<Service>();
-
-        foreach (var retrievedService in retrievedServices.ToList())
-        {
-            if (retrievedService.Name == serviceRegistry.Name)
-                continue;
-
-            if (services.ContainsKey(retrievedService.Name))
-            {
-                var service = services[retrievedService.Name];
-                service.Id = retrievedService.Id;
-
-                Console.WriteLine("Updating Service '" + service.Name + "'");
-                await resourceManager.UpdateAsync(service);
-            }
-            else
-            {
-                Console.WriteLine("Removing Service '" + retrievedService.Name + "'");
-                await resourceManager.DeleteAsync(retrievedService);
-            }
-        }
-
-        foreach (var serviceName in services.Keys.ToList())
-        {
-            var service = services[serviceName];
-            if (service.Id == null)
-            {
-                Console.WriteLine("Inserting Service '" + service.Name + "'");
-                services[serviceName] = await resourceManager.CreateAsync(service);
-            }
-        }
+        // upload website config file generated from terraform output
+        await WebsiteConfigUploader.UploadConfigAsync();
 
         return true;
     }
 
-    private IDictionary<string, string> ParseContent(string content)
+    private async Task InsertOrUpdateServiceRegistryAsync(ResourceManager resourceManager)
     {
-        var serviceUrls = new Dictionary<string, string>();
-
-        foreach (var line in content.Split('\n'))
+        var retrievedServiceRegistry = (await resourceManager.QueryAsync<Service>(("name", "Service Registry"))).FirstOrDefault();
+        if (retrievedServiceRegistry != null)
         {
-            var parts = line.Split(new[] {" = "}, StringSplitOptions.RemoveEmptyEntries);
-
-            if (parts.Length == 2)
-                serviceUrls[parts[0]] = parts[1].Trim();
+            ServiceRegistryPopulator.ServiceRegistry.Id = retrievedServiceRegistry.Id;
+            Console.WriteLine("Updating Service Registry");
+            await resourceManager.UpdateAsync(ServiceRegistryPopulator.ServiceRegistry);
         }
-
-        return serviceUrls;
+        else
+        {
+            Console.WriteLine("Inserting Service Registry");
+            ServiceRegistryPopulator.ServiceRegistry.Id = (await resourceManager.CreateAsync(ServiceRegistryPopulator.ServiceRegistry)).Id;
+        }
     }
 
-    private IDictionary<string, (string, string)> GetServiceUrlsAndKeys(IDictionary<string, string> terraformOutput)
+    private async Task PopulateJobProfilesAsync(ResourceManager resourceManager)
         =>
-            terraformOutput
-                .Where(x => x.Key.EndsWith("_url") || x.Key.EndsWith("_key"))
-                .GroupBy(x => x.Key.Replace("_url", "").Replace("_key", ""))
-                .Where(
-                    x =>
-                        x.Count() == 2 &&
-                        x.Any(y => y.Key.EndsWith("_url")) &&
-                        x.Any(y => y.Key.EndsWith("_key")))
-                .ToDictionary(
-                    x => x.First(y => y.Key.EndsWith("_url")).Key,
-                    x =>
-                    (
-                        x.First(y => y.Key.EndsWith("_url")).Value,
-                        x.First(y => y.Key.EndsWith("_key")).Value
-                    )
-                );
+        await PopulateAsync(
+            resourceManager,
+            (await resourceManager.QueryAsync<JobProfile>()).ToArray(),
+            ServiceRegistryPopulator.JobProfiles,
+            jp => jp.Name);
 
-    private static IDictionary<string, Service> CreateServices(IDictionary<string, (string, string)> serviceUrlsAndKeys)
+    private async Task PopulateServicesAsync(ResourceManager resourceManager)
+        =>
+        await PopulateAsync(
+            resourceManager,
+            (await resourceManager.QueryAsync<Service>())
+                .Where(s => !ServiceRegistryPopulator.ServiceRegistry.Name.Equals(s.Name, StringComparison.OrdinalIgnoreCase))
+                .ToArray(),
+            ServiceRegistryPopulator.Services,
+            s => s.Name);
+
+    private async Task PopulateAsync<T>(ResourceManager resourceManager, T[] retrievedItems, T[] expectedItems, Func<T, string> getName) where T : McmaResource
     {
-        var serviceList = new List<Service>();
-
-        foreach (var prop in serviceUrlsAndKeys.Keys)
+        foreach (var retrievedItem in retrievedItems)
         {
-            var serviceJson = Services[prop];
-            if (serviceJson == null)
-                continue;
-
-            var (url, key) = serviceUrlsAndKeys[prop];
-
-            var resourceArray = serviceJson["resources"];
-            if (resourceArray != null)
-                foreach (var resourceJson in resourceArray)
-                    resourceJson["httpEndpoint"] = url.TrimEnd('/') + "/" + resourceJson["httpEndpoint"].Value<string>().TrimStart('/');
-
-            var jobProfileArray = serviceJson["jobProfiles"] as JArray;
-            if (jobProfileArray != null)
+            // try to match on name
+            var expectedItem = expectedItems.FirstOrDefault(i => getName(i).Equals(getName(retrievedItem), StringComparison.OrdinalIgnoreCase));
+            if (expectedItem != null)
             {
-                for (var i = 0; i < jobProfileArray.Count; i++)
-                {
-                    var jobProfileName = jobProfileArray[i].Value<string>();
-
-                    var jobProfileId = JobProfiles[jobProfileName]?["id"];
-                    if (jobProfileId == null)
-                        throw new Exception($"Service {serviceJson["name"]} references job profile '{jobProfileName}', but the profile has not been defined.");
-                    
-                    jobProfileArray[i] = jobProfileId;
-                }
+                // if we found a matching item, set the expected item ID and do an update
+                expectedItem.Id = retrievedItem.Id;
+                Console.WriteLine("Updating " + typeof(T).Name + " '" + getName(expectedItem) + "'");
+                await resourceManager.UpdateAsync(expectedItem);
             }
-
-            serviceJson["authType"] = AzureConstants.AzureFunctionKeyAuth;
-            serviceJson["authContext"] =
-                new AzureFunctionKeyAuthContext(EncryptionHelper.Encrypt(key, PublicEncryptionKeyJson))
-                    .ToMcmaJson()
-                    .ToString();
-
-            serviceList.Add(serviceJson.ToMcmaObject<Service>());
+            else
+            {
+                // item was not matched in the expected list, so we need to remove it
+                Console.WriteLine("Removing " + typeof(T).Name + " '" + getName(retrievedItem) + "'");
+                await resourceManager.DeleteAsync(retrievedItem);
+            }
         }
 
-        return serviceList.ToDictionary(service => service.Name, service => service);
+        // anything without an ID at this point needs to be created
+        foreach (var itemToInsert in expectedItems.Where(s => s.Id == null))
+        {
+            Console.WriteLine("Inserting " + typeof(T).Name + " '" + getName(itemToInsert) + "'");
+            itemToInsert.Id = (await resourceManager.CreateAsync(itemToInsert)).Id;
+        }
     }
 }

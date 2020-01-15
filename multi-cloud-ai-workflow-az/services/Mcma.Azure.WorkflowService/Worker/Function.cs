@@ -21,31 +21,35 @@ namespace Mcma.Azure.WorkflowService.Worker
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
-        private static IResourceManagerProvider ResourceManagerProvider { get; } =
-            new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("workflow-service-worker");
 
-        private static IDbTableProvider DbTableProvider { get; } =
-            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
+        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureAdManagedIdentityAuth();
+
+        private static ProviderCollection ProviderCollection { get; } = new ProviderCollection(
+            LoggerProvider,
+            new ResourceManagerProvider(AuthProvider),
+            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables()),
+            AuthProvider
+        );
 
         private static IWorker Worker =
-            new Mcma.Worker.Builders.WorkerBuilder()
-                .HandleJobsOfType<WorkflowJob>(
-                    DbTableProvider,
-                    ResourceManagerProvider,
+            new Mcma.Worker.Worker(ProviderCollection)
+                .AddJobProcessing<WorkflowJob>(
                     x =>
-                        x.AddProfile<RunWorkflow>("ConformWorkflow")
-                         .AddProfile<RunWorkflow>("AiWorkflow"))
-                .HandleOperation(new ProcessNotification(ResourceManagerProvider, DbTableProvider))
-                .Build();
+                        x.AddProfile(new RunWorkflow("ConformWorkflow"))
+                         .AddProfile(new RunWorkflow("AiWorkflow")))
+                .AddOperation(new ProcessNotification(ProviderCollection));
 
         [FunctionName("WorkflowServiceWorker")]
         public static async Task Run(
             [QueueTrigger("workflow-service-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
             ILogger log)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
+            var request = queueMessage.ToWorkerRequest();
 
-            await Worker.DoWorkAsync(queueMessage.ToWorkerRequest());
+            LoggerProvider.AddLogger(log, request.Tracker);
+
+            await Worker.DoWorkAsync(request);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Mcma.Azure.JobRepository.ApiHandler
             =>
             async requestContext =>
             {
-                var table = dbTableProvider.Table<Job>(requestContext.Variables.TableName());
+                var table = dbTableProvider.Table<Job>(requestContext.TableName());
 
                 var notification = requestContext.GetRequestBody<Notification>();
                 if (notification == null)
@@ -23,7 +23,7 @@ namespace Mcma.Azure.JobRepository.ApiHandler
                     return;
                 }
 
-                var job = await table.GetAsync(requestContext.Variables.PublicUrl().TrimEnd('/') + "/jobs/" + requestContext.Request.PathVariables["id"]);
+                var job = await table.GetAsync(requestContext.PublicUrl().TrimEnd('/') + "/jobs/" + requestContext.Request.PathVariables["id"]);
                 if (job == null)
                 {
                     requestContext.SetResponseResourceNotFound();
@@ -38,9 +38,9 @@ namespace Mcma.Azure.JobRepository.ApiHandler
                 }
 
                 await createWorkerInvoker(requestContext).InvokeAsync(
-                    requestContext.Variables.WorkerFunctionId(),
+                    requestContext.WorkerFunctionId(),
                     "ProcessNotification",
-                    requestContext.Variables.GetAll().ToDictionary(),
+                    requestContext.GetAllContextVariables().ToDictionary(),
                     new
                     {
                         jobId = job.Id,

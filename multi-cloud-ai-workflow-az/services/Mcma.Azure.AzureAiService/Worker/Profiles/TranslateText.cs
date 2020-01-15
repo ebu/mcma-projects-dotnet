@@ -5,11 +5,11 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.AzureAiService.Worker
 {
-    internal class TranslateText : IJobProfileHandler<AIJob>
+    internal class TranslateText : IJobProfile<AIJob>
     {
-        public const string Name = "Azure" + nameof(TranslateText);
+        public string Name => "Azure" + nameof(TranslateText);
 
-        public Task ExecuteAsync(WorkerJobHelper<AIJob> job)
+        public Task ExecuteAsync(ProcessJobAssignmentHelper<AIJob> job)
             => throw new NotImplementedException($"{Name} profile has not yet been implemented for Azure.");
     }
 }

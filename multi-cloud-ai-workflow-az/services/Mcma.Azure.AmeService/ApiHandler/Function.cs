@@ -7,7 +7,6 @@ using Mcma.Azure.CosmosDb;
 using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
 using Mcma.Client;
-using Mcma.Core;
 using Mcma.Core.Serialization;
 using Mcma.Data;
 using Microsoft.AspNetCore.Http;
@@ -16,7 +15,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
-using McmaLogger = Mcma.Core.Logging.Logger;
+using IMcmaLoggerProvider = Mcma.Core.Logging.ILoggerProvider;
 
 namespace Mcma.Azure.AmeService.ApiHandler
 {
@@ -24,27 +23,38 @@ namespace Mcma.Azure.AmeService.ApiHandler
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
-        private static IResourceManagerProvider ResourceManagerProvider { get; } =
-            new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("ame-service-worker");
 
         private static IDbTableProvider DbTableProvider { get; } =
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
 
         private static AzureFunctionApiController Controller { get; } =
             DefaultRoutes.ForJobAssignments(DbTableProvider, (reqCtx, _) => new QueueWorkerInvoker(reqCtx))
+                // .Route(r => r.Create).Configure(configure =>
+                //     configure
+                //         .OnStarted(reqCtx =>
+                //         {
+                //             var logger = LoggerProvider.Get(reqCtx.GetTracker());
+                //             logger.Info("AmeService OnCreate. WorkerFunctionId = " + reqCtx.WorkerFunctionId());
+                //             return Task.CompletedTask;
+                //         })
+                //         .OnCompleted((reqCtx, jobAssignment) =>
+                //         {
+                //             var logger = LoggerProvider.Get(reqCtx.GetTracker());
+                //             logger.Info("AmeService OnCompleted. JobAssignmentId = " + jobAssignment.Id);
+                //             return Task.CompletedTask;
+                //         }))
                 .Build()
-                .ToAzureFunctionApiController();
+                .ToAzureFunctionApiController(LoggerProvider);
 
         [FunctionName("AmeServiceApiHandler")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, Route = "{*resourcePath}")] HttpRequest request,
+            [HttpTrigger(AuthorizationLevel.Anonymous, Route = "{*resourcePath}")] HttpRequest request,
             string resourcePath,
             ILogger log,
             ExecutionContext executionContext)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
-
-            return await Controller.HandleRequestAsync(request);
+            return await Controller.HandleRequestAsync(request, log);
         }
     }
 }

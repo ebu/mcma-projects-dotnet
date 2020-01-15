@@ -14,16 +14,16 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
-using McmaLogger = Mcma.Core.Logging.Logger;
-
 namespace Mcma.Azure.TransformService.ApiHandler
 {
     public static class Function
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("transform-service-api-handler");
+
         private static IResourceManagerProvider ResourceManagerProvider { get; } =
-            new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());
+            new ResourceManagerProvider(new AuthProvider().AddAzureAdManagedIdentityAuth());
 
         private static IDbTableProvider DbTableProvider { get; } =
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
@@ -31,18 +31,16 @@ namespace Mcma.Azure.TransformService.ApiHandler
         private static AzureFunctionApiController Controller { get; } =
             DefaultRoutes.ForJobAssignments(DbTableProvider ,(ctx, _) => new QueueWorkerInvoker(ctx))
                 .Build()
-                .ToAzureFunctionApiController();
+                .ToAzureFunctionApiController(LoggerProvider);
 
         [FunctionName("TransformServiceApiHandler")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, Route = "{*resourcePath}")] HttpRequest request,
+            [HttpTrigger(AuthorizationLevel.Anonymous, Route = "{*resourcePath}")] HttpRequest request,
             string resourcePath,
             ILogger log,
             ExecutionContext executionContext)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
-
-            return await Controller.HandleRequestAsync(request);
+            return await Controller.HandleRequestAsync(request, log);
         }
     }
 }

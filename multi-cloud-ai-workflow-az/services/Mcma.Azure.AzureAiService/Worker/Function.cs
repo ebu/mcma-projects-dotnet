@@ -7,46 +7,47 @@ using Mcma.Azure.Functions.Worker;
 using Mcma.Client;
 using Mcma.Core;
 using Mcma.Core.Serialization;
-using Mcma.Data;
 using Mcma.Worker;
-using Mcma.Worker.Builders;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Queue;
-
-using McmaLogger = Mcma.Core.Logging.Logger;
 
 namespace Mcma.Azure.AzureAiService.Worker
 {
     public static class Function
     {
         static Function() => McmaTypes.Add<BlobStorageFolderLocator>().Add<BlobStorageFileLocator>();
-        private static IResourceManagerProvider ResourceManagerProvider { get; } =
-            new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());
 
-        private static IDbTableProvider DbTableProvider { get; } =
-            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
+        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureAdManagedIdentityAuth();
+
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("azure-ai-service-worker");
+
+        private static ProviderCollection ProviderCollection { get; } = new ProviderCollection(
+            LoggerProvider,
+            new ResourceManagerProvider(AuthProvider),
+            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables()),
+            AuthProvider
+        );
 
         public static IWorker Worker { get; } =
-            new WorkerBuilder()
-                .HandleJobsOfType<AIJob>(
-                    DbTableProvider,
-                    ResourceManagerProvider,
+            new Mcma.Worker.Worker(ProviderCollection)
+                .AddJobProcessing<AIJob>(
                     x =>
-                        x.AddProfile<TranscribeAudio>(TranscribeAudio.Name)
-                         .AddProfile<TranslateText>(TranslateText.Name)
-                         .AddProfile<ExtractAllAIMetadata>(ExtractAllAIMetadata.Name))
-                .HandleOperation(new ProcessNotification(DbTableProvider, ResourceManagerProvider))
-                .Build();
+                        x.AddProfile<TranscribeAudio>()
+                         .AddProfile<TranslateText>()
+                         .AddProfile<ExtractAllAIMetadata>())
+                .AddOperation(new ProcessNotification(ProviderCollection));
 
         [FunctionName("AzureAiServiceWorker")]
         public static async Task Run(
             [QueueTrigger("azure-ai-service-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
             ILogger log)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
+            var request = queueMessage.ToWorkerRequest();
 
-            await Worker.DoWorkAsync(queueMessage.ToWorkerRequest());
+            LoggerProvider.AddLogger(log, request.Tracker);
+
+            await Worker.DoWorkAsync(request);
         }
     }
 }

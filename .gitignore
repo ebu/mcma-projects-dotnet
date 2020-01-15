@@ -13,3 +13,4 @@ aws-credentials.json
 build.state
 private-key.json
 public-key.json
+client-secrets.json

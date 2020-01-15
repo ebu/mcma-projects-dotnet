@@ -13,11 +13,11 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.AwsAiService.Worker
 {
-    internal class DetectCelebrities : IJobProfileHandler<AIJob>
+    internal class DetectCelebrities : IJobProfile<AIJob>
     {
-        public const string Name = "AWS" + nameof(DetectCelebrities);
+        public string Name => "AWS" + nameof(DetectCelebrities);
 
-        public async Task ExecuteAsync(WorkerJobHelper<AIJob> jobHelper)
+        public async Task ExecuteAsync(ProcessJobAssignmentHelper<AIJob> jobHelper)
         {
             BlobStorageFileLocator inputFile;
             if (!jobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
@@ -30,21 +30,21 @@ namespace Mcma.Azure.AwsAiService.Worker
             var base64JobId = Encoding.UTF8.GetBytes(jobHelper.JobAssignmentId).HexEncode();
 
             // create destination locator
-            var rekoInputFile = new S3FileLocator
+            var rekoInputFile = new AwsS3FileLocator
             {
-                Bucket = jobHelper.Variables.AwsAiInputBucket(),
-                Key = inputFile.FilePath
+                AwsS3Bucket = jobHelper.Request.AwsAiInputBucket(),
+                AwsS3Key = inputFile.FilePath
             };
             
             // copy input file from Blob Storage to S3
-            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Variables).GetAsync())
-            using (var rekoBucketClient = await rekoInputFile.GetBucketClientAsync(jobHelper.Variables.AwsAccessKey(), jobHelper.Variables.AwsSecretKey()))
+            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Request).GetAsync())
+            using (var rekoBucketClient = await rekoInputFile.GetBucketClientAsync(jobHelper.Request.AwsAccessKey(), jobHelper.Request.AwsSecretKey()))
             {
-                await rekoBucketClient.UploadObjectFromStreamAsync(rekoInputFile.Bucket, rekoInputFile.Key, blobDownloadStream, null);
+                await rekoBucketClient.UploadObjectFromStreamAsync(rekoInputFile.AwsS3Bucket, rekoInputFile.AwsS3Key, blobDownloadStream, null);
             }
 
             StartCelebrityRecognitionResponse response;
-            using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Variables.AwsCredentials(), jobHelper.Variables.AwsRegion()))
+            using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
                 response = await rekognitionClient.StartCelebrityRecognitionAsync(
                     new StartCelebrityRecognitionRequest
                     {
@@ -52,16 +52,16 @@ namespace Mcma.Azure.AwsAiService.Worker
                         {
                             S3Object = new S3Object
                             {
-                                Bucket = rekoInputFile.Bucket,
-                                Name = rekoInputFile.Key
+                                Bucket = rekoInputFile.AwsS3Bucket,
+                                Name = rekoInputFile.AwsS3Key
                             }
                         },
                         ClientRequestToken = clientToken,
                         JobTag = base64JobId,
                         NotificationChannel = new NotificationChannel
                         {
-                            RoleArn = jobHelper.Variables.AwsRekoSnsRoleArn(),
-                            SNSTopicArn = jobHelper.Variables.AwsAiOutputSnsTopicArn()
+                            RoleArn = jobHelper.Request.AwsRekoSnsRoleArn(),
+                            SNSTopicArn = jobHelper.Request.AwsAiOutputSnsTopicArn()
                         }
                     });
             

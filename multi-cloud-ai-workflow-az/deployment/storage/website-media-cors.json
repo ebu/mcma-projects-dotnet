@@ -1,0 +1,61 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "storageAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the Azure Storage account."
+            }
+        },
+        "websiteDomain": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the Azure Storage account."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-07-01",
+            "name": "[parameters('storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "resources": [
+                {
+                    "name": "default",
+                    "type": "blobServices",
+                    "apiVersion": "2018-07-01",
+                    "properties": {
+                        "cors": {
+                            "corsRules": [
+                                {
+                                    "allowedOrigins": [
+                                        "[parameters('websiteDomain')]",
+                                        "http://localhost:4200"
+                                    ],
+                                    "allowedMethods": [
+                                        "GET",
+                                        "OPTIONS",
+                                        "PUT",
+                                        "POST"
+                                    ],
+                                    "maxAgeInSeconds": 3600,
+                                    "exposedHeaders": [
+                                        "*"
+                                    ],
+                                    "allowedHeaders": [
+                                        "*"
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    "dependsOn": [
+                        "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
+                    ]
+                }
+            ]
+        }
+    ]
+}

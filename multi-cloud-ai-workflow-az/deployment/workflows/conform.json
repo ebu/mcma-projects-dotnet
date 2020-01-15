@@ -2,13 +2,14 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "tenantId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientSecret": { "type": "string" },
         "mediaStorageConnectionId": { "type": "string" },
         "mediaStorageAccountName": { "type": "string" },
         "repositoryContainerName": { "type": "string" },
         "tempContainerName": { "type": "string" },
-        "websiteStorageConnectionId": { "type": "string" },
-        "websiteStorageAccountName": { "type": "string" },
-        "websiteContainerName": { "type": "string" }
+        "previewContainerName": { "type": "string" }
     },
     "variables": {},
     "resources": [
@@ -17,6 +18,9 @@
             "apiVersion": "2017-07-01",
             "name": "ConformWorkflow",
             "location": "[resourceGroup().location]",
+            "identity": {
+               "type": "SystemAssigned"
+            },
             "properties": {
                 "state": "Enabled",
                 "parameters": {
@@ -26,13 +30,17 @@
                                 "connectionId": "[parameters('mediaStorageConnectionId')]",
                                 "connectionName": "[parameters('mediaStorageAccountName')]",
                                 "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/azureblob')]"
-                            },
-                            "azureblob-website": {
-                                "connectionId": "[parameters('websiteStorageConnectionId')]",
-                                "connectionName": "[parameters('websiteStorageAccountName')]",
-                                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/azureblob')]"
                             }
                         }
+                    },
+                    "tenantId": {
+                        "value": "[parameters('tenantId')]"
+                    },
+                    "clientId": {
+                        "value": "[parameters('clientId')]"
+                    },
+                    "clientSecret": {
+                        "value": "[parameters('clientSecret')]"
                     },
                     "mediaStorageAccountName": {
                         "value": "[parameters('mediaStorageAccountName')]"
@@ -43,11 +51,8 @@
                     "tempContainerName": {
                         "value": "[parameters('tempContainerName')]"
                     },
-                    "websiteStorageAccountName": {
-                        "value": "[parameters('websiteStorageAccountName')]"
-                    },
-                    "websiteContainerName": {
-                        "value": "[parameters('websiteContainerName')]"
+                    "previewContainerName": {
+                        "value": "[parameters('previewContainerName')]"
                     }
                 },
                 "definition": {
@@ -153,6 +158,10 @@
                                     "actions": {
                                         "AddSourceEssenceToBMContent": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@setProperty(body('CreateBMContent'), 'bmEssences', union(body('CreateBMContent')?['bmEssences'], createArray(body('CreateSourceEssence')?['id'])))",
                                                 "method": "PUT",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -189,6 +198,10 @@
                                         },
                                         "CreateBMContent": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@addProperty(addProperty(variables('BMContent'), 'name', triggerBody()?['input']?['metadata']?['name']), 'description', triggerBody()?['input']?['metadata']?['description'])",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -202,6 +215,10 @@
                                         },
                                         "CreateSourceEssence": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@addProperty(addProperty(addProperty(json('{ \"@type\": \"BMEssence\" }'), 'bmContent', body('CreateBMContent')?['id']), 'locations', array(variables('SourceLocator'))), 'technicalMetadata', json(base64ToString(body('GetTechnicalMetadataFromStorage').$content)))",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -425,10 +442,10 @@
                                             },
                                             "type": "If"
                                         },
-                                        "FilterForWebsiteLocator": {
+                                        "FilterForPreviewLocator": {
                                             "inputs": {
                                                 "from": "@variables('AiWorkflowInputEssence')['locations']",
-                                                "where": "@equals(item()['storageAccountName'], parameters('websiteStorageAccountName'))"
+                                                "where": "@equals(item()['container'], parameters('previewContainerName'))"
                                             },
                                             "runAfter": {
                                                 "RunAiWorkflowJob": [
@@ -439,8 +456,12 @@
                                         },
                                         "GetAiWorkflowProfile": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['jobProfilesEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AiWorkflow')}"
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '?name=AiWorkflow')}"
                                             },
                                             "runAfter": {
                                                 "UpdateProgressTo90": [
@@ -451,8 +472,12 @@
                                         },
                                         "GetExtractTechnicalMetadataProfile": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['jobProfilesEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=ExtractTechnicalMetadata')}"
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '?name=ExtractTechnicalMetadata')}"
                                             },
                                             "runAfter": {
                                                 "UpdateProgressTo27": [
@@ -485,6 +510,10 @@
                                         },
                                         "RunAiWorkflowJob": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@addProperty(addProperty(json('{ \"@type\": \"WorkflowJob\" }'), 'jobProfile', body('GetAiWorkflowProfile')?[0]?['id']), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'bmContent', body('CreateBMContent')?['id']), 'bmEssence', variables('AiWorkflowInputEssence')['id']))",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -499,6 +528,13 @@
                                         "RunExtractTechnicalMetadataAmeJob": {
                                             "inputs": {
                                                 "subscribe": {
+                                                    "authentication": {
+                                                        "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                        "clientId": "@parameters('clientId')",
+                                                        "secret": "@parameters('clientSecret')",
+                                                        "tenant": "@parameters('tenantId')",
+                                                        "type": "ActiveDirectoryOAuth"
+                                                    },
                                                     "body": "@addProperty(addProperty(addProperty(json('{ \"@type\": \"AmeJob\" }'), 'jobProfile', body('GetExtractTechnicalMetadataProfile')?[0]?['id']), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('SourceLocator')), 'outputLocation', addProperty(addProperty(addProperty(json('{ \"@type\": \"BlobStorageFolderLocator\" }'), 'storageAccountName', parameters('mediaStorageAccountName')), 'container', parameters('repositoryContainerName')), 'folderPath', 'AmeJobResults'))), 'notificationEndpoint', json(concat('{ \"httpEndpoint\": \"', listCallbackUrl(), '\" }')))",
                                                     "method": "POST",
                                                     "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -534,8 +570,12 @@
                                                     "actions": {
                                                         "GetCreateProxyProfile": {
                                                             "inputs": {
+                                                                "authentication": {
+                                                                    "audience": "@{triggerBody()?['jobProfilesEndpointAudience']}",
+                                                                    "type": "ManagedServiceIdentity"
+                                                                },
                                                                 "method": "GET",
-                                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=CreateProxy')}"
+                                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '?name=CreateProxy')}"
                                                             },
                                                             "runAfter": {
                                                                 "UpdateProgressTo54": [
@@ -547,6 +587,13 @@
                                                         "RunCreateProxyTransformJob": {
                                                             "inputs": {
                                                                 "subscribe": {
+                                                                    "authentication": {
+                                                                        "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                                        "clientId": "@parameters('clientId')",
+                                                                        "secret": "@parameters('clientSecret')",
+                                                                        "tenant": "@parameters('tenantId')",
+                                                                        "type": "ActiveDirectoryOAuth"
+                                                                    },
                                                                     "body": "@addProperty(addProperty(addProperty(json('{ \"@type\": \"TransformJob\" }'), 'jobProfile', body('GetCreateProxyProfile')?[0]?['id']), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('SourceLocator')), 'outputLocation', addProperty(addProperty(addProperty(json('{ \"@type\": \"BlobStorageFolderLocator\" }'), 'storageAccountName', parameters('mediaStorageAccountName')), 'container', parameters('repositoryContainerName')), 'folderPath', 'TransformJobResults'))), 'notificationEndpoint', json(concat('{ \"httpEndpoint\": \"', listCallbackUrl(), '\" }')))",
                                                                     "method": "POST",
                                                                     "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -574,6 +621,10 @@
                                                         },
                                                         "UpdateProgressTo54": {
                                                             "inputs": {
+                                                                "authentication": {
+                                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                                    "type": "ManagedServiceIdentity"
+                                                                },
                                                                 "body": {
                                                                     "progress": 54,
                                                                     "status": "Running"
@@ -601,12 +652,16 @@
                                         },
                                         "UpdateOutputs": {
                                             "inputs": {
-                                                "body": "@addProperty(json('{ \"progress\": 99, \"status\": \"Running\" }'), 'output', addProperty(json(concat('{ \"aiWorkflow\": \"', body('RunAiWorkflowJob')?['id'], '\", \"bmContent\": \"', body('CreateBMContent')['id'], '\" }')), 'websiteMediaFile', body('FilterForWebsiteLocator')[0]))",
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
+                                                "body": "@addProperty(json('{ \"progress\": 99, \"status\": \"Running\" }'), 'output', addProperty(json(concat('{ \"aiWorkflow\": \"', body('RunAiWorkflowJob')?['id'], '\", \"bmContent\": \"', body('CreateBMContent')['id'], '\" }')), 'previewMediaFile', body('FilterForPreviewLocator')[0]))",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['notificationEndpoint']}"
                                             },
                                             "runAfter": {
-                                                "FilterForWebsiteLocator": [
+                                                "FilterForPreviewLocator": [
                                                     "Succeeded"
                                                 ]
                                             },
@@ -614,6 +669,10 @@
                                         },
                                         "UpdateProgressTo18": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "progress": 18,
                                                     "status": "Running"
@@ -630,6 +689,10 @@
                                         },
                                         "UpdateProgressTo27": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@json(concat('{ \"progress\": 27, \"status\": \"Running\", \"output\": { \"bmContent\": \"', body('CreateBMContent')?['id'], '\" } }'))",
                                                 "method": "POST",
                                                 "uri": "@{triggerBody()?['notificationEndpoint']}"
@@ -643,6 +706,10 @@
                                         },
                                         "UpdateProgressTo36": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "progress": 36,
                                                     "status": "Running"
@@ -659,6 +726,10 @@
                                         },
                                         "UpdateProgressTo45": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "progress": 45,
                                                     "status": "Running"
@@ -675,6 +746,10 @@
                                         },
                                         "UpdateProgressTo63": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "progress": 63,
                                                     "status": "Running"
@@ -691,6 +766,10 @@
                                         },
                                         "UpdateProgressTo9": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "progress": 9,
                                                     "status": "Running"
@@ -703,6 +782,10 @@
                                         },
                                         "UpdateProgressTo90": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "progress": 90,
                                                     "status": "Running"
@@ -721,6 +804,10 @@
                                             "actions": {
                                                 "AddProxyEssenceToBMContent": {
                                                     "inputs": {
+                                                        "authentication": {
+                                                            "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
                                                         "body": "@setProperty(body('AddSourceEssenceToBMContent'), 'locations', union(body('AddSourceEssenceToBMContent')?['locations'], createArray(body('CreateProxyEssence')?['id'])))",
                                                         "method": "PUT",
                                                         "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -732,9 +819,13 @@
                                                     },
                                                     "type": "Http"
                                                 },
-                                                "AddWebsiteLocatorToProxyEssence": {
+                                                "AddPreviewLocatorToProxyEssence": {
                                                     "inputs": {
-                                                        "body": "@setProperty(body('CreateProxyEssence'), 'locators', union(body('CreateProxyEssence')['locations'], createArray(variables('WebsiteLocator'))))",
+                                                        "authentication": {
+                                                            "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
+                                                        "body": "@setProperty(body('CreateProxyEssence'), 'locators', union(body('CreateProxyEssence')['locations'], createArray(variables('PreviewLocator'))))",
                                                         "method": "PUT",
                                                         "uri": "@{triggerBody()?['resourceEndpoint']}"
                                                     },
@@ -745,19 +836,19 @@
                                                     },
                                                     "type": "Http"
                                                 },
-                                                "CreateProxyBlobInWebsiteStorage": {
+                                                "CreateProxyBlobInPreviewContainer": {
                                                     "inputs": {
                                                         "body": "@body('GetProxyBlobContent')",
                                                         "host": {
                                                             "connection": {
-                                                                "name": "@parameters('$connections')['azureblob-website']['connectionId']"
+                                                                "name": "@parameters('$connections')['azureblob-media']['connectionId']"
                                                             }
                                                         },
                                                         "method": "post",
                                                         "path": "/datasets/default/files",
                                                         "queries": {
-                                                            "folderPath": "@{concat(variables('WebsiteLocator')['container'], '/', substring(variables('WebsiteLocator')['filePath'], 0, lastIndexOf(variables('WebsiteLocator')['filePath'], '/')))}",
-                                                            "name": "@{substring(variables('WebsiteLocator')['filePath'], add(lastIndexOf(variables('WebsiteLocator')['filePath'], '/'), 1))}",
+                                                            "folderPath": "@{concat(variables('PreviewLocator')['container'], '/', substring(variables('PreviewLocator')['filePath'], 0, lastIndexOf(variables('PreviewLocator')['filePath'], '/')))}",
+                                                            "name": "@{substring(variables('PreviewLocator')['filePath'], add(lastIndexOf(variables('PreviewLocator')['filePath'], '/'), 1))}",
                                                             "queryParametersSingleEncoded": true
                                                         }
                                                     },
@@ -775,6 +866,10 @@
                                                 },
                                                 "CreateProxyEssence": {
                                                     "inputs": {
+                                                        "authentication": {
+                                                            "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
                                                         "body": "@addProperty(addProperty(json('{ \"@type\": \"BMEssence\" }'), 'bmContent', body('CreateBMContent')?['id']), 'locations', array(variables('ProxyLocator')))",
                                                         "method": "POST",
                                                         "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -807,10 +902,10 @@
                                                 "SetAiWorkflowInputEssenceToProxy": {
                                                     "inputs": {
                                                         "name": "AiWorkflowInputEssence",
-                                                        "value": "@body('AddWebsiteLocatorToProxyEssence')"
+                                                        "value": "@body('AddPreviewLocatorToProxyEssence')"
                                                     },
                                                     "runAfter": {
-                                                        "AddWebsiteLocatorToProxyEssence": [
+                                                        "AddPreviewLocatorToProxyEssence": [
                                                             "Succeeded"
                                                         ]
                                                     },
@@ -818,6 +913,10 @@
                                                 },
                                                 "UpdateProgressTo72": {
                                                     "inputs": {
+                                                        "authentication": {
+                                                            "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
                                                         "body": {
                                                             "progress": 72,
                                                             "status": "Running"
@@ -834,6 +933,10 @@
                                                 },
                                                 "UpdateProgressTo81Proxy": {
                                                     "inputs": {
+                                                        "authentication": {
+                                                            "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
                                                         "body": {
                                                             "progress": 81,
                                                             "status": "Running"
@@ -842,7 +945,7 @@
                                                         "uri": "@{triggerBody()?['notificationEndpoint']}"
                                                     },
                                                     "runAfter": {
-                                                        "CreateProxyBlobInWebsiteStorage": [
+                                                        "CreateProxyBlobInPreviewContainer": [
                                                             "Succeeded"
                                                         ]
                                                     },
@@ -851,9 +954,13 @@
                                             },
                                             "else": {
                                                 "actions": {
-                                                    "AddWebsiteLocatorToSourceEssence": {
+                                                    "AddPreviewLocatorToSourceEssence": {
                                                         "inputs": {
-                                                            "body": "@setProperty(body('CreateSourceEssence'), 'locations', union(body('CreateSourceEssence')['locations'], createArray(variables('WebsiteLocator'))))",
+                                                            "authentication": {
+                                                                "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                                "type": "ManagedServiceIdentity"
+                                                            },
+                                                            "body": "@setProperty(body('CreateSourceEssence'), 'locations', union(body('CreateSourceEssence')['locations'], createArray(variables('PreviewLocator'))))",
                                                             "method": "PUT",
                                                             "uri": "@{triggerBody()?['resourceEndpoint']}"
                                                         },
@@ -864,19 +971,19 @@
                                                         },
                                                         "type": "Http"
                                                     },
-                                                    "CreateSourceBlobInWebsiteStorage": {
+                                                    "CreateSourceBlobInPreviewContainer": {
                                                         "inputs": {
                                                             "body": "@body('GetSourceBlobContent')",
                                                             "host": {
                                                                 "connection": {
-                                                                    "name": "@parameters('$connections')['azureblob-website']['connectionId']"
+                                                                    "name": "@parameters('$connections')['azureblob-media']['connectionId']"
                                                                 }
                                                             },
                                                             "method": "post",
                                                             "path": "/datasets/default/files",
                                                             "queries": {
-                                                                "folderPath": "@{concat(variables('WebsiteLocator')['container'], '/', substring(variables('WebsiteLocator')['filePath'], 0, lastIndexOf(variables('WebsiteLocator')['filePath'], '/')))}",
-                                                                "name": "@{substring(variables('WebsiteLocator')['filePath'], add(lastIndexOf(variables('WebsiteLocator')['filePath'], '/'), 1))}",
+                                                                "folderPath": "@{concat(variables('PreviewLocator')['container'], '/', substring(variables('PreviewLocator')['filePath'], 0, lastIndexOf(variables('PreviewLocator')['filePath'], '/')))}",
+                                                                "name": "@{substring(variables('PreviewLocator')['filePath'], add(lastIndexOf(variables('PreviewLocator')['filePath'], '/'), 1))}",
                                                                 "queryParametersSingleEncoded": true
                                                             }
                                                         },
@@ -913,10 +1020,10 @@
                                                     "SetAiWorkflowInputEssenceToSource": {
                                                         "inputs": {
                                                             "name": "AiWorkflowInputEssence",
-                                                            "value": "@body('AddWebsiteLocatorToSourceEssence')"
+                                                            "value": "@body('AddPreviewLocatorToSourceEssence')"
                                                         },
                                                         "runAfter": {
-                                                            "AddWebsiteLocatorToSourceEssence": [
+                                                            "AddPreviewLocatorToSourceEssence": [
                                                                 "Succeeded"
                                                             ]
                                                         },
@@ -924,6 +1031,10 @@
                                                     },
                                                     "UpdateProgressTo81Source": {
                                                         "inputs": {
+                                                            "authentication": {
+                                                                "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                                "type": "ManagedServiceIdentity"
+                                                            },
                                                             "body": {
                                                                 "progress": 81,
                                                                 "status": "Running"
@@ -932,7 +1043,7 @@
                                                             "uri": "@{triggerBody()?['notificationEndpoint']}"
                                                         },
                                                         "runAfter": {
-                                                            "CreateSourceBlobInWebsiteStorage": [
+                                                            "CreateSourceBlobInPreviewContainer": [
                                                                 "Succeeded"
                                                             ]
                                                         },
@@ -1075,6 +1186,10 @@
                                 },
                                 "NotifyOnError": {
                                     "inputs": {
+                                        "authentication": {
+                                            "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                            "type": "ManagedServiceIdentity"
+                                        },
                                         "body": "@concat('{ \"status\": \"Failed\", \"errors\": ', variables('Errors'), ' }')",
                                         "method": "POST",
                                         "uri": "@triggerBody()?['notificationEndpoint']"
@@ -1087,6 +1202,10 @@
                                 "actions": {
                                     "NotifyOnSuccess": {
                                         "inputs": {
+                                            "authentication": {
+                                                "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                "type": "ManagedServiceIdentity"
+                                            },
                                             "body": {
                                                 "progress": "100",
                                                 "status": "COMPLETED"
@@ -1135,7 +1254,7 @@
                                 ]
                             },
                             "runAfter": {
-                                "InitializeWebsiteLocatorVar": [
+                                "InitializePreviewLocatorVar": [
                                     "Succeeded"
                                 ]
                             },
@@ -1271,13 +1390,13 @@
                             },
                             "type": "InitializeVariable"
                         },
-                        "InitializeWebsiteLocatorVar": {
+                        "InitializePreviewLocatorVar": {
                             "inputs": {
                                 "variables": [
                                     {
-                                        "name": "WebsiteLocator",
+                                        "name": "PreviewLocator",
                                         "type": "Object",
-                                        "value": "@json(concat('{ \"@type\": \"BlobStorageFileLocator\", \"storageAccountName\": \"', parameters('websiteStorageAccountName'), '\", \"container\": \"', parameters('websiteContainerName'), '\", \"filePath\": \"media/', guid(), '.mp4\" }'))"
+                                        "value": "@json(concat('{ \"@type\": \"BlobStorageFileLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('previewContainerName'), '\", \"filePath\": \"media/', guid(), '.mp4\" }'))"
                                     }
                                 ]
                             },
@@ -1295,6 +1414,15 @@
                             "defaultValue": {},
                             "type": "Object"
                         },
+                        "tenantId": {
+                            "type": "String"
+                        },
+                        "clientId": {
+                            "type": "String"
+                        },
+                        "clientSecret": {
+                            "type": "String"
+                        },
                         "mediaStorageAccountName": {
                             "type": "String"
                         },
@@ -1304,10 +1432,7 @@
                         "tempContainerName": {
                             "type": "String"
                         },
-                        "websiteContainerName": {
-                            "type": "String"
-                        },
-                        "websiteStorageAccountName": {
+                        "previewContainerName": {
                             "type": "String"
                         }
                     },

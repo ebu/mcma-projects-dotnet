@@ -1,5 +1,5 @@
-{
-    "ConformWorkflow": {
+[
+    {
         "@type": "JobProfile",
         "name": "ConformWorkflow",
         "inputParameters": [
@@ -14,7 +14,7 @@
         ],
         "outputParameters": [
             {
-                "parameterName": "websiteMediaFile",
+                "parameterName": "previewMediaFile",
                 "parameterType": "BlobStorageFileLocator"
             },
             {
@@ -27,7 +27,7 @@
             }
         ]
     },
-    "AiWorkflow": {
+    {
         "@type": "JobProfile",
         "name": "AiWorkflow",
         "inputParameters": [
@@ -41,7 +41,7 @@
             }
         ]
     },
-    "ExtractTechnicalMetadata": {
+    {
         "@type": "JobProfile",
         "name": "ExtractTechnicalMetadata",
         "inputParameters": [
@@ -61,7 +61,7 @@
             }
         ]
     },
-    "CreateProxy": {
+    {
         "@type": "JobProfile",
         "name": "CreateProxy",
         "inputParameters": [
@@ -81,7 +81,7 @@
             }
         ]
     },
-    "ExtractThumbnail": {
+    {
         "@type": "JobProfile",
         "name": "ExtractThumbnail",
         "inputParameters": [
@@ -109,7 +109,7 @@
             }
         ]
     },
-    "AWSTranscribeAudio": {
+    {
         "@type": "JobProfile",
         "name": "AWSTranscribeAudio",
         "inputParameters": [
@@ -129,7 +129,7 @@
             }
         ]
     },
-    "AWSTranslateText": {
+    {
         "@type": "JobProfile",
         "name": "AWSTranslateText",
         "inputParameters": [
@@ -159,7 +159,7 @@
             }
         ]
     },
-    "AWSDetectCelebrities": {
+    {
         "@type": "JobProfile",
         "name": "AWSDetectCelebrities",
         "inputParameters": [
@@ -179,7 +179,7 @@
             }
         ]
     },
-    "AzureExtractAllAIMetadata": {
+    {
         "@type": "JobProfile",
         "name": "AzureExtractAllAIMetadata",
         "inputParameters": [
@@ -199,4 +199,4 @@
             }
         ]
     }
-}
+]

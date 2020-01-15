@@ -6,43 +6,44 @@ using Mcma.Azure.Functions.Logging;
 using Mcma.Azure.Functions.Worker;
 using Mcma.Client;
 using Mcma.Core.Serialization;
-using Mcma.Data;
 using Mcma.Worker;
-using Mcma.Worker.Builders;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Queue;
-
-using McmaLogger = Mcma.Core.Logging.Logger;
 
 namespace Mcma.Azure.JobRepository.Worker
 {
     public static class Function
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
+
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("job-repository-worker");
             
-        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureFunctionKeyAuth();
+        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureAdManagedIdentityAuth();
 
-        private static IDbTableProvider DbTableProvider { get; } =
-            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
-
-        private static IResourceManagerProvider ResourceManagerProvider { get; } = new ResourceManagerProvider(AuthProvider);
+        private static ProviderCollection ProviderCollection { get; } = new ProviderCollection(
+            LoggerProvider,
+            new ResourceManagerProvider(AuthProvider),
+            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables()),
+            AuthProvider
+        );
 
         private static IWorker Worker =
-            new WorkerBuilder()
-                .HandleOperation(new CreateJobProcess(ResourceManagerProvider, DbTableProvider))
-                .HandleOperation(new DeleteJobProcess(ResourceManagerProvider))
-                .HandleOperation(new ProcessNotification(ResourceManagerProvider, DbTableProvider))
-                .Build();
+            new Mcma.Worker.Worker(ProviderCollection)
+                .AddOperation(new CreateJobProcess(ProviderCollection))
+                .AddOperation(new DeleteJobProcess(ProviderCollection))
+                .AddOperation(new ProcessNotification(ProviderCollection));
             
         [FunctionName("JobRepositoryWorker")]
         public static async Task Run(
             [QueueTrigger("job-repository-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
             ILogger log)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
+            var request = queueMessage.ToWorkerRequest();
 
-            await Worker.DoWorkAsync(queueMessage.ToWorkerRequest());
+            LoggerProvider.AddLogger(log, request.Tracker);
+
+            await Worker.DoWorkAsync(request);
         }
     }
 }

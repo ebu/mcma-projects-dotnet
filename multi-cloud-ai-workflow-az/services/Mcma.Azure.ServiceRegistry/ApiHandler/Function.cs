@@ -1,10 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Mcma.Api.Routes;
 using Mcma.Api.Routes.Defaults;
 using Mcma.Azure.CosmosDb;
 using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
 using Mcma.Core;
+using Mcma.Core.Context;
 using Mcma.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +20,8 @@ namespace Mcma.Azure.ServiceRegistry.ApiHandler
 {
     public static class Function
     {
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("service-registry-api-handler");
+
         private static IDbTableProvider DbTableProvider { get; } =
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
 
@@ -31,18 +35,16 @@ namespace Mcma.Azure.ServiceRegistry.ApiHandler
             new McmaApiRouteCollection()
                 .AddRoutes(ServiceRoutes)
                 .AddRoutes(JobProfileRoutes)
-                .ToAzureFunctionApiController();
+                .ToAzureFunctionApiController(LoggerProvider);
 
         [FunctionName("ServiceRegistryApiHandler")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, Route = "{*resourcePath}")] HttpRequest request,
+            [HttpTrigger(AuthorizationLevel.Anonymous, Route = "{*resourcePath}")] HttpRequest request,
             string resourcePath,
             ILogger log,
             ExecutionContext executionContext)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
-
-            return await ApiController.HandleRequestAsync(request);
+            return await ApiController.HandleRequestAsync(request, log);
         }
     }
 }

@@ -14,7 +14,7 @@ export class WorkflowJobViewModel {
 
     get fileName(): string {
         return this.workflowJob && this.workflowJob.jobInput && this.workflowJob.jobInput.inputFile
-            ? this.workflowJob.jobInput.inputFile.awsS3Key
+            ? this.workflowJob.jobInput.inputFile.filePath
             : null;
     }
 
@@ -43,8 +43,8 @@ export class WorkflowJobViewModel {
     }
 
     get previewUrl(): string {
-        return this.workflowJob && this.workflowJob.jobOutput && this.workflowJob.jobOutput.websiteMediaFile
-            ? this.workflowJob.jobOutput.websiteMediaFile.httpEndpoint
+        return this.workflowJob && this.workflowJob.jobOutput && this.workflowJob.jobOutput.previewMediaFile
+            ? this.workflowJob.jobOutput.previewMediaFile.url
             : null;
     }
 
@@ -61,15 +61,15 @@ export class WorkflowJobViewModel {
             return "";
         }
 
-        if (JobStatus.new.equals(this.workflowJob.status) ||
-            JobStatus.queued.equals(this.workflowJob.status) ||
-            JobStatus.scheduled.equals(this.workflowJob.status)) {
+        if (JobStatus.New.toLowerCase() === this.workflowJob.status.toLowerCase() ||
+            JobStatus.Queued.toLowerCase() === this.workflowJob.status.toLowerCase() ||
+            JobStatus.Scheduled.toLowerCase() === this.workflowJob.status.toLowerCase()) {
             return "schedule";
-        } else if (JobStatus.running.equals(this.workflowJob.status)) {
+        } else if (JobStatus.Running.toLowerCase() === this.workflowJob.status.toLowerCase()) {
             return "play_arrow";
-        } else if (JobStatus.completed.equals(this.workflowJob.status)) {
+        } else if (JobStatus.Completed.toLowerCase() === this.workflowJob.status.toLowerCase()) {
             return "check";
-        } else if (JobStatus.failed.equals(this.workflowJob.status)) {
+        } else if (JobStatus.Failed.toLowerCase() === this.workflowJob.status.toLowerCase()) {
             return "error";
         }
     }
@@ -79,9 +79,10 @@ export class WorkflowJobViewModel {
             return null;
         }
 
-        if (JobStatus.running.equals(this.workflowJob.status) || JobStatus.completed.equals(this.workflowJob.status)) {
+        if (JobStatus.Running.toLowerCase() === this.workflowJob.status.toLowerCase() ||
+            JobStatus.Completed.toLowerCase() === this.workflowJob.status.toLowerCase()) {
             return "accent";
-        } else if (JobStatus.failed.equals(this.workflowJob.status)) {
+        } else if (JobStatus.Failed.toLowerCase() === this.workflowJob.status.toLowerCase()) {
             return "warn";
         } else {
             return "primary";

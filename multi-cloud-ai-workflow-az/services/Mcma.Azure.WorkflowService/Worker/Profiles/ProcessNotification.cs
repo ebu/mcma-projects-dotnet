@@ -9,17 +9,14 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.WorkflowService.Worker
 {
-    internal class ProcessNotification : WorkerOperationHandler<ProcessNotificationRequest>
+    internal class ProcessNotification : WorkerOperation<ProcessNotificationRequest>
     {
-        public ProcessNotification(IResourceManagerProvider resourceManagerProvider, IDbTableProvider dbTableProvider)
+        public ProcessNotification(ProviderCollection providerCollection)
+            : base(providerCollection)
         {
-            ResourceManagerProvider = resourceManagerProvider;
-            DbTableProvider = dbTableProvider;
         }
 
-        private IResourceManagerProvider ResourceManagerProvider { get; }
-
-        private IDbTableProvider DbTableProvider { get; }
+        public override string Name => nameof(ProcessNotification);
 
         protected override async Task ExecuteAsync(WorkerRequest request, ProcessNotificationRequest notificationRequest)
         {
@@ -28,7 +25,7 @@ namespace Mcma.Azure.WorkflowService.Worker
 
             var workflowStatePayload = notification.Content.ToMcmaObject<WorkflowState>();
 
-            var table = DbTableProvider.Table<JobAssignment>(request.Variables.TableName());
+            var table = ProviderCollection.DbTableProvider.Table<JobAssignment>(request.TableName());
 
             var jobAssignment = await table.GetAsync(jobAssignmentId);
 
@@ -51,7 +48,7 @@ namespace Mcma.Azure.WorkflowService.Worker
 
             await table.PutAsync(jobAssignmentId, jobAssignment);
 
-            var resourceManager = ResourceManagerProvider.Get(request.Variables);
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(request);
 
             await resourceManager.SendNotificationAsync(jobAssignment, jobAssignment.NotificationEndpoint);
         }

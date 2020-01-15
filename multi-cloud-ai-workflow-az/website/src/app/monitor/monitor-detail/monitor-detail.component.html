@@ -2,7 +2,7 @@
 
   <div class="job-info">
     <div class="job-preview-player">
-      <video *ngIf="conformJobVm.isCompleted && conformJobVm.previewUrl; else statusMessage" controls [src]="conformJobVm.previewUrl" [currentTime]="currentTime$ | async"></video>
+      <video *ngIf="conformJobVm.isCompleted && conformJobVm.previewUrl; else statusMessage" controls [src]="conformJobVm.previewUrl" (timeupdate)="logTimeUpdate($event)" [currentTime]="currentTime$ | async"></video>
       <ng-template #statusMessage>
         <div class="conform-status">
           <div class="conform-status-icon-text">

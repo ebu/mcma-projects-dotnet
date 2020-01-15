@@ -4,14 +4,14 @@ import { CanActivate } from "@angular/router";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 
-import { CognitoAuthService } from "../services/cognito-auth.service";
+import { AzureAdAuthService } from "../services/azure-ad-auth.service";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
 
-    constructor(private cognitoAuthService: CognitoAuthService) {}
+    constructor(private azureAdAuthService: AzureAdAuthService) {}
     
     canActivate(): Observable<boolean> {
-        return this.cognitoAuthService.autoLogin().pipe(map(creds => !!creds));
+        return this.azureAdAuthService.isLoggedIn$;
     }
 }

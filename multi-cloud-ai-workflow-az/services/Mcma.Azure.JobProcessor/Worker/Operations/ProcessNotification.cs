@@ -9,17 +9,14 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.JobProcessor.Worker
 {
-    internal class ProcessNotification : WorkerOperationHandler<ProcessNotificationRequest>
+    internal class ProcessNotification : WorkerOperation<ProcessNotificationRequest>
     {
-        public ProcessNotification(IResourceManagerProvider resourceManagerProvider, IDbTableProvider dbTableProvider)
+        public ProcessNotification(ProviderCollection providerCollection)
+            : base(providerCollection)
         {
-            ResourceManagerProvider = resourceManagerProvider;
-            DbTableProvider = dbTableProvider;
         }
         
-        private IResourceManagerProvider ResourceManagerProvider { get; }
-
-        private IDbTableProvider DbTableProvider { get; }
+        public override string Name => nameof(ProcessNotification);
 
         protected override async Task ExecuteAsync(WorkerRequest request, ProcessNotificationRequest @event)
         {
@@ -27,14 +24,16 @@ namespace Mcma.Azure.JobProcessor.Worker
             var notification = @event.Notification;
             var notificationJobData = notification.Content.ToMcmaObject<JobBase>();
 
-            var table = DbTableProvider.Table<JobProcess>(request.Variables.TableName());
+            var logger = ProviderCollection.LoggerProvider.Get(request.Tracker);
+
+            var table = ProviderCollection.DbTableProvider.Table<JobProcess>(request.TableName());
 
             var jobProcess = await table.GetAsync(jobProcessId);
 
             // not updating job if it already was marked as completed or failed.
             if (jobProcess.Status == JobStatus.Completed || jobProcess.Status == JobStatus.Failed)
             {
-                request.Logger.Warn("Ignoring update of job process that tried to change state from " + jobProcess.Status + " to " + notificationJobData.Status);
+                logger.Warn("Ignoring update of job process that tried to change state from " + jobProcess.Status + " to " + notificationJobData.Status);
                 return;
             }
 
@@ -46,7 +45,7 @@ namespace Mcma.Azure.JobProcessor.Worker
 
             await table.PutAsync(jobProcessId, jobProcess);
 
-            var resourceManager = ResourceManagerProvider.Get(request.Variables);
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(request);
 
             await resourceManager.SendNotificationAsync(jobProcess, jobProcess.NotificationEndpoint);
         }

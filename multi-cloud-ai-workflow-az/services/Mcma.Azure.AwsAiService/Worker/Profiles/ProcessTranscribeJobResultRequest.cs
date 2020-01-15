@@ -6,6 +6,6 @@ namespace Mcma.Azure.AwsAiService.Worker
     {
         public string JobAssignmentId { get; set; }
 
-        public S3FileLocator OutputFile { get; set; }
+        public AwsS3FileLocator OutputFile { get; set; }
     }
 }

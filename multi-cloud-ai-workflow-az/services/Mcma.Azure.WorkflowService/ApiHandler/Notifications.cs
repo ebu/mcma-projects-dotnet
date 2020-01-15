@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Mcma.Api;
 using Mcma.Core;
 using Mcma.Core.Context;
+using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
 using Mcma.Data;
 
@@ -10,20 +11,22 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
 {
     public static class Notifications
     {
-        public static Func<McmaApiRequestContext, Task> Handler(IDbTableProvider dbTableProvider, Func<McmaApiRequestContext, IWorkerInvoker> createWorkerInvoker)
+        public static Func<McmaApiRequestContext, Task> Handler(ILoggerProvider loggerProvider, IDbTableProvider dbTableProvider, Func<McmaApiRequestContext, IWorkerInvoker> createWorkerInvoker)
             =>
             async requestContext =>
             {
-                requestContext.Logger.Debug($"{nameof(Notifications)}.{nameof(Handler)}");
-                requestContext.Logger.Debug(requestContext.Request.ToMcmaJson().ToString());
-                
-                var table = dbTableProvider.Table<JobAssignment>(requestContext.Variables.TableName());
+                var logger = loggerProvider.Get(requestContext.GetTracker());
 
-                var jobAssignmentId = requestContext.Variables.PublicUrl().TrimEnd('/') + "/job-assignments/" + requestContext.Request.PathVariables["id"];
+                logger.Debug($"{nameof(Notifications)}.{nameof(Handler)}");
+                logger.Debug(requestContext.Request.ToMcmaJson().ToString());
+                
+                var table = dbTableProvider.Table<JobAssignment>(requestContext.TableName());
+
+                var jobAssignmentId = requestContext.PublicUrl().TrimEnd('/') + "/job-assignments/" + requestContext.Request.PathVariables["id"];
 
                 var jobAssignment = await table.GetAsync(jobAssignmentId);
 
-                requestContext.Logger.Debug("jobAssignment = {0}", jobAssignment);
+                logger.Debug("jobAssignment = {0}", jobAssignment);
 
                 if (jobAssignment == null)
                 {
@@ -32,7 +35,7 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
                 }
 
                 await createWorkerInvoker(requestContext).InvokeAsync(
-                    requestContext.Variables.WorkerFunctionId(),
+                    requestContext.WorkerFunctionId(),
                     "ProcessNotification",
                     input: new
                     {

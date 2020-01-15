@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.BlobStorage.Proxies;
@@ -9,20 +10,20 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.AzureAiService.Worker
 {
-    internal class ExtractAllAIMetadata : IJobProfileHandler<AIJob>
+    internal class ExtractAllAIMetadata : IJobProfile<AIJob>
     {
-        public const string Name = "Azure" + nameof(ExtractAllAIMetadata);
+        public string Name => "Azure" + nameof(ExtractAllAIMetadata);
 
-        public async Task ExecuteAsync(WorkerJobHelper<AIJob> jobHelper)
+        public async Task ExecuteAsync(ProcessJobAssignmentHelper<AIJob> jobHelper)
         {
             BlobStorageFileLocator inputFile;
             if (!jobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
                 throw new Exception($"Invalid or missing input file");
 
-            var mediaFileUrl = inputFile.Proxy(jobHelper.Variables).GetPublicReadOnlyUrl();
+            var mediaFileUrl = inputFile.Proxy(jobHelper.Request).GetPublicReadOnlyUrl();
 
-            var authTokenUrl = jobHelper.Variables.VideoIndexerApiUrl() + "/auth/" + jobHelper.Variables.VideoIndexerLocation() + "/Accounts/" + jobHelper.Variables.VideoIndexerAccountID() + "/AccessToken?allowEdit=true";
-            var customHeaders = new Dictionary<string, string> { ["Ocp-Apim-Subscription-Key"] = jobHelper.Variables.VideoIndexerSubscriptionKey() };
+            var authTokenUrl = jobHelper.Request.VideoIndexerApiUrl() + "/auth/" + jobHelper.Request.VideoIndexerLocation() + "/Accounts/" + jobHelper.Request.VideoIndexerAccountID() + "/AccessToken?allowEdit=true";
+            var customHeaders = new Dictionary<string, string> { ["Ocp-Apim-Subscription-Key"] = jobHelper.Request.VideoIndexerSubscriptionKey() };
 
             jobHelper.Logger.Debug($"Generate Azure Video Indexer Token: Doing a GET on {authTokenUrl}");
             var mcmaHttp = new McmaHttpClient();
@@ -51,13 +52,18 @@ namespace Mcma.Azure.AzureAiService.Worker
                     privacy={string}&
                     externalUrl={string}" */
 
-            var callbackUrl = Uri.EscapeDataString(jobHelper.JobAssignmentId.TrimEnd('/') + "/notifications?code=" + jobHelper.Variables.ApiHandlerKey());
+            var trimmedJobAssignmentId = jobHelper.JobAssignmentId.TrimEnd('/');
+            var jobAssignmentGuid = trimmedJobAssignmentId.Substring(trimmedJobAssignmentId.LastIndexOf('/') + 1);
+
+            var callbackUrl =
+                Uri.EscapeDataString(
+                    jobHelper.Request.NotificationsUrl().TrimEnd('/') + "/job-assignments/" + jobAssignmentGuid + "/notifications?code=" + jobHelper.Request.NotificationHandlerKey());
             jobHelper.Logger.Debug("Callback url: " + callbackUrl);
 
             var videoUrl = Uri.EscapeDataString(mediaFileUrl);
 
             var postVideoUrl =
-                jobHelper.Variables.VideoIndexerApiUrl() + "/" + jobHelper.Variables.VideoIndexerLocation() + "/Accounts/" + jobHelper.Variables.VideoIndexerAccountID() + "/Videos" +
+                jobHelper.Request.VideoIndexerApiUrl() + "/" + jobHelper.Request.VideoIndexerLocation() + "/Accounts/" + jobHelper.Request.VideoIndexerAccountID() + "/Videos" +
                     "?accessToken=" + apiToken +
                     "&name=" + inputFile.FilePath +
                     "&callbackUrl=" + callbackUrl +

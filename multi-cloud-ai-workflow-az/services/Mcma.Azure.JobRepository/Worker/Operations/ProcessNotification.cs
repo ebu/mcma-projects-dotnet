@@ -3,39 +3,37 @@ using System.Threading.Tasks;
 using Mcma.Client;
 using Mcma.Core;
 using Mcma.Core.Context;
-using Mcma.Core.Logging;
 using Mcma.Core.Serialization;
 using Mcma.Data;
 using Mcma.Worker;
 
 namespace Mcma.Azure.JobRepository.Worker
 {
-    internal class ProcessNotification : WorkerOperationHandler<ProcessNotificationRequest>
+    internal class ProcessNotification : WorkerOperation<ProcessNotificationRequest>
     {
-        public ProcessNotification(IResourceManagerProvider resourceManagerProvider, IDbTableProvider dbTableProvider)
+        public ProcessNotification(ProviderCollection providerCollection)
+            : base(providerCollection)
         {
-            ResourceManagerProvider = resourceManagerProvider;
-            DbTableProvider = dbTableProvider;
         }
 
-        private IResourceManagerProvider ResourceManagerProvider { get; }
-
-        private IDbTableProvider DbTableProvider { get; }
+        public override string Name => nameof(ProcessNotification);
 
         protected override async Task ExecuteAsync(WorkerRequest request, ProcessNotificationRequest notificationRequest)
         {
+            var logger = ProviderCollection.LoggerProvider.Get(request.Tracker);
+
             var jobId = notificationRequest.JobId;
             var notification = notificationRequest.Notification;
             var notificationJob = notification.Content.ToMcmaObject<JobBase>();
 
-            var table = DbTableProvider.Table<Job>(request.Variables.TableName());
+            var table = ProviderCollection.DbTableProvider.Table<Job>(request.TableName());
 
             var job = await table.GetAsync(jobId);
 
             // not updating job if it already was marked as completed or failed.
             if (job.Status == JobStatus.Completed || job.Status == JobStatus.Failed)
             {
-                request.Logger.Warn("Ignoring update of job that tried to change state from " + job.Status + " to " + notificationJob.Status);
+                logger.Warn("Ignoring update of job that tried to change state from " + job.Status + " to " + notificationJob.Status);
                 return;
             }
 
@@ -47,7 +45,7 @@ namespace Mcma.Azure.JobRepository.Worker
 
             await table.PutAsync(jobId, job);
 
-            var resourceManager = ResourceManagerProvider.Get(request.Variables);
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(request);
 
             await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint);
         }

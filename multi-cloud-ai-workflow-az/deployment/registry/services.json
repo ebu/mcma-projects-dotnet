@@ -1,21 +1,5 @@
 {
-    "service_registry": {
-        "@type": "Service",
-        "name": "Service Registry",
-        "resources": [
-            {
-                "@type": "ResourceEndpoint",
-                "resourceType": "Service",
-                "httpEndpoint": "/services"
-            },
-            {
-                "@type": "ResourceEndpoint",
-                "resourceType": "JobProfile",
-                "httpEndpoint": "/job-profiles"
-            }
-        ]
-    },
-    "ame_service_url":{
+    "ame_service": {
         "@type": "Service",
         "name": "MediaInfo AME Service",
         "resources": [
@@ -30,7 +14,7 @@
             "ExtractTechnicalMetadata"
         ]
     },
-    "aws_ai_service_url":{
+    "aws_ai_service": {
         "@type": "Service",
         "name": "AWS AI Service",
         "resources": [
@@ -47,7 +31,7 @@
             "AWSDetectCelebrities"
         ]
     },
-    "azure_ai_service_url":{
+    "azure_ai_service": {
         "@type": "Service",
         "name": "AZURE AI Service",
         "resources": [
@@ -62,7 +46,7 @@
             "AzureExtractAllAIMetadata"
         ]
     },
-    "job_processor_url":{
+    "job_processor": {
         "@type": "Service",
         "name": "Job Processor Service",
         "resources": [
@@ -73,7 +57,7 @@
             }
         ]
      },
-     "job_repository_url":{
+     "job_repository": {
         "@type": "Service",
         "name": "Job Repository",
         "resources": [
@@ -109,7 +93,7 @@
             }
         ]
     },
-    "media_repository_url":{
+    "media_repository": {
         "@type": "Service",
         "name": "Media Repository",
         "resources": [
@@ -125,7 +109,7 @@
             }
         ]
     },
-    "transform_service_url":{
+    "transform_service": {
         "@type": "Service",
         "name": "FFmpeg TransformService",
         "resources": [
@@ -140,7 +124,7 @@
             "CreateProxy"
         ]
     },
-    "workflow_service_url":{
+    "workflow_service": {
         "@type": "Service",
         "name": "Workflow Service",
         "resources": [
@@ -148,6 +132,11 @@
                 "@type": "ResourceEndpoint",
                 "resourceType": "JobAssignment",
                 "httpEndpoint": "/job-assignments"
+            },
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "Notification",
+                "httpEndpoint": "/resource-notifications"
             }
         ],
         "jobType": "WorkflowJob",

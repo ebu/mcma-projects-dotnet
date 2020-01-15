@@ -2,7 +2,7 @@ import { Component } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { map, share } from "rxjs/operators";
 
-import { CognitoAuthService } from "./services/cognito-auth.service";
+import { AzureAdAuthService } from "./services/azure-ad-auth.service";
 
 @Component({
     selector: "app-root",
@@ -14,7 +14,7 @@ import { CognitoAuthService } from "./services/cognito-auth.service";
 export class AppComponent {
     isLoggedIn$: Observable<boolean>;
 
-    constructor(private cognitoAuthService: CognitoAuthService) {
-        this.isLoggedIn$ = this.cognitoAuthService.autoLogin().pipe(map(creds => !!creds), share());
+    constructor(private azureAdAuthService: AzureAdAuthService) {
+        this.isLoggedIn$ = this.azureAdAuthService.isLoggedIn$;
     }
 }

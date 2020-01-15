@@ -12,11 +12,11 @@ using Mcma.Azure.BlobStorage.Proxies;
 
 namespace Mcma.Azure.AmeService.Worker
 {
-    internal class ExtractTechnicalMetadata : IJobProfileHandler<AmeJob>
+    internal class ExtractTechnicalMetadata : IJobProfile<AmeJob>
     {
-        public const string Name = nameof(ExtractTechnicalMetadata);
+        public string Name => nameof(ExtractTechnicalMetadata);
 
-        public async Task ExecuteAsync(WorkerJobHelper<AmeJob> jobHelper)
+        public async Task ExecuteAsync(ProcessJobAssignmentHelper<AmeJob> jobHelper)
         {
             BlobStorageFileLocator inputFile;
             if (!jobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
@@ -32,15 +32,12 @@ namespace Mcma.Azure.AmeService.Worker
 
             var localFileName = @"D:\local\temp\" + Guid.NewGuid().ToString() + ".tmp";
             using (var localFileStream = File.Open(localFileName, FileMode.Create))
-                await inputFile.Proxy(jobHelper.Variables).GetAsync(localFileStream);
+                await inputFile.Proxy(jobHelper.Request).GetAsync(localFileStream);
 
             var fileInfo = new FileInfo(localFileName);
-            jobHelper.Logger.Debug($"Local file = " + localFileName);
-            jobHelper.Logger.Debug($"Local file exists = " + fileInfo.Exists);
-            jobHelper.Logger.Debug($"Local file size = " + fileInfo.Length);
 
             jobHelper.Logger.Debug("Running MediaInfo against " + localFileName);
-            var mediaInfoProcess = await MediaInfoProcess.RunAsync(jobHelper, "--Output=EBUCore_JSON", localFileName);
+            var mediaInfoProcess = await MediaInfoProcess.RunAsync(jobHelper.Request, jobHelper.Logger, "--Output=EBUCore_JSON", localFileName);
 
             // jobHelper.Logger.Debug($"MediaInfo completed. Deleting temp file {localFileName}...");
             // File.Delete(localFileName);
@@ -53,7 +50,7 @@ namespace Mcma.Azure.AmeService.Worker
 
             jobHelper.Logger.Debug($"Writing MediaInfo output to container {outputLocation.Container} in folder {outputLocation.FolderPath} with file name {outputFileName}...");
 
-            var outputFile = await outputLocation.Proxy(jobHelper.Variables).PutAsync(outputFileName, new MemoryStream(Encoding.UTF8.GetBytes(mediaInfoProcess.StdOut)));
+            var outputFile = await outputLocation.Proxy(jobHelper.Request).PutAsync(outputFileName, new MemoryStream(Encoding.UTF8.GetBytes(mediaInfoProcess.StdOut)));
 
             jobHelper.Logger.Debug($"Successfully wrote MediaInfo output to container {outputLocation.Container} in folder {outputLocation.FolderPath} with file name {outputFileName}");
 

@@ -13,7 +13,7 @@ export class ModalComponent implements AfterViewInit {
   static readonly escapeKeyCode = 27;
   
   isShowing = false;
-  @ViewChild(ModalContentDirective) modalContent: ModalContentDirective;
+  @ViewChild(ModalContentDirective, { static: true }) modalContent: ModalContentDirective;
 
   constructor(private modalService: ModalService, private componentFactoryResolver: ComponentFactoryResolver) {
   }

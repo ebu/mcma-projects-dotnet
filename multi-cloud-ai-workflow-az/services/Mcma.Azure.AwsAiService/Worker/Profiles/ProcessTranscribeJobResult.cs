@@ -13,28 +13,28 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.AwsAiService.Worker
 {
-    internal class ProcessTranscribeJobResult : WorkerOperationHandler<ProcessTranscribeJobResultRequest>
+    internal class ProcessTranscribeJobResult : WorkerOperation<ProcessTranscribeJobResultRequest>
     {
-        public ProcessTranscribeJobResult(IDbTableProvider dbTableProvider, IResourceManagerProvider resourceManagerProvider)
+        public ProcessTranscribeJobResult(ProviderCollection providerCollection)
+            : base(providerCollection)
         {
-            DbTableProvider = dbTableProvider;
-            ResourceManagerProvider = resourceManagerProvider;
         }
 
-        private IDbTableProvider DbTableProvider { get; }
-
-        private IResourceManagerProvider ResourceManagerProvider { get; }
+        public override string Name => nameof(ProcessTranscribeJobResult);
 
         protected override async Task ExecuteAsync(WorkerRequest request, ProcessTranscribeJobResultRequest requestInput)
         {
+            var logger = ProviderCollection.LoggerProvider.Get(request.Tracker);
+
             var jobHelper =
-                new WorkerJobHelper<AIJob>(
-                    DbTableProvider.Table<JobAssignment>(request.Variables.TableName()),
-                    ResourceManagerProvider.Get(request.Variables),
+                new ProcessJobAssignmentHelper<AIJob>(
+                    ProviderCollection.DbTableProvider.Table<JobAssignment>(request.TableName()),
+                    ProviderCollection.ResourceManagerProvider.Get(request),
+                    logger,
                     request,
                     requestInput.JobAssignmentId);
 
-            var transcribeOutputClient = await requestInput.OutputFile.GetBucketClientAsync(jobHelper.Variables.AwsAccessKey(), jobHelper.Variables.AwsSecretKey());
+            var transcribeOutputClient = await requestInput.OutputFile.GetBucketClientAsync(request.AwsAccessKey(), request.AwsSecretKey());
 
             try
             {
@@ -47,22 +47,22 @@ namespace Mcma.Azure.AwsAiService.Worker
                         throw new Exception("Invalid or missing output location.");
 
                     jobHelper.JobOutput["outputFile"] = 
-                        await outputLocation.Proxy(request.Variables).PutAsync(
-                            requestInput.OutputFile.Key,
-                            await transcribeOutputClient.GetObjectStreamAsync(requestInput.OutputFile.Bucket, requestInput.OutputFile.Key, null));
+                        await outputLocation.Proxy(request).PutAsync(
+                            requestInput.OutputFile.AwsS3Key,
+                            await transcribeOutputClient.GetObjectStreamAsync(requestInput.OutputFile.AwsS3Bucket, requestInput.OutputFile.AwsS3Key, null));
 
                     await jobHelper.CompleteAsync();
                 }
                 catch (Exception ex)
                 {
-                    jobHelper.Logger.Exception(ex);
+                    logger.Error(ex);
                     try
                     {
                         await jobHelper.FailAsync(ex.ToString());
                     }
                     catch (Exception innerEx)
                     {
-                        jobHelper.Logger.Exception(innerEx);
+                        logger.Error(innerEx);
                     }
                 }
 
@@ -70,14 +70,13 @@ namespace Mcma.Azure.AwsAiService.Worker
                 {
                     await transcribeOutputClient.DeleteObjectAsync(new DeleteObjectRequest
                     {
-                        BucketName = requestInput.OutputFile.Bucket,
-                        Key = requestInput.OutputFile.Key,
+                        BucketName = requestInput.OutputFile.AwsS3Bucket,
+                        Key = requestInput.OutputFile.AwsS3Key,
                     });
                 }
                 catch (Exception error)
                 {
-                    jobHelper.Logger.Error("Failed to cleanup transcribe output file.");
-                    jobHelper.Logger.Exception(error);
+                    logger.Error("Failed to cleanup transcribe output file.", error);
                 }
             }
             finally

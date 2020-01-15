@@ -12,11 +12,11 @@ using Mcma.Azure.BlobStorage.Proxies;
 
 namespace Mcma.Azure.AwsAiService.Worker
 {
-    internal class TranslateText : IJobProfileHandler<AIJob>
+    internal class TranslateText : IJobProfile<AIJob>
     {
-        public const string Name = "AWS" + nameof(TranslateText);
+        public string Name => "AWS" + nameof(TranslateText);
 
-        public async Task ExecuteAsync(WorkerJobHelper<AIJob> jobHelper)
+        public async Task ExecuteAsync(ProcessJobAssignmentHelper<AIJob> jobHelper)
         {
             BlobStorageFileLocator inputFile;
             if (!jobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
@@ -26,10 +26,10 @@ namespace Mcma.Azure.AwsAiService.Worker
             if (!jobHelper.JobInput.TryGet(nameof(outputLocation), out outputLocation))
                 throw new Exception("Invalid or missing output location.");
 
-            var inputText = await inputFile.Proxy(jobHelper.Variables).GetAsTextAsync();
+            var inputText = await inputFile.Proxy(jobHelper.Request).GetAsTextAsync();
                 
             TranslateTextResponse translateResponse;
-            using (var translateService = new AmazonTranslateClient(jobHelper.Variables.AwsCredentials(), jobHelper.Variables.AwsRegion()))
+            using (var translateService = new AmazonTranslateClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
                 translateResponse =
                     await translateService.TranslateTextAsync(
                         new TranslateTextRequest
@@ -41,7 +41,7 @@ namespace Mcma.Azure.AwsAiService.Worker
 
             // put results in file on Blob storage
             jobHelper.JobOutput["outputFile"] =
-                await outputLocation.Proxy(jobHelper.Variables).PutAsTextAsync("Translate-" + Guid.NewGuid().ToString() + ".txt", translateResponse.TranslatedText);
+                await outputLocation.Proxy(jobHelper.Request).PutAsTextAsync("Translate-" + Guid.NewGuid().ToString() + ".txt", translateResponse.TranslatedText);
 
             await jobHelper.CompleteAsync();
         }

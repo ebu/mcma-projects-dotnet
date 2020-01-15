@@ -28,20 +28,20 @@ export class ContentViewModel {
 
             const celebsByName: { [key: string]: any } = {};
 
-            if (this.content.awsAiMetadata.celebrities && this.content.awsAiMetadata.celebrities.Celebrities) {
-                for (const celebrity of this.content.awsAiMetadata.celebrities.Celebrities) {
-                    if (celebrity.Celebrity) {
-                        if (!celebsByName[celebrity.Celebrity.Id]) {
-                            celebsByName[celebrity.Celebrity.Id] = {
-                                id: celebrity.Celebrity.Id,
-                                name: celebrity.Celebrity.Name,
-                                urls: celebrity.Celebrity.Urls,
+            if (this.content.awsAiMetadata.celebrities && this.content.awsAiMetadata.celebrities.celebrities) {
+                for (const celebrity of this.content.awsAiMetadata.celebrities.celebrities) {
+                    if (celebrity.celebrity) {
+                        if (!celebsByName[celebrity.celebrity.id]) {
+                            celebsByName[celebrity.celebrity.id] = {
+                                id: celebrity.celebrity.id,
+                                name: celebrity.celebrity.name,
+                                urls: celebrity.celebrity.urls,
                                 timestamps: []
                             };
                         }
-                        celebsByName[celebrity.Celebrity.Id].timestamps.push({
-                            timecode: this.convertToTimeCode(celebrity.Timestamp),
-                            seconds: celebrity.Timestamp / 1000
+                        celebsByName[celebrity.celebrity.id].timestamps.push({
+                            timecode: this.convertToTimeCode(celebrity.timestamp),
+                            seconds: celebrity.timestamp / 1000
                         });
                     }
                 }

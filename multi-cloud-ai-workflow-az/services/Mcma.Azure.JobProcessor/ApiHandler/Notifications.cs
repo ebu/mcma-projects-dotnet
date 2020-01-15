@@ -26,9 +26,9 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                     return;
                 }
 
-                var table = dbTableProvider.Table<JobProcess>(requestContext.Variables.TableName());
+                var table = dbTableProvider.Table<JobProcess>(requestContext.TableName());
 
-                var jobProcess = await table.GetAsync(requestContext.Variables.PublicUrl().TrimEnd('/') + "/job-processes/" + request.PathVariables["id"]);
+                var jobProcess = await table.GetAsync(requestContext.PublicUrl().TrimEnd('/') + "/job-processes/" + request.PathVariables["id"]);
                 
                 if (jobProcess == null)
                 {
@@ -44,9 +44,9 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                 }
 
                 await workerInvoker(requestContext).InvokeAsync(
-                    requestContext.Variables.WorkerFunctionId(),
+                    requestContext.WorkerFunctionId(),
                     "ProcessNotification",
-                    requestContext.Variables.GetAll().ToDictionary(),
+                    requestContext.GetAllContextVariables().ToDictionary(),
                     new
                     {
                         jobProcessId = jobProcess.Id,

@@ -6,47 +6,41 @@ namespace Mcma.Azure.WorkflowService.Worker
 {
     internal static class ContextVariableExtensions
     {
-        public static string AzureClientId(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(AzureClientId));
+        public static string AzureClientId(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureClientId));
 
-        public static string AzureClientSecret(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(AzureClientSecret));
+        public static string AzureClientSecret(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureClientSecret));
 
-        public static string AzureSubscriptionId(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(AzureSubscriptionId));
+        public static string AzureSubscriptionId(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureSubscriptionId));
 
-        public static string AzureTenantId(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(AzureTenantId));
+        public static string AzureTenantId(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureTenantId));
 
-        public static string AzureTenantName(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(AzureTenantName));
+        public static string AzureTenantName(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureTenantName));
 
-        public static string AzureResourceGroupName(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(AzureResourceGroupName));
+        public static string AzureResourceGroupName(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureResourceGroupName));
 
-        public static string ApiHandlerKey(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(ApiHandlerKey));
+        public static string LogicAppUrl(this IContextVariableProvider contextVariableProvider, string workflowName)
+            => contextVariableProvider.GetRequiredContextVariable(workflowName + nameof(LogicAppUrl));
 
-        public static string LogicAppUrl(this IContextVariables contextVariables, string workflowName)
-            => contextVariables.GetRequired(workflowName + nameof(LogicAppUrl));
-
-        public static AzureCredentials AzureCredentials(this IContextVariables contextVariables)
+        public static AzureCredentials AzureCredentials(this IContextVariableProvider contextVariableProvider)
             => 
             SdkContext.AzureCredentialsFactory
                 .FromServicePrincipal(
-                    contextVariables.AzureClientId(),
-                    contextVariables.AzureClientSecret(),
-                    contextVariables.AzureTenantId(),
+                    contextVariableProvider.AzureClientId(),
+                    contextVariableProvider.AzureClientSecret(),
+                    contextVariableProvider.AzureTenantId(),
                     AzureEnvironment.AzureGlobalCloud)
-                .WithDefaultSubscription(contextVariables.AzureSubscriptionId());
+                .WithDefaultSubscription(contextVariableProvider.AzureSubscriptionId());
 
-        public static string ServiceRegistryUrl(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(ServiceRegistryUrl));
-
-        public static string ServiceRegistryKey(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(ServiceRegistryKey));
-
-        public static string JobProfilesUrl(this IContextVariables contextVariables)
-            => contextVariables.ServiceRegistryUrl().TrimEnd('/') + "/job-profiles?code=" + contextVariables.ServiceRegistryKey();
+        public static string ServiceRegistryUrl(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(ServiceRegistryUrl));
+            
+        public static string JobProfilesUrl(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.ServiceRegistryUrl().TrimEnd('/') + "/job-profiles";
     }
 }

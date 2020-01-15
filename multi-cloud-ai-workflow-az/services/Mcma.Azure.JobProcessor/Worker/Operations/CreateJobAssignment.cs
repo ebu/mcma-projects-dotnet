@@ -9,26 +9,22 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.JobProcessor.Worker
 {
-    internal class CreateJobAssignment : WorkerOperationHandler<CreateJobAssignmentRequest>
+    internal class CreateJobAssignment : WorkerOperation<CreateJobAssignmentRequest>
     {
-        public CreateJobAssignment(IResourceManagerProvider resourceManagerProvider, IAuthProvider authProvider, IDbTableProvider dbTableProvider)
+        public CreateJobAssignment(ProviderCollection providerCollection)
+            : base(providerCollection)
         {
-            ResourceManagerProvider = resourceManagerProvider;
-            AuthProvider = authProvider;
-            DbTableProvider = dbTableProvider;
         }
 
-        private IResourceManagerProvider ResourceManagerProvider { get; }
-
-        private IAuthProvider AuthProvider { get; }
-
-        private IDbTableProvider DbTableProvider { get; }
+        public override string Name => nameof(CreateJobAssignment);
 
         protected override async Task ExecuteAsync(WorkerRequest request, CreateJobAssignmentRequest createRequest)
         {
-            var resourceManager = ResourceManagerProvider.Get(request.Variables);
+            var logger = ProviderCollection.LoggerProvider.Get(request.Tracker);
 
-            var table = DbTableProvider.Table<JobProcess>(request.Variables.TableName());
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(request);
+
+            var table = ProviderCollection.DbTableProvider.Table<JobProcess>(request.TableName());
 
             var jobProcessId = createRequest.JobProcessId;
             var jobProcess = await table.GetAsync(jobProcessId);
@@ -36,10 +32,10 @@ namespace Mcma.Azure.JobProcessor.Worker
             try
             {
                 // retrieving the job
-                var job = await resourceManager.ResolveAsync<Job>(jobProcess.Job);
+                var job = await resourceManager.GetAsync<Job>(jobProcess.Job);
 
                 // retrieving the jobProfile
-                var jobProfile = await resourceManager.ResolveAsync<JobProfile>(job.JobProfile);
+                var jobProfile = await resourceManager.GetAsync<JobProfile>(job.JobProfile);
                 
                 // validating job.JobInput with required input parameters of jobProfile
                 var jobInput = job.JobInput; //await resourceManager.ResolveAsync<JobParameterBag>(job.JobInput);
@@ -54,14 +50,14 @@ namespace Mcma.Azure.JobProcessor.Worker
                 }
 
                 // finding a service that is capable of handling the job type and job profile
-                var services = await resourceManager.GetAsync<Service>();
+                var services = await resourceManager.QueryAsync<Service>();
 
                 Service selectedService = null;
                 ResourceEndpointClient jobAssignmentResourceEndpoint = null;
                 
                 foreach (var service in services)
                 {
-                    var serviceClient = new ServiceClient(service, AuthProvider);
+                    var serviceClient = resourceManager.GetServiceClient(service);
 
                     jobAssignmentResourceEndpoint = null;
 
@@ -108,8 +104,7 @@ namespace Mcma.Azure.JobProcessor.Worker
             }
             catch (Exception error)
             {
-                request.Logger.Error("Failed to create job assignment");
-                request.Logger.Exception(error);
+                logger.Error("Failed to create job assignment", error);
 
                 jobProcess.Status = JobStatus.Failed;
                 jobProcess.StatusMessage = error.ToString();

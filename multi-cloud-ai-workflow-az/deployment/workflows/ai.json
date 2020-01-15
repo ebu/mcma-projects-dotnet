@@ -2,13 +2,14 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "tenantId": { "type": "string" },
+        "clientId": { "type": "string" },
+        "clientSecret": { "type": "string" },
         "mediaStorageConnectionId": { "type": "string" },
         "mediaStorageAccountName": { "type": "string" },
         "repositoryContainerName": { "type": "string" },
         "tempContainerName": { "type": "string" },
-        "websiteStorageConnectionId": { "type": "string" },
-        "websiteStorageAccountName": { "type": "string" },
-        "websiteContainerName": { "type": "string" }
+        "previewContainerName": { "type": "string" }
     },
     "variables": {},
     "resources": [
@@ -17,6 +18,9 @@
             "apiVersion": "2017-07-01",
             "name": "AiWorkflow",
             "location": "[resourceGroup().location]",
+            "identity": {
+               "type": "SystemAssigned"
+            },
             "properties": {
                 "state": "Enabled",
                 "parameters": {
@@ -29,6 +33,15 @@
                             }
                         }
                     },
+                    "tenantId": {
+                        "value": "[parameters('tenantId')]"
+                    },
+                    "clientId": {
+                        "value": "[parameters('clientId')]"
+                    },
+                    "clientSecret": {
+                        "value": "[parameters('clientSecret')]"
+                    },
                     "mediaStorageAccountName": {
                         "value": "[parameters('mediaStorageAccountName')]"
                     },
@@ -38,11 +51,8 @@
                     "tempContainerName": {
                         "value": "[parameters('tempContainerName')]"
                     },
-                    "websiteStorageAccountName": {
-                        "value": "[parameters('websiteStorageAccountName')]"
-                    },
-                    "websiteContainerName": {
-                        "value": "[parameters('websiteContainerName')]"
+                    "previewContainerName": {
+                        "value": "[parameters('previewContainerName')]"
                     }
                 },
                 "definition": {
@@ -161,8 +171,12 @@
                                         },
                                         "GetAwsDetectCelebritiesJobProfile": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['jobProfilesEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AWSDetectCelebrities')}"
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '?name=AWSDetectCelebrities')}"
                                             },
                                             "runAfter": {
                                                 "UpdateCelebritiesAwsProgressTo20": [
@@ -173,8 +187,12 @@
                                         },
                                         "GetAwsTranscribeAudioJobProfile": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['jobProfilesEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AWSTranscribeAudio')}"
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '?name=AWSTranscribeAudio')}"
                                             },
                                             "runAfter": {
                                                 "UpdateSpeechTranslateProgressTo20": [
@@ -185,8 +203,12 @@
                                         },
                                         "GetAwsTranslateTextJobProfile": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['jobProfilesEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AWSTranslateText')}"
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '?name=AWSTranslateText')}"
                                             },
                                             "runAfter": {
                                                 "WriteTranscriptToBlobStorage": [
@@ -219,8 +241,12 @@
                                         },
                                         "GetAzureExtractAllAiMetadataJobProfile": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['jobProfilesEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '&name=AzureExtractAllAIMetadata')}"
+                                                "uri": "@{concat(triggerBody()?['jobProfilesEndpoint'], '?name=AzureExtractAllAIMetadata')}"
                                             },
                                             "runAfter": {
                                                 "UpdateCelebritiesAzureProgressTo20": [
@@ -231,16 +257,24 @@
                                         },
                                         "GetBMContent": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '?resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
                                             },
                                             "runAfter": {},
                                             "type": "Http"
                                         },
                                         "GetBMContentForAwsCelebritiesUpdate": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', body('GetBMContent')?['id'])}"
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '?resourceType=BMContent&resourceId=', body('GetBMContent')?['id'])}"
                                             },
                                             "runAfter": {
                                                 "GetAwsCelebritiesOutput": [
@@ -251,8 +285,12 @@
                                         },
                                         "GetBMContentForAzureAiMetadataUpdate": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', body('GetBMContent')?['id'])}"
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '?resourceType=BMContent&resourceId=', body('GetBMContent')?['id'])}"
                                             },
                                             "runAfter": {
                                                 "GetAzureAiMetadataOutput": [
@@ -263,8 +301,12 @@
                                         },
                                         "GetBMContentForTranscriptionUpdate": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '?resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
                                             },
                                             "runAfter": {
                                                 "SelectTranscriptsInTranscriptionOutput": [
@@ -275,8 +317,12 @@
                                         },
                                         "GetBMContentForTranslationUpdate": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '?resourceType=BMContent&resourceId=', triggerBody()?['input']?['bmContent'])}"
                                             },
                                             "runAfter": {
                                                 "GetTranslationOutput": [
@@ -287,8 +333,12 @@
                                         },
                                         "GetBMEssence": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "method": "GET",
-                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '&resourceType=BMEssence&resourceId=', triggerBody()?['input']?['bmEssence'])}"
+                                                "uri": "@{concat(triggerBody()?['resourceEndpoint'], '?resourceType=BMEssence&resourceId=', triggerBody()?['input']?['bmEssence'])}"
                                             },
                                             "runAfter": {
                                                 "GetBMContent": [
@@ -344,6 +394,13 @@
                                         "RunAwsDetectCelebritiesAIJob": {
                                             "inputs": {
                                                 "subscribe": {
+                                                    "authentication": {
+                                                        "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                        "clientId": "@parameters('clientId')",
+                                                        "secret": "@parameters('clientSecret')",
+                                                        "tenant": "@parameters('tenantId')",
+                                                        "type": "ActiveDirectoryOAuth"
+                                                    },
                                                     "body": "@addProperty(addProperty(json(concat('{ \"@type\": \"AIJob\", \"jobProfile\": \"', body('GetAwsDetectCelebritiesJobProfile')?[0]?['id'], '\" }')), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('MediaFileLocator')), 'outputLocation', json(concat('{ \"@type\": \"BlobStorageFolderLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"folderPath\": \"AIJobResults\" }')))), 'notificationEndpoint', json(concat('{ \"@type\": \"NotificationEndpoint\", \"httpEndpoint\": \"', listCallbackURL(), '\" }')))",
                                                     "method": "POST",
                                                     "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -360,6 +417,13 @@
                                         "RunAwsTranscribeAudioAIJob": {
                                             "inputs": {
                                                 "subscribe": {
+                                                    "authentication": {
+                                                        "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                        "clientId": "@parameters('clientId')",
+                                                        "secret": "@parameters('clientSecret')",
+                                                        "tenant": "@parameters('tenantId')",
+                                                        "type": "ActiveDirectoryOAuth"
+                                                    },
                                                     "body": "@addProperty(addProperty(json(concat('{ \"@type\": \"AIJob\", \"jobProfile\": \"', body('GetAwsTranscribeAudioJobProfile')?[0]?['id'], '\" }')), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('MediaFileLocator')), 'outputLocation', json(concat('{ \"@type\": \"BlobStorageFolderLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"folderPath\": \"AIJobResults\" }')))), 'notificationEndpoint', json(concat('{ \"@type\": \"NotificationEndpoint\", \"httpEndpoint\": \"', listCallbackURL(), '\" }')))",
                                                     "method": "POST",
                                                     "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -376,6 +440,13 @@
                                         "RunAwsTranslateTextAiJob": {
                                             "inputs": {
                                                 "subscribe": {
+                                                    "authentication": {
+                                                        "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                        "clientId": "@parameters('clientId')",
+                                                        "secret": "@parameters('clientSecret')",
+                                                        "tenant": "@parameters('tenantId')",
+                                                        "type": "ActiveDirectoryOAuth"
+                                                    },
                                                     "body": "@addProperty(addProperty(json(concat('{ \"@type\": \"AIJob\", \"jobProfile\": \"', body('GetAwsTranslateTextJobProfile')?[0]?['id'], '\" }')), 'jobInput', addProperty(addProperty(json(concat('{ \"@type\": \"JobParameterBag\", \"targetLanguageCode\": \"ja\" }')), 'outputLocation', json(concat('{ \"@type\": \"BlobStorageFolderLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"folderPath\": \"AIResults\" }'))), 'inputFile', json(concat('{ \"@type\": \"BlobStorageFileLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"filePath\": \"AIInput/', actions('WriteTranscriptToBlobStorage')?['inputs']?['queries']?['name'], '\" }')))), 'notificationEndpoint', json(concat('{ \"@type\": \"NotificationEndpoint\", \"httpEndpoint\": \"', listCallbackURL(), '\" }')))",
                                                     "method": "POST",
                                                     "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -392,6 +463,13 @@
                                         "RunAzureExtractAllAiMetadataJob": {
                                             "inputs": {
                                                 "subscribe": {
+                                                    "authentication": {
+                                                        "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                        "clientId": "@parameters('clientId')",
+                                                        "secret": "@parameters('clientSecret')",
+                                                        "tenant": "@parameters('tenantId')",
+                                                        "type": "ActiveDirectoryOAuth"
+                                                    },
                                                     "body": "@addProperty(addProperty(json(concat('{ \"@type\": \"AIJob\", \"jobProfile\": \"', body('GetAzureExtractAllAiMetadataJobProfile')?[0]?['id'], '\" }')), 'jobInput', addProperty(addProperty(json('{ \"@type\": \"JobParameterBag\" }'), 'inputFile', variables('MediaFileLocator')), 'outputLocation', json(concat('{ \"@type\": \"BlobStorageFolderLocator\", \"storageAccountName\": \"', parameters('mediaStorageAccountName'), '\", \"container\": \"', parameters('tempContainerName'), '\", \"folderPath\": \"AIJobResults\" }')))), 'notificationEndpoint', json(concat('{ \"@type\": \"NotificationEndpoint\", \"httpEndpoint\": \"', listCallbackURL(), '\" }')))",
                                                     "method": "POST",
                                                     "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -431,6 +509,10 @@
                                         },
                                         "UpdateBMContentWithAwsCelebritiesOutput": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@setProperty(body('GetBMContentForAwsCelebritiesUpdate'), 'awsAiMetadata', addProperty(body('GetBMContentForAwsCelebritiesUpdate')?['awsAiMetadata'], 'celebrities', json(base64ToString(body('GetAwsCelebritiesOutput')?['$content']))))",
                                                 "method": "PUT",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -444,6 +526,10 @@
                                         },
                                         "UpdateBMContentWithAzureAiMetadataOutput": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@setProperty(body('GetBMContentForAzureAiMetadataUpdate'), 'azureAiMetadata', json(base64ToString(body('GetAzureAiMetadataOutput')?['$content'])))",
                                                 "method": "PUT",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -457,6 +543,10 @@
                                         },
                                         "UpdateBMContentWithTranscription": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@setProperty(body('GetBMContentForTranscriptionUpdate'), 'awsAiMetadata', addProperty(body('GetBMContentForTranscriptionUpdate')?['awsAiMetadata'], 'transcription', addProperty(json('{}'), 'original', join(body('SelectTranscriptsInTranscriptionOutput'), ''))))",
                                                 "method": "PUT",
                                                 "uri": "@triggerBody()?['resourceEndpoint']"
@@ -470,6 +560,10 @@
                                         },
                                         "UpdateBMContentWithTranslation": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['resourceEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": "@setProperty(body('GetBMContentForTranscriptionUpdate'), 'awsAiMetadata', setProperty(body('GetBMContentForTranscriptionUpdate')?['awsAiMetadata'], 'transcription', addProperty(body('GetBMContentForTranslationUpdate')?['awsAiMetadata']?['transcription'], 'translation', body('GetTranslationOutput'))))",
                                                 "method": "PUT",
                                                 "uri": "@{triggerBody()?['resourceEndpoint']}"
@@ -483,6 +577,10 @@
                                         },
                                         "UpdateCelebritiesAwsProgressTo100": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "detect-celebrities-aws": 100
@@ -501,6 +599,10 @@
                                         },
                                         "UpdateCelebritiesAwsProgressTo20": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "detect-celebrities-aws": 20
@@ -519,6 +621,10 @@
                                         },
                                         "UpdateCelebritiesAwsProgressTo80": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "detect-celebrities-aws": 80
@@ -537,6 +643,10 @@
                                         },
                                         "UpdateCelebritiesAzureProgressTo100": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "detect-celebrities-azure": 100
@@ -555,6 +665,10 @@
                                         },
                                         "UpdateCelebritiesAzureProgressTo20": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "detect-celebrities-azure": 20
@@ -573,6 +687,10 @@
                                         },
                                         "UpdateCelebritiesAzureProgressTo80": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "detect-celebrities-azure": 80
@@ -591,6 +709,10 @@
                                         },
                                         "UpdateSpeechTranslateProgressTo100": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "speech-text-translate": 100
@@ -609,6 +731,10 @@
                                         },
                                         "UpdateSpeechTranslateProgressTo20": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "speech-text-translate": 20
@@ -627,6 +753,10 @@
                                         },
                                         "UpdateSpeechTranslateProgressTo40": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "speech-text-translate": 40
@@ -645,6 +775,10 @@
                                         },
                                         "UpdateSpeechTranslateProgressTo60": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "speech-text-translate": 60
@@ -663,6 +797,10 @@
                                         },
                                         "UpdateSpeechTranslateProgressTo80": {
                                             "inputs": {
+                                                "authentication": {
+                                                    "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
                                                 "body": {
                                                     "parallelProgress": {
                                                         "speech-text-translate": 80
@@ -823,6 +961,10 @@
                                 },
                                 "NotifyOnError": {
                                     "inputs": {
+                                        "authentication": {
+                                            "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                            "type": "ManagedServiceIdentity"
+                                        },
                                         "body": "@concat('{ \"status\": \"Failed\", \"errors\": ', variables('Errors'), ' }')",
                                         "method": "POST",
                                         "uri": "@triggerBody()?['notificationEndpoint']"
@@ -835,6 +977,10 @@
                                 "actions": {
                                     "NotifyOnSuccess": {
                                         "inputs": {
+                                            "authentication": {
+                                                "audience": "@{triggerBody()?['notificationEndpointAudience']}",
+                                                "type": "ManagedServiceIdentity"
+                                            },
                                             "body": {
                                                 "progress": "100",
                                                 "status": "COMPLETED"
@@ -909,6 +1055,15 @@
                             "defaultValue": {},
                             "type": "Object"
                         },
+                        "tenantId": {
+                            "type": "String"
+                        },
+                        "clientId": {
+                            "type": "String"
+                        },
+                        "clientSecret": {
+                            "type": "String"
+                        },
                         "mediaStorageAccountName": {
                             "type": "String"
                         },
@@ -918,10 +1073,7 @@
                         "tempContainerName": {
                             "type": "String"
                         },
-                        "websiteContainerName": {
-                            "type": "String"
-                        },
-                        "websiteStorageAccountName": {
+                        "previewContainerName": {
                             "type": "String"
                         }
                     },

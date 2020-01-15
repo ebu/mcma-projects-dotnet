@@ -11,17 +11,17 @@ using Mcma.Aws.S3;
 
 namespace Mcma.Azure.AwsAiService.Worker
 {
-    internal class TranscribeAudio : IJobProfileHandler<AIJob>
+    internal class TranscribeAudio : IJobProfile<AIJob>
     {
-        public const string Name = "AWSTranscribeAudio";
+        public string Name => "AWS" + nameof(TranscribeAudio);
 
-        public async Task ExecuteAsync(WorkerJobHelper<AIJob> jobHelper)
+        public async Task ExecuteAsync(ProcessJobAssignmentHelper<AIJob> jobHelper)
         {
             BlobStorageFileLocator inputFile;
             if (!jobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
                 throw new Exception("Invalid or missing input file.");
 
-            var publicUri = new Uri(inputFile.Proxy(jobHelper.Variables).GetPublicReadOnlyUrl());
+            var publicUri = new Uri(inputFile.Proxy(jobHelper.Request).GetPublicReadOnlyUrl());
 
             string mediaFormat;
             if (publicUri.AbsolutePath.EndsWith("mp3", StringComparison.OrdinalIgnoreCase))
@@ -36,20 +36,20 @@ namespace Mcma.Azure.AwsAiService.Worker
                 throw new Exception($"Unable to determine media format from input file '{inputFile.Url}'");
 
             // create destination locator
-            var transcribeInputFile = new S3FileLocator
+            var transcribeInputFile = new AwsS3FileLocator
             {
-                Bucket = jobHelper.Variables.AwsAiInputBucket(),
-                Key = inputFile.FilePath
+                AwsS3Bucket = jobHelper.Request.AwsAiInputBucket(),
+                AwsS3Key = inputFile.FilePath
             };
             
             // copy input file from Blob Storage to S3
-            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Variables).GetAsync())
-            using (var rekoBucketClient = await transcribeInputFile.GetBucketClientAsync(jobHelper.Variables.AwsAccessKey(), jobHelper.Variables.AwsSecretKey()))
+            using (var blobDownloadStream = await inputFile.Proxy(jobHelper.Request).GetAsync())
+            using (var rekoBucketClient = await transcribeInputFile.GetBucketClientAsync(jobHelper.Request.AwsAccessKey(), jobHelper.Request.AwsSecretKey()))
             {
-                await rekoBucketClient.UploadObjectFromStreamAsync(transcribeInputFile.Bucket, transcribeInputFile.Key, blobDownloadStream, null);
+                await rekoBucketClient.UploadObjectFromStreamAsync(transcribeInputFile.AwsS3Bucket, transcribeInputFile.AwsS3Key, blobDownloadStream, null);
             }
 
-            using (var transcribeService = new AmazonTranscribeServiceClient(jobHelper.Variables.AwsCredentials(), jobHelper.Variables.AwsRegion()))
+            using (var transcribeService = new AmazonTranscribeServiceClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
                 await transcribeService.StartTranscriptionJobAsync(
                     new StartTranscriptionJobRequest
                     {
@@ -57,7 +57,7 @@ namespace Mcma.Azure.AwsAiService.Worker
                         LanguageCode = "en-US",
                         Media = new Media { MediaFileUri = transcribeInputFile.Url },
                         MediaFormat = mediaFormat,
-                        OutputBucketName = jobHelper.Variables.AwsAiOutputBucket()
+                        OutputBucketName = jobHelper.Request.AwsAiOutputBucket()
                     });
         }
     }

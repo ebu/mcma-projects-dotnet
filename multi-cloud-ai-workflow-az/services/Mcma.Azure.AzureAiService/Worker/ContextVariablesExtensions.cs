@@ -6,22 +6,25 @@ namespace Mcma.Azure.AzureAiService.Worker
     {
         private const string Prefix = "Azure";
 
-        public static string ApiHandlerKey(this IContextVariables contextVariables)
-            => contextVariables.GetRequired(nameof(ApiHandlerKey));
+        public static string NotificationsUrl(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(NotificationsUrl));
 
-        public static string VideoIndexerApiUrl(this IContextVariables contextVariables)
-            => contextVariables.GetPrefixed(nameof(VideoIndexerApiUrl));
+        public static string NotificationHandlerKey(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetRequiredContextVariable(nameof(NotificationHandlerKey));
 
-        public static string VideoIndexerLocation(this IContextVariables contextVariables)
-            => contextVariables.GetPrefixed(nameof(VideoIndexerLocation));
+        public static string VideoIndexerApiUrl(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetPrefixed(nameof(VideoIndexerApiUrl));
 
-        public static string VideoIndexerAccountID(this IContextVariables contextVariables)
-            => contextVariables.GetPrefixed(nameof(VideoIndexerAccountID));
+        public static string VideoIndexerLocation(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetPrefixed(nameof(VideoIndexerLocation));
 
-        public static string VideoIndexerSubscriptionKey(this IContextVariables contextVariables)
-            => contextVariables.GetPrefixed(nameof(VideoIndexerSubscriptionKey));
+        public static string VideoIndexerAccountID(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetPrefixed(nameof(VideoIndexerAccountID));
 
-        private static string GetPrefixed(this IContextVariables contextVariables, string name)
-            => contextVariables.GetRequired(Prefix + name);
+        public static string VideoIndexerSubscriptionKey(this IContextVariableProvider contextVariableProvider)
+            => contextVariableProvider.GetPrefixed(nameof(VideoIndexerSubscriptionKey));
+
+        private static string GetPrefixed(this IContextVariableProvider contextVariableProvider, string name)
+            => contextVariableProvider.GetRequiredContextVariable(Prefix + name);
     }
 }

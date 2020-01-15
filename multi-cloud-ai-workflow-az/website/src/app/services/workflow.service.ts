@@ -19,12 +19,16 @@ export class WorkflowService {
     constructor(private configService: ConfigService, private mcmaClientService: McmaClientService) {
     }
 
-    runWorkflow(objectKey: string, metadata: DescriptiveMetadata, profileName = this.WORKFLOW_NAME): Observable<WorkflowJob> {
+    runWorkflow(filePath: string, metadata: DescriptiveMetadata, profileName = this.WORKFLOW_NAME): Observable<WorkflowJob> {
         const workflowJobSubject = new BehaviorSubject<WorkflowJob>(null);
 
         const sub = this.mcmaClientService.resourceManager$.pipe(
-            zip(this.configService.get<string>("aws.s3.uploadBucket")),
-            switchMap(([resourceManager, uploadBucket]) => from(this.runWorkflowAsync(resourceManager, profileName, uploadBucket, objectKey, metadata)))
+            zip(
+                this.configService.get<string>("azure.storage.mediaStorageAccountName"),
+                this.configService.get<string>("azure.storage.uploadContainer")
+            ),
+            switchMap(([resourceManager, mediaStorageAccountName, uploadContainer]) =>
+                from(this.runWorkflowAsync(resourceManager, profileName, mediaStorageAccountName, uploadContainer, filePath, metadata)))
         ).subscribe(job => {
             sub.unsubscribe();
             workflowJobSubject.next(job);
@@ -47,7 +51,7 @@ export class WorkflowService {
     }
 
     private getWorkflowJob(jobId: string): Observable<any> {
-        return this.mcmaClientService.resourceManager$.pipe(switchMap(resourceManager => from(resourceManager.resolve<WorkflowJob>(jobId))));
+        return this.mcmaClientService.resourceManager$.pipe(switchMap(resourceManager => from(resourceManager.get<WorkflowJob>(jobId))));
     }
 
     getWorkflowJobVm(jobId: string): Observable<WorkflowJobViewModel> {
@@ -62,7 +66,7 @@ export class WorkflowService {
         const sub1 =
             timer(0, 3000).pipe(
                 switchMap(() => this.mcmaClientService.resourceManager$),
-                switchMap(resourceManager => from(resourceManager.resolve<WorkflowJob>(workflowJobId))),
+                switchMap(resourceManager => from(resourceManager.get<WorkflowJob>(workflowJobId))),
                 takeWhile(j => !isFinished(j))
             ).subscribe(
                 job => subject.next(new WorkflowJobViewModel(job, fakeRunning)),
@@ -83,7 +87,7 @@ export class WorkflowService {
 
     private async getJobProfileIdAsync(resourceManager: ResourceManager, profileName: string) {
         // get job profiles filtered by name
-        const jobProfiles = await resourceManager.get<JobProfile>("JobProfile", { name: profileName });
+        const jobProfiles = await resourceManager.query<JobProfile>("JobProfile", { name: profileName });
 
         const jobProfileId = jobProfiles.length ? jobProfiles[0].id : null;
 
@@ -97,8 +101,9 @@ export class WorkflowService {
 
     private async runWorkflowAsync(resourceManager: ResourceManager,
         profileName: string,
-        uploadBucket: string,
-        objectKey: string,
+        storageAccountName: string,
+        uploadContainer: string,
+        filePath: string,
         metadata: DescriptiveMetadata): Promise<WorkflowJob> {
         const jobProfileId = await this.getJobProfileIdAsync(resourceManager, profileName);
 
@@ -108,9 +113,10 @@ export class WorkflowService {
             jobInput: new JobParameterBag({
                 metadata: metadata,
                 inputFile: {
-                    "@type": "S3Locator",
-                    awsS3Bucket: uploadBucket,
-                    awsS3Key: objectKey
+                    "@type": "BlobStorageFileLocator",
+                    storageAccountName: storageAccountName,
+                    container: uploadContainer,
+                    filePath
                 }
             })
         });
@@ -126,7 +132,7 @@ export class WorkflowService {
     private async getWorkflowJobsAsync(resourceManager: ResourceManager): Promise<WorkflowJob[]> {
         const jobProfileId = await this.getJobProfileIdAsync(resourceManager, this.WORKFLOW_NAME);
 
-        const jobs = await resourceManager.get(WorkflowJob);
+        const jobs = await resourceManager.query(WorkflowJob);
         console.log("All jobs", jobs);
 
         const filteredJobs = jobs.filter(j => j["@type"] === this.WORKFLOW_JOB_TYPE && j.jobProfile && j.jobProfile === jobProfileId);

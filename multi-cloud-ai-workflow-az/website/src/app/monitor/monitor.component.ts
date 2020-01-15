@@ -1,10 +1,11 @@
 import { Component, OnInit } from "@angular/core";
-import { Observable, of } from "rxjs";
+import { Observable, of, zip } from "rxjs";
 import { tap, map } from "rxjs/operators";
 
 import { isFinished } from "../models/job-statuses";
 import { WorkflowService } from "../services/workflow.service";
 import { WorkflowJobViewModel } from "../view-models/workflow-job-vm";
+import { ConfigService } from '../services/config.service';
   
 @Component({
     selector: "mcma-monitor",
@@ -15,7 +16,7 @@ export class MonitorComponent implements OnInit {
   workflowJobVms$: Observable<Observable<WorkflowJobViewModel>[]>;
   selectedWorkflowJobVm$: Observable<WorkflowJobViewModel>;
 
-  constructor(private workflowService: WorkflowService) { }
+  constructor(private workflowService: WorkflowService, private configService: ConfigService) { }
 
   ngOnInit(): void {
     this.refresh();
@@ -23,17 +24,21 @@ export class MonitorComponent implements OnInit {
   
   refresh(): void {
     this.workflowJobVms$ =
-      this.workflowService.getWorkflowJobs().pipe(
-        map(jobs =>
+      zip(
+        this.workflowService.getWorkflowJobs(),
+        this.configService.get<boolean>("enablePolling")
+      ).pipe(
+        map(([jobs, enablePolling]) =>
           jobs.map(j =>
-            !isFinished(j)
+            !isFinished(j) && enablePolling
               ? this.workflowService.pollForCompletion(j.id)
               : of(new WorkflowJobViewModel(j)))),
         tap(jobs => {
           if (jobs && jobs.length > 0) {
             this.selectedWorkflowJobVm$ = jobs[0];
           }
-        }));
+        })
+      );
   }
 
   onJobSelected(workflowJob: Observable<WorkflowJobViewModel>): void {

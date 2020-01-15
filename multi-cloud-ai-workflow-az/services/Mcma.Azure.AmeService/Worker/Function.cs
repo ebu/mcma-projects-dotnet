@@ -7,35 +7,32 @@ using Mcma.Azure.Functions.Worker;
 using Mcma.Client;
 using Mcma.Core;
 using Mcma.Core.Serialization;
-using Mcma.Data;
 using Mcma.Worker;
-using Mcma.Worker.Builders;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Queue;
-
-using McmaLogger = Mcma.Core.Logging.Logger;
 
 namespace Mcma.Azure.AmeService.Worker
 {
     public static class Function
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
-            
-        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureFunctionKeyAuth();
 
-        private static IDbTableProvider DbTableProvider { get; } =
-            new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("ame-service-worker");
 
-        private static IResourceManagerProvider ResourceManagerProvider { get; } = new ResourceManagerProvider(AuthProvider);
+        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureAdManagedIdentityAuth();
+
+        private static ProviderCollection ProviderCollection { get; } =
+            new ProviderCollection(
+                LoggerProvider,
+                new ResourceManagerProvider(AuthProvider),
+                new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables()),
+                AuthProvider
+            );
 
         private static IWorker Worker =
-            new WorkerBuilder()
-                .HandleJobsOfType<AmeJob>(
-                    DbTableProvider,
-                    ResourceManagerProvider,
-                    x => x.AddProfile<ExtractTechnicalMetadata>())
-                .Build();
+            new Mcma.Worker.Worker(ProviderCollection)
+                .AddJobProcessing<AmeJob>(op =>op.AddProfile<ExtractTechnicalMetadata>());
             
         [FunctionName("AmeServiceWorker")]
         public static async Task Run(
@@ -43,11 +40,13 @@ namespace Mcma.Azure.AmeService.Worker
             ILogger log,
             ExecutionContext executionContext)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
+            var workerRequest = queueMessage.ToWorkerRequest();
+
+            LoggerProvider.AddLogger(log, workerRequest.Tracker);
 
             MediaInfoProcess.HostRootDir = executionContext.FunctionAppDirectory;
 
-            await Worker.DoWorkAsync(queueMessage.ToWorkerRequest());
+            await Worker.DoWorkAsync(workerRequest);
         }
     }
 }

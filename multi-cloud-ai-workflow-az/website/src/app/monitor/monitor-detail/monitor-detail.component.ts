@@ -6,6 +6,7 @@ import { WorkflowService } from "../../services/workflow.service";
 import { ContentService } from "../../services/content.service";
 import { WorkflowJobViewModel } from "../../view-models/workflow-job-vm";
 import { ContentViewModel } from "../../view-models/content-vm";
+import { ConfigService } from 'src/app/services/config.service';
 
 @Component({
     selector: "mcma-monitor-detail",
@@ -18,7 +19,7 @@ export class MonitorDetailComponent {
     content$: Observable<ContentViewModel>;
 
     private currentTimeSubject = new BehaviorSubject<number>(0);
-    currentTime$ = this.currentTimeSubject.asObservable();
+    currentTime$ = this.currentTimeSubject.asObservable().pipe(tap(x => console.log("setting current time to " + x)));
 
     selectedAzureCelebrity;
 
@@ -28,27 +29,40 @@ export class MonitorDetailComponent {
 
         if (val) {
             this.aiJobVm$ = val.pipe(
-                switchMap(conformJobVm => 
-                    conformJobVm.isCompleted && conformJobVm.aiJobUrl
-                        ? this.workflowService.pollForCompletion(conformJobVm.aiJobUrl)
-                        : of(null)
+                switchMap(conformJobVm =>
+                    this.configService.get<boolean>("enablePolling").pipe(
+                        switchMap(enablePolling =>
+                            conformJobVm.isCompleted && conformJobVm.aiJobUrl
+                                ? enablePolling
+                                    ? this.workflowService.pollForCompletion(conformJobVm.aiJobUrl)
+                                    : this.workflowService.getWorkflowJobVm(conformJobVm.aiJobUrl)
+                                : of(null)
+                        )
+                    )
                 )
             );
             
             this.content$ = val.pipe(
                 switchMap(conformJobVm =>
-                    conformJobVm.isCompleted && conformJobVm.contentUrl
-                        ? this.contentService.pollUntil(conformJobVm.contentUrl, this.aiJobVm$.pipe(map(aiJobVm => aiJobVm && aiJobVm.isFinished)))
-                        : of (null)
+                    this.configService.get<boolean>("enablePolling").pipe(
+                        switchMap(enablePolling =>
+                            conformJobVm.isCompleted && conformJobVm.contentUrl
+                                ? enablePolling
+                                    ? this.contentService.pollUntil(conformJobVm.contentUrl, this.aiJobVm$.pipe(map(aiJobVm => aiJobVm && aiJobVm.isFinished)))
+                                    : this.contentService.getContent(conformJobVm.contentUrl).pipe(map(c => new ContentViewModel(c)))
+                                : of (null)
+                        )
+                    )
                 ),
                 tap(contentVm => console.log("got content vm", contentVm))
             );
         }
     }
 
-    constructor(private workflowService: WorkflowService, private contentService: ContentService) {}
+    constructor(private workflowService: WorkflowService, private contentService: ContentService, private configService: ConfigService) {}
 
     seekVideoAws(timestamp: { timecode: string, seconds: number }): void {
+        console.log("seekVideoAws", timestamp);
         this.currentTimeSubject.next(timestamp.seconds);
     }
 
@@ -67,5 +81,9 @@ export class MonitorDetailComponent {
         }
 
         this.currentTimeSubject.next(timeSeconds);
+    }
+
+    logTimeUpdate(evt) {
+        console.log(evt);
     }
 }

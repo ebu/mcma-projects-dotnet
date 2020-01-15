@@ -1,9 +1,10 @@
 import { WorkflowJob, JobStatus } from "@mcma/core";
 
 export function isFinished(workflowJob: WorkflowJob): boolean {
-    return JobStatus.completed.equals(workflowJob.status) || JobStatus.failed.equals(workflowJob.status);
+    return workflowJob.status &&
+        (JobStatus.Completed.toLowerCase() === workflowJob.status.toLowerCase() || JobStatus.Failed.toLowerCase() === workflowJob.status.toLowerCase());
 }
 
 export function isCompleted(workflowJob: WorkflowJob): boolean {
-    return JobStatus.completed.equals(workflowJob.status);
+    return workflowJob.status && JobStatus.Completed.toLowerCase() === workflowJob.status.toLowerCase();
 }

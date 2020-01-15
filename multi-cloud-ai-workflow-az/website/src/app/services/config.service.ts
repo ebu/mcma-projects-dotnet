@@ -1,17 +1,22 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable, BehaviorSubject, of } from "rxjs";
-import { switchMap, map, tap } from "rxjs/operators";
+import { switchMap, map, tap, share } from "rxjs/operators";
+import { emitOnceAndCache } from '../utility-functions';
 
 @Injectable()
 export class ConfigService {
-    private configLoadSubject = new BehaviorSubject(null);
-    private configLoad$ = this.configLoadSubject.asObservable().pipe(switchMap(x => !!x ? of(x) : this.loadConfig()));
+    private loadConfig$: Observable<any>;
+    private configSubject = new BehaviorSubject<any>(null);
+    private config$: Observable<any>;
 
-    constructor(private httpClient: HttpClient) {}
+    constructor(private httpClient: HttpClient) {
+        this.loadConfig$ = this.httpClient.get("config.json");
+        this.config$ = emitOnceAndCache(this.configSubject, this.loadConfig$);
+    }
 
     get<T>(key: string, defaultVal: T = null): Observable<T> {
-        return this.configLoad$.pipe(
+        return this.config$.pipe(
             map(c => {
                 console.log("getting config for key " + key);
                 let val = c;
@@ -25,9 +30,5 @@ export class ConfigService {
                 return val;
             })
         );
-    }
-
-    private loadConfig(): Observable<any> {
-        return this.httpClient.get("config.json").pipe(tap(resp => this.configLoadSubject.next(resp)));
     }
 }

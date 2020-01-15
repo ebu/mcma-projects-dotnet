@@ -7,7 +7,7 @@
 #load "website/build-tasks.csx"
 #load "deployment/build-tasks.csx"
 #load "deployment/registry/register.csx"
-// #load "deployment/registry/unregister.csx"
+#load "deployment/registry/unregister.csx"
 
 using System.Runtime.InteropServices;
 
@@ -39,10 +39,10 @@ Build.Tasks["deployNoBuild"] = Deploy;
 Build.Tasks["deploy"] = new AggregateTask(BuildAllSln, Deploy);
 Build.Tasks["destroy"] = Destroy;
 Build.Tasks["register"] = new UpdateServiceRegistry();
+Build.Tasks["unregister"] = new ClearServiceRegistry();
 Build.Tasks["tfOutput"] = new RetrieveTerraformOutput();
 Build.Tasks["generateTfVars"] = new GenerateTerraformTfVars();
 Build.Tasks["generateWebsiteTf"] = new GenerateTerraformWebsiteTf();
 Build.Tasks["plan"] = Plan;
-Build.Tasks["generateKeys"] = new GenerateEncryptionKeys();
 
 await Build.Run(Args?.FirstOrDefault());

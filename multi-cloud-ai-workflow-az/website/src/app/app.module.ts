@@ -8,8 +8,8 @@ import { MaterialModule } from "./material.module";
 import { AppRoutingModule } from "./app-routing.module";
 
 import { ConfigService } from "./services/config.service";
-import { S3BucketService } from "./services/s3bucket.service";
-import { CognitoAuthService } from "./services/cognito-auth.service";
+import { AzureBlobStorageService } from "./services/azure-blob-storage.service";
+import { AzureAdAuthService } from "./services/azure-ad-auth.service";
 import { AuthGuard } from "./guards/auth.guard";
 import { WorkflowService } from "./services/workflow.service";
 import { ModalService } from "./services/modal.service";
@@ -56,10 +56,10 @@ import { McmaClientService } from "./services/mcma-client.service";
   ],
   providers: [
     ConfigService,
-    CognitoAuthService,
+    AzureAdAuthService,
     McmaClientService,
     ModalService,
-    S3BucketService,
+    AzureBlobStorageService,
     AuthGuard,
     WorkflowService,
     ContentService

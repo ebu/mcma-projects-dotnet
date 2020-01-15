@@ -1,5 +1,3 @@
-variable private_encryption_key {}
-
 #########################
 # Environment Variables
 #########################
@@ -38,6 +36,7 @@ variable "deploy_container" {}
 variable "upload_container" {}
 variable "temp_container" {}
 variable "repository_container" {}
+variable "preview_container" {}
 variable "website_container" {}
 
 

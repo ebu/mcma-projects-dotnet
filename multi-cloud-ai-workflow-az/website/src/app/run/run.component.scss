@@ -7,7 +7,7 @@
     align-items: center;
 }
 
-.s3-objects-container {
+.azure-blobs-container {
     margin-top: 50px;
     height: 700px;
     width: 1000px;
@@ -15,14 +15,14 @@
     flex-direction: column;
     background: #292929;
 
-    .bucket-header {
+    .blobs-container-header {
         height: 60px;
         display: flex;
         align-items: center;
         background: mat-color($mcma-primary, 900);
         padding: 0 30px;
 
-        .bucket-label {
+        .blobs-container-label {
             font-size: 14px;
             font-style: italic;
             color: mat-color($mcma-primary, 400);
@@ -65,7 +65,7 @@
         padding: 15px 40px;
         overflow: auto;
 
-        .s3-object {
+        .azure-blob {
             display: flex;
             align-items: center;
             .size {
@@ -76,7 +76,7 @@
         }
     }
 
-    .empty-bucket {
+    .empty-blobs-container {
         font-size: 18px;
         color: mat-color($mcma-primary, 300);
         font-style: italic;

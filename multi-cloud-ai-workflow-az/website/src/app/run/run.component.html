@@ -1,15 +1,15 @@
 
 <div class="run-container">
-  <div class="s3-objects-container">
+  <div class="azure-blobs-container">
 
-    <ng-container *ngIf="bucket$ | async as bucket">
+    <ng-container *ngIf="container$ | async as container">
 
-      <div class="bucket-header">
-        <label class="bucket-label">Bucket:</label>
-        <span class="bucket-name">{{ bucket.name }}</span>
+      <div class="blobs-container-header">
+        <label class="blobs-container-label">Container:</label>
+        <span class="blobs-container-name">{{ container.name }}</span>
         <button mat-icon-button (click)="refresh()"><mat-icon color="primary">refresh</mat-icon></button>
         <div class="filter">
-          <input type="text" [formControl]="filter" placeholder="Filter objects...">
+          <input type="text" [formControl]="filter" placeholder="Filter blobs...">
         </div>
         <button class="upload-button" mat-raised-button color="accent">
           <label for="file-upload">
@@ -20,21 +20,21 @@
         </button>
       </div>
 
-      <mat-selection-list *ngIf="bucket.objects.length > 0" (selectionChange)="onSelectedObjectChanged($event)" (drop)="onDrop($event)" (dragover)="onDragOver($event)">
-        <mat-list-option *ngFor="let s3Object of objects$ | async" checkboxPosition="before" [value]="s3Object" [selected]="selectedKey === s3Object.key">
-          <div class="s3-object">
-            <span class="key">{{ s3Object.key }}</span>
-            <span class="size">{{ s3Object.size | fileSize }}</span>
+      <mat-selection-list *ngIf="container.blobs.length > 0" (selectionChange)="onSelectedBlobChanged($event)" (drop)="onDrop($event)" (dragover)="onDragOver($event)">
+        <mat-list-option *ngFor="let blob of blobs$ | async" checkboxPosition="before" [value]="blob" [selected]="selectedName === blob.name">
+          <div class="azure-blob">
+            <span class="name">{{ blob.name }}</span>
+            <span class="size">{{ blob.size | fileSize }}</span>
           </div>
         </mat-list-option>
       </mat-selection-list>
 
-      <div class="empty-bucket" *ngIf="bucket.objects.length === 0">
-        <span>Bucket is empty</span>
+      <div class="empty-blobs-container" *ngIf="container.blobs.length === 0">
+        <span>Container is empty</span>
       </div>
 
       <div class="upload-progress" *ngIf="currentUpload$ | async as currentUpload">
-        <span>Uploading {{ currentUpload.key }} ({{ currentUpload.percentComplete$ | async }}%)...</span>
+        <span>Uploading {{ currentUpload.name }} ({{ currentUpload.percentComplete$ | async }}%)...</span>
         <div class="upload-progress-bar-container">
           <div class="upload-progress-bar" [style.width]="(currentUpload.percentComplete$ | async).toString() + '%'"></div>
         </div>
@@ -43,7 +43,7 @@
     </ng-container>
     
     <div class="loading" *ngIf="isLoading">
-      <span>Loading bucket...</span>
+      <span>Loading container...</span>
       <div class="sk-three-bounce">
         <div class="sk-child sk-bounce1"></div>
         <div class="sk-child sk-bounce2"></div>

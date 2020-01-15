@@ -7,28 +7,29 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.JobRepository.Worker
 {
-    internal class DeleteJobProcess : WorkerOperationHandler<DeleteJobProcessRequest>
+    internal class DeleteJobProcess : WorkerOperation<DeleteJobProcessRequest>
     {
-        public DeleteJobProcess(IResourceManagerProvider resourceManagerProvider)
+        public DeleteJobProcess(ProviderCollection providerCollection)
+            : base(providerCollection)
         {
-            ResourceManagerProvider = resourceManagerProvider;
         }
 
-        private IResourceManagerProvider ResourceManagerProvider { get; }
+        public override string Name => nameof(DeleteJobProcess);
 
         protected override async Task ExecuteAsync(WorkerRequest request, DeleteJobProcessRequest deleteRequest)
         {
+            var logger = ProviderCollection.LoggerProvider.Get(request.Tracker);
             var jobProcessId = deleteRequest.JobProcessId;
 
             try
             {
-                var resourceManager = ResourceManagerProvider.Get(request.Variables);
+                var resourceManager = ProviderCollection.ResourceManagerProvider.Get(request);
 
                 await resourceManager.DeleteAsync<JobProcess>(jobProcessId);
             }
             catch (Exception error)
             {
-                request.Logger.Exception(error);
+                logger.Error(error);
             }
         }
     }

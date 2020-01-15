@@ -54,14 +54,14 @@ export class ServicesComponent implements OnInit, OnDestroy {
 
     private initialize = async () => {
         console.log("[ServicesComponent] getting services", this.resourceManager, Service.name);
-        let services = await this.resourceManager.get<Service>("Service");
+        let services = await this.resourceManager.query<Service>("Service");
         console.log("[ServicesComponent] retrieved services", services);
 
         this.services = services.sort((a, b) => a.name.localeCompare(b.name));
         console.log("[ServicesComponent] sorted services", this.services);
 
         console.log("[ServicesComponent] getting job profiles", this.resourceManager, JobProfile.name);
-        let jobProfiles = await this.resourceManager.get<JobProfile>("JobProfile");
+        let jobProfiles = await this.resourceManager.query<JobProfile>("JobProfile");
         console.log("[ServicesComponent] retrieved job profiles", jobProfiles);
 
         this.jobProfiles = {};
@@ -134,7 +134,7 @@ export class ServicesComponent implements OnInit, OnDestroy {
     }
 
     private getResources = async (httpEndpoint) => {
-        let resourceEndpoint = await this.resourceManager.getResourceEndpoint(httpEndpoint);
+        let resourceEndpoint = await this.resourceManager.getResourceEndpointClient(httpEndpoint);
 
         if (resourceEndpoint) {
             let response = await resourceEndpoint.get(httpEndpoint)

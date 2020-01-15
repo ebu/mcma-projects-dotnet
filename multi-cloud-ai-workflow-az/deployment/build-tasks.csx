@@ -1,45 +1,20 @@
 #load "../build/build.csx"
 #load "../build/aggregate-task.csx"
 #load "../build/cmd-task.csx"
+#load "../build/file-changes.csx"
 #load "../build/terraform.csx"
-//#load "./registry/register.csx"
-
-#r "nuget:Mcma.Azure.Client, 0.5.5.57"
+#load "./registry/register.csx"
 
 using System.IO;
 using System.Security.Cryptography;
-using Mcma.Azure.Client;
 using Newtonsoft.Json.Linq;
-
-public class GenerateEncryptionKeys : BuildTask
-{
-    public static readonly string PrivateKeyFile = $"{Build.Dirs.Deployment}/private-key.json";
-    
-    public static readonly string PublicKeyFile = $"{Build.Dirs.Deployment}/public-key.json";
-
-    protected override Task<bool> ExecuteTask()
-    {
-        if (File.Exists(PrivateKeyFile) && File.Exists(PublicKeyFile))
-        {
-            Console.WriteLine("Encryption key files already exist.");
-            return Task.FromResult(true);
-        }
-
-        var (privateKey, publicKey) = EncryptionHelper.GenerateNewKeys();
-        File.WriteAllText(PrivateKeyFile, privateKey);
-        File.WriteAllText(PublicKeyFile, publicKey);
-
-        return Task.FromResult(true);
-    }
-}
 
 public class GenerateTerraformTfVars : BuildTask
 {
     protected override Task<bool> ExecuteTask()
     {
-        File.WriteAllText($"{Build.Dirs.Deployment}/terraform.tfvars", 
+        var tfVarsBuilder = 
             new StringBuilder()
-                .AppendLine($"private_encryption_key                = \"{File.ReadAllText(GenerateEncryptionKeys.PrivateKeyFile)}\"")
                 .AppendLine($"environment_name                      = \"{Build.Inputs.environmentName}\"")
                 .AppendLine($"environment_type                      = \"{Build.Inputs.environmentType}\"")
                 .AppendLine($"global_prefix                         = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}\"")
@@ -57,12 +32,14 @@ public class GenerateTerraformTfVars : BuildTask
                 .AppendLine($"upload_container                      = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}-upload\"")
                 .AppendLine($"temp_container                        = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}-temp\"")
                 .AppendLine($"repository_container                  = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}-repository\"")
+                .AppendLine($"preview_container                     = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}-preview\"")
                 .AppendLine($"website_container                     = \"{Build.Inputs.environmentName}-{Build.Inputs.environmentType}-website\"")
                 .AppendLine($"azure_videoindexer_location           = \"{Build.Inputs.azureVideoIndexerLocation}\"")
                 .AppendLine($"azure_videoindexer_account_id         = \"{Build.Inputs.azureVideoIndexerAccountId}\"")
                 .AppendLine($"azure_videoindexer_subscription_key   = \"{Build.Inputs.azureVideoIndexerSubscriptionKey}\"")
-                .AppendLine($"azure_videoindexer_api_url            = \"{Build.Inputs.azureVideoIndexerApiUrl}\"")
-                .ToString());
+                .AppendLine($"azure_videoindexer_api_url            = \"{Build.Inputs.azureVideoIndexerApiUrl}\"");
+
+        File.WriteAllText($"{Build.Dirs.Deployment}/terraform.tfvars", tfVarsBuilder.ToString());
 
         return Task.FromResult(true);
     }
@@ -72,6 +49,8 @@ public class GenerateTerraformWebsiteTf : BuildTask
 {
     const string WebsiteDistDir = "website/dist/website";
 
+    private IBuildTask CheckDistFilesForChanges { get; } = new CheckForFileChanges($"./{WebsiteDistDir}", null);
+
     protected override Task<bool> ExecuteTask()
     {
         var tfFileContents = new StringBuilder();
@@ -79,7 +58,11 @@ public class GenerateTerraformWebsiteTf : BuildTask
 
         foreach (var file in Directory.EnumerateFiles($"./{WebsiteDistDir}", "*.*", SearchOption.AllDirectories))
         {
-            var mimeType = string.Empty;
+            // skip the config.json, as this will generated later and shouldn't be managed by terraform
+            if (file.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string mimeType;
             if (file.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
                 mimeType = "text/html";
             else if (file.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
@@ -94,6 +77,10 @@ public class GenerateTerraformWebsiteTf : BuildTask
                 mimeType = "text/plain";
             else if (file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
                 mimeType = "image/svg+xml";
+            else if (file.EndsWith(".map", StringComparison.OrdinalIgnoreCase))
+                mimeType = "application/octet-stream";
+            else
+                continue;
 
             var relativePath = file.Substring(file.IndexOf(WebsiteDistDir) + WebsiteDistDir.Length + 1).Replace("\\", "/");
             var fromRoot = file.Replace("\\", "/").Replace("./", "../");
@@ -101,15 +88,16 @@ public class GenerateTerraformWebsiteTf : BuildTask
             tfFileContents
                 .Append("resource \"azurerm_storage_blob\" \"file_" + idx++ + "\" {\r\n" )
                 .Append("  name                     = \"" + relativePath + "\"\r\n")
-                .Append("  resource_group_name      = \"${var.resource_group_name}\"\r\n")
-                .Append("  storage_account_name     = \"${azurerm_storage_account.website_storage_account.name}\"\r\n")
-                .Append("  storage_container_name   = \"${azurerm_storage_container.website_container.name}\"\r\n")
+                .Append("  resource_group_name      = var.resource_group_name\r\n")
+                .Append("  storage_account_name     = azurerm_storage_account.website_storage_account.name\r\n")
+                .Append("  storage_container_name   = azurerm_storage_container.website_container.name\r\n")
+                .Append("  type                     = \"block\"\r\n")
                 .Append("  source                   = \"" + fromRoot + "\"\r\n")
                 .Append("  content_type             = \"" + mimeType + "\"\r\n")
                 .Append("}\r\n\r\n");
         }
 
-        File.WriteAllText($"{Build.Dirs.Deployment}/storage/website.tf", tfFileContents.ToString());
+        File.WriteAllText($"{Build.Dirs.Deployment}/storage/website-blobs.tf", tfFileContents.ToString());
 
         return Task.FromResult(true);
     }
@@ -131,25 +119,19 @@ public class RetrieveTerraformOutput : Terraform
 }
 
 public static readonly IBuildTask Plan = new AggregateTask(
-    new GenerateEncryptionKeys(),
     new GenerateTerraformTfVars(),
     new GenerateTerraformWebsiteTf(),
     Terraform.Init(),
     Terraform.Plan());
 
 public static readonly IBuildTask Deploy = new AggregateTask(
-    new GenerateEncryptionKeys(),
     new GenerateTerraformTfVars(),
-    //new GenerateTerraformWebsiteTf(),
+    new GenerateTerraformWebsiteTf(),
     Terraform.Init(),
     Terraform.Apply(),
     new RetrieveTerraformOutput(),
-    //new GenerateAwsCredentialsJson(),
     new UpdateServiceRegistry());
 
 public static readonly IBuildTask Destroy = new AggregateTask(
-    new GenerateEncryptionKeys(),
-    new GenerateTerraformTfVars(),
-    new GenerateTerraformWebsiteTf(),
     Terraform.Init(),
     Terraform.Destroy());

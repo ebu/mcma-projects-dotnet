@@ -15,24 +15,22 @@ using System.Collections.Generic;
 
 namespace Mcma.Azure.AwsAiService.Worker
 {
-    internal class ProcessRekognitionResult : WorkerOperationHandler<ProcessRekognitionResultRequest>
+    internal class ProcessRekognitionResult : WorkerOperation<ProcessRekognitionResultRequest>
     {
-        public ProcessRekognitionResult(IDbTableProvider dbTableProvider, IResourceManagerProvider resourceManagerProvider)
+        public ProcessRekognitionResult(ProviderCollection providerCollection)
+            : base(providerCollection)
         {
-            DbTableProvider = dbTableProvider;
-            ResourceManagerProvider = resourceManagerProvider;
         }
 
-        private IDbTableProvider DbTableProvider { get; }
-
-        private IResourceManagerProvider ResourceManagerProvider { get; }
+        public override string Name => nameof(ProcessRekognitionResult);
 
         protected override async Task ExecuteAsync(WorkerRequest request, ProcessRekognitionResultRequest requestInput)
         {
             var jobHelper =
-                new WorkerJobHelper<AIJob>(
-                    DbTableProvider.Table<JobAssignment>(request.Variables.TableName()),
-                    ResourceManagerProvider.Get(request.Variables),
+                new ProcessJobAssignmentHelper<AIJob>(
+                    ProviderCollection.DbTableProvider.Table<JobAssignment>(request.TableName()),
+                    ProviderCollection.ResourceManagerProvider.Get(request),
+                    ProviderCollection.LoggerProvider.Get(request.Tracker),
                     request,
                     requestInput.JobAssignmentId);
             try
@@ -58,7 +56,7 @@ namespace Mcma.Azure.AwsAiService.Worker
                 switch (rekoJobType)
                 {
                     case "StartCelebrityRecognition":
-                        using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Variables.AwsCredentials(), jobHelper.Variables.AwsRegion()))
+                        using (var rekognitionClient = new AmazonRekognitionClient(jobHelper.Request.AwsCredentials(), jobHelper.Request.AwsRegion()))
                             data =
                                 ProcessCelebrityRecognitionResponse(
                                     await rekognitionClient.GetCelebrityRecognitionAsync(new GetCelebrityRecognitionRequest
@@ -87,20 +85,20 @@ namespace Mcma.Azure.AwsAiService.Worker
                     throw new Exception($"No data was returned by AWS Rekognition");
 
                 jobHelper.JobOutput["outputFile"] =
-                    await outputLocation.Proxy(jobHelper.Variables).PutAsTextAsync($"Rekognition-{Guid.NewGuid()}.json", data.ToMcmaJson().ToString());
+                    await outputLocation.Proxy(jobHelper.Request).PutAsTextAsync($"Rekognition-{Guid.NewGuid()}.json", data.ToMcmaJson().ToString());
 
                 await jobHelper.CompleteAsync();
             }
             catch (Exception ex)
             {
-                jobHelper.Logger.Exception(ex);
+                jobHelper.Logger.Error(ex);
                 try
                 {
                     await jobHelper.FailAsync(ex.ToString());
                 }
                 catch (Exception innerEx)
                 {
-                    jobHelper.Logger.Exception(innerEx);
+                    jobHelper.Logger.Error(innerEx);
                 }
             }
         }

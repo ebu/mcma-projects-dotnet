@@ -1,12 +1,10 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, zip } from "rxjs";
 import { filter, map } from "rxjs/operators";
-
 import { ResourceManager, AuthProvider } from "@mcma/client";
-import "@mcma/aws-client";
 
 import { ConfigService } from "./config.service";
-import { CognitoAuthService } from "./cognito-auth.service";
+import { AzureAdAuthService } from './azure-ad-auth.service';
 
 @Injectable()
 export class McmaClientService {
@@ -14,30 +12,27 @@ export class McmaClientService {
     private resourceManagerSubject = new BehaviorSubject<ResourceManager>(null);
     resourceManager$ = this.resourceManagerSubject.asObservable().pipe(filter(x => !!x));
 
-    constructor(private configService: ConfigService, private cognitoAuthService: CognitoAuthService) {
+    constructor(private configService: ConfigService, private azureAdAuthService: AzureAdAuthService) {
         zip(
-            this.cognitoAuthService.credentials$.pipe(filter(creds => { console.log(creds); return !!creds && !!creds.accessKeyId; })),
+            this.azureAdAuthService.accessTokenProvider$,
             this.configService.get<string>("resourceManager.servicesUrl"),
             this.configService.get<string>("resourceManager.servicesAuthType"),
-            this.configService.get<string>("resourceManager.servicesAuthContext"),
-            this.configService.get<string>("aws.region")
+            this.configService.get<string>("resourceManager.servicesAuthContext")
         ).pipe(
-            map(([creds, servicesUrl, servicesAuthType, servicesAuthContext, region]) => {
-                const authOptions = {
-                    accessKey: creds.accessKeyId,
-                    secretKey: creds.secretAccessKey,
-                    sessionToken: creds.sessionToken,
-                    region: region
-                };
-
-                console.log("creating resource manager", authOptions);
+            map(([accessTokenProvider, servicesUrl, servicesAuthType, servicesAuthContext]) => {
                 return {
-                    config: { servicesUrl, servicesAuthType, servicesAuthContext },
-                    authContext: authOptions
+                    accessTokenProvider,
+                    resourceManagerConfig: {
+                        servicesUrl,
+                        servicesAuthType,
+                        servicesAuthContext
+                    }
                 };
             })
         ).subscribe(x => {
-            this.resourceManagerSubject.next(new ResourceManager(x.config, new AuthProvider().addAwsV4Auth(x.authContext)));
+            this.resourceManagerSubject.next(
+                new ResourceManager(x.resourceManagerConfig, new AuthProvider().addAccessTokenAuth(x.accessTokenProvider, x.resourceManagerConfig.servicesAuthType))
+            );
         });
     }
 }

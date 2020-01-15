@@ -23,8 +23,10 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
-        private static IResourceManagerProvider ResourceManagerProvider { get; } =
-            new ResourceManagerProvider(new AuthProvider().AddAzureFunctionKeyAuth());
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("workflow-service-api-handler");
+
+        private static IResourceManagerProvider ResourceManagerProvider { get; }
+            = new ResourceManagerProvider(new AuthProvider().AddAzureAdManagedIdentityAuth());
 
         private static IDbTableProvider DbTableProvider { get; } =
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
@@ -34,21 +36,19 @@ namespace Mcma.Azure.WorkflowService.ApiHandler
                 .AddAdditionalRoute(
                     HttpMethod.Post,
                     "/job-assignments/{id}/notifications",
-                    Notifications.Handler(DbTableProvider, reqCtx => new QueueWorkerInvoker(reqCtx)))
-                .AddAdditionalRoutes(ResourceRoutes.Get(ResourceManagerProvider))
+                    Notifications.Handler(LoggerProvider, DbTableProvider, reqCtx => new QueueWorkerInvoker(reqCtx)))
+                .AddAdditionalRoutes(ResourceRoutes.Get(LoggerProvider, ResourceManagerProvider))
                 .Build()
-                .ToAzureFunctionApiController();
+                .ToAzureFunctionApiController(LoggerProvider);
 
         [FunctionName("WorkflowServiceApiHandler")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, Route = "{*resourcePath}")] HttpRequest request,
+            [HttpTrigger(AuthorizationLevel.Anonymous, Route = "{*resourcePath}")] HttpRequest request,
             string resourcePath,
             ILogger log,
             ExecutionContext executionContext)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
-
-            return await Controller.HandleRequestAsync(request);
+            return await Controller.HandleRequestAsync(request, log);
         }
     }
 }

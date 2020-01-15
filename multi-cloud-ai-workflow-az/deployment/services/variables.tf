@@ -1,5 +1,3 @@
-variable "private_encryption_key" {}
-
 variable "azure_client_id" {}
 variable "azure_client_secret" {}
 variable "azure_tenant_id" {}
@@ -12,6 +10,7 @@ variable "environment_type" {}
 variable "global_prefix" {}
 variable "global_prefix_lower_only" {}
 variable "resource_group_name" {}
+variable "resource_group_id" {}
 
 variable "cosmosdb_endpoint" {}
 variable "cosmosdb_key" {}
@@ -23,10 +22,8 @@ variable "deploy_container" {}
 
 variable "media_storage_connection_string" {}
 variable "media_storage_account_name" {}
-variable "upload_container" {}
-variable "temp_container" {}
-variable "repository_container" {}
-variable "website_container" {}
+
+variable "website_domain" {}
 
 variable "azure_videoindexer_location" {}
 variable "azure_videoindexer_account_id" {}

@@ -8,11 +8,11 @@ using Mcma.Worker;
 
 namespace Mcma.Azure.TransformService.Worker
 {
-    internal class CreateProxyLambda : IJobProfileHandler<TransformJob>
+    internal class CreateProxyLambda : IJobProfile<TransformJob>
     {
-        public const string Name = nameof(CreateProxyLambda);
+        public string Name => nameof(CreateProxyLambda);
 
-        public async Task ExecuteAsync(WorkerJobHelper<TransformJob> jobHelper)
+        public async Task ExecuteAsync(ProcessJobAssignmentHelper<TransformJob> jobHelper)
         {
             BlobStorageFileLocator inputFile;
             if (!jobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
@@ -24,16 +24,16 @@ namespace Mcma.Azure.TransformService.Worker
 
             var inputFilePath = @"D:\local\temp\" + Guid.NewGuid();
             using (var fileStream = File.Open(inputFilePath, FileMode.CreateNew))
-                await inputFile.Proxy(jobHelper.Variables).GetAsync(fileStream);
+                await inputFile.Proxy(jobHelper.Request).GetAsync(fileStream);
             
             var outputFilePath = @"D:\local\temp\" + Guid.NewGuid() + ".mp4";
             var ffmpegParams = new[] {"-y", "-i", inputFilePath, "-preset", "ultrafast", "-vf", "scale=-1:360", "-c:v", "libx264", "-pix_fmt", "yuv420p", outputFilePath};
-            var ffmpegProcess = await FFmpegProcess.RunAsync(jobHelper, ffmpegParams);
+            var ffmpegProcess = await FFmpegProcess.RunAsync(jobHelper.Logger, ffmpegParams);
 
             File.Delete(inputFilePath);
 
             using (var outputFileStream = File.Open(outputFilePath, FileMode.Open))
-                jobHelper.JobOutput["outputFile"] = outputLocation.Proxy(jobHelper.Variables).PutAsync(Path.GetFileName(outputFilePath), outputFileStream);
+                jobHelper.JobOutput["outputFile"] = outputLocation.Proxy(jobHelper.Request).PutAsync(Path.GetFileName(outputFilePath), outputFileStream);
 
             await jobHelper.CompleteAsync();
         }

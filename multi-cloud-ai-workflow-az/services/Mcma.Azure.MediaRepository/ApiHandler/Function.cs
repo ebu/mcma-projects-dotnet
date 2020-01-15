@@ -22,6 +22,8 @@ namespace Mcma.Azure.MediaRepository.ApiHandler
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
+        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("media-repository-api-handler");
+
         private static IDbTableProvider DbTableProvider { get; } =
             new CosmosDbTableProvider(new CosmosDbTableProviderOptions().FromEnvironmentVariables());
 
@@ -35,17 +37,15 @@ namespace Mcma.Azure.MediaRepository.ApiHandler
             new McmaApiRouteCollection()
                 .AddRoutes(ContentRoutes)
                 .AddRoutes(EssenceRoutes)
-                .ToAzureFunctionApiController();
+                .ToAzureFunctionApiController(LoggerProvider);
 
         [FunctionName("MediaRepositoryApiHandler")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, Route = "{*resourcePath}")] HttpRequest request,
+            [HttpTrigger(AuthorizationLevel.Anonymous, Route = "{*resourcePath}")] HttpRequest request,
             string resourcePath,
             ILogger log)
         {
-            McmaLogger.Global = new MicrosoftLoggerWrapper(log);
-
-            return await ApiController.HandleRequestAsync(request);
+            return await ApiController.HandleRequestAsync(request, log);
         }
     }
 }

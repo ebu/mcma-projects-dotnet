@@ -1,12 +1,9 @@
 using System.Threading.Tasks;
-using Mcma.Api;
 using Mcma.Api.Routes.Defaults;
 using Mcma.Azure.BlobStorage;
-using Mcma.Azure.Client;
 using Mcma.Azure.CosmosDb;
 using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
-using Mcma.Client;
 using Mcma.Core.Serialization;
 using Mcma.Data;
 using Microsoft.AspNetCore.Http;
@@ -14,8 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-
-using IMcmaLoggerProvider = Mcma.Core.Logging.ILoggerProvider;
 
 namespace Mcma.Azure.AmeService.ApiHandler
 {

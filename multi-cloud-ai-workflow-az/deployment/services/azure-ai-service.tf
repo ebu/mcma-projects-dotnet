@@ -2,9 +2,11 @@ locals {
   azure_ai_service_api_zip_file          = "./../services/Mcma.Azure.AzureAiService/ApiHandler/dist/function.zip"
   azure_ai_service_worker_zip_file       = "./../services/Mcma.Azure.AzureAiService/Worker/dist/function.zip"
   azure_ai_service_notification_zip_file = "./../services/Mcma.Azure.AzureAiService/Notifications/dist/function.zip"
-  azure_ai_service_subdomain             = "${var.global_prefix_lower_only}azureaiserviceapi"
-  azure_ai_service_url                   = "https://${local.azure_ai_service_subdomain}.azurewebsites.net"
+  azure_ai_service_api_function_name     = "${var.global_prefix}-azure-ai-service-api"
+  azure_ai_service_url                   = "https://${local.azure_ai_service_api_function_name}.azurewebsites.net"
   azure_ai_service_notification_func_key = "${lookup(azurerm_template_deployment.azure_ai_service_notification_func_key.outputs, "functionkey")}"
+  azure_ai_service_worker_function_name  = "${var.global_prefix}-azure-ai-service-worker"
+  azure_ai_service_worker_function_key   = "${lookup(azurerm_template_deployment.azure_ai_service_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -25,15 +27,8 @@ resource "azurerm_storage_blob" "azure_ai_service_worker_function_zip" {
   source                 = local.azure_ai_service_worker_zip_file
 }
 
-resource "azurerm_application_insights" "azure_ai_service_worker_appinsights" {
-  name                = "${var.global_prefix_lower_only}azureaiserviceworker_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "azure_ai_service_worker_function" {
-  name                      = "${var.global_prefix_lower_only}azureaiserviceworker"
+  name                      = "${var.global_prefix}-azure-ai-service-worker"
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -49,15 +44,15 @@ resource "azurerm_function_app" "azure_ai_service_worker_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.azure_ai_service_worker_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.azure_ai_service_worker_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.azure_ai_service_worker_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.azure_ai_service_worker_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     WorkQueueStorage                 = var.app_storage_connection_string
     TableName                        = "AzureAiService"
-    NotificationsUrl                 = "https://${var.global_prefix_lower_only}azureaiservicenotification.azurewebsites.net/"
+    NotificationsUrl                 = "https://${var.global_prefix}-azure-ai-service-notification.azurewebsites.net/"
     CosmosDbEndpoint                 = var.cosmosdb_endpoint
     CosmosDbKey                      = var.cosmosdb_key
-    CosmosDbDatabaseId               = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId               = local.cosmosdb_id
     CosmosDbRegion                   = var.azure_location
     ServicesUrl                      = local.services_url
     ServicesAuthType                 = "AzureAD"
@@ -72,12 +67,24 @@ resource "azurerm_function_app" "azure_ai_service_worker_function" {
   }
 }
 
+resource "azurerm_template_deployment" "azure_ai_service_worker_function_key" {
+  name                = "azure-ai-service-worker-func-key"
+  resource_group_name = var.resource_group_name
+  deployment_mode     = "Incremental"
+
+  parameters = {
+    functionApp = local.azure_ai_service_worker_function_name
+  }
+
+  template_body = file("./services/function-key-template.json")
+}
+
 #===================================================================
 # API Function
 #===================================================================
 
 resource "azuread_application" "azure_ai_service_app" {
-  name            = local.azure_ai_service_subdomain
+  name            = local.azure_ai_service_api_function_name
   identifier_uris = [local.azure_ai_service_url]
 }
 
@@ -95,15 +102,8 @@ resource "azurerm_storage_blob" "azure_ai_service_api_function_zip" {
   source                 = local.azure_ai_service_api_zip_file
 }
 
-resource "azurerm_application_insights" "azure_ai_service_api_appinsights" {
-  name                = "${var.global_prefix_lower_only}azureaiserviceapi_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "azure_ai_service_api_function" {
-  name                      = "${var.global_prefix_lower_only}azureaiserviceapi"
+  name                      = local.azure_ai_service_api_function_name
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -126,14 +126,14 @@ resource "azurerm_function_app" "azure_ai_service_api_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.azure_ai_service_api_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.azure_ai_service_api_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.azure_ai_service_api_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.azure_ai_service_api_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     TableName          = "AzureAiService"
-    PublicUrl          = "https://${var.global_prefix_lower_only}azureaiserviceapi.azurewebsites.net/"
+    PublicUrl          = local.azure_ai_service_url
     CosmosDbEndpoint   = var.cosmosdb_endpoint
     CosmosDbKey        = var.cosmosdb_key
-    CosmosDbDatabaseId = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId = local.cosmosdb_id
     CosmosDbRegion     = var.azure_location
     WorkerFunctionId   = azurerm_storage_queue.azure_ai_service_worker_function_queue.name
   }
@@ -152,15 +152,8 @@ resource "azurerm_storage_blob" "azure_ai_service_notification_function_zip" {
   source                 = local.azure_ai_service_notification_zip_file
 }
 
-resource "azurerm_application_insights" "azure_ai_service_notification_appinsights" {
-  name                = "${var.global_prefix_lower_only}azureaiservicenotification_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "azure_ai_service_notification_function" {
-  name                      = "${var.global_prefix_lower_only}azureaiservicenotification"
+  name                      = "${var.global_prefix}-azure-ai-service-notification"
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -172,21 +165,21 @@ resource "azurerm_function_app" "azure_ai_service_notification_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.azure_ai_service_notification_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.azure_ai_service_notification_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.azure_ai_service_notification_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.azure_ai_service_notification_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     TableName          = "AzureAiService"
-    PublicUrl          = "https://${var.global_prefix_lower_only}azureaiserviceapi.azurewebsites.net/"
+    PublicUrl          = local.azure_ai_service_url
     CosmosDbEndpoint   = var.cosmosdb_endpoint
     CosmosDbKey        = var.cosmosdb_key
-    CosmosDbDatabaseId = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId = local.cosmosdb_id
     CosmosDbRegion     = var.azure_location
     WorkerFunctionId   = azurerm_storage_queue.azure_ai_service_worker_function_queue.name
   }
 }
 
 resource "azurerm_template_deployment" "azure_ai_service_notification_func_key" {
-  name                = "azureaiservicenotificationfunckeys"
+  name                = "azure-ai-service-notification-func-keys"
   resource_group_name = var.resource_group_name
   deployment_mode     = "Incremental"
 
@@ -217,5 +210,13 @@ resource "azurerm_template_deployment" "azure_ai_service_notification_func_key" 
 }
 
 output azure_ai_service_url {
-  value = "https://${azurerm_function_app.azure_ai_service_api_function.default_hostname}/"
+  value = "${local.azure_ai_service_url}/"
+}
+
+output azure_ai_service_worker_function_name {
+    value = local.azure_ai_service_worker_function_name
+}
+
+output azure_ai_service_worker_function_key {
+    value = local.azure_ai_service_worker_function_key
 }

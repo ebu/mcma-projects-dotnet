@@ -1,0 +1,11 @@
+{
+  "environmentName": "triskel",
+  "environmentType": "dev",
+  "azureLocation": "East US",
+  "awsAccessKey": "AKIATDMVKJNZUWQKKHV6",
+  "awsSecretKey": "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",
+  "awsRegion": "us-east-1",
+  "azureVideoIndexerAccountId": "0af5a721-5d3c-451a-88b0-e658114bdea4",
+  "azureVideoIndexerSubscriptionKey": "e8700f0d224645a7b05c1a4f3b80b498",
+  "azureVideoIndexerApiUrl": "https://api.videoindexer.ai"
+}

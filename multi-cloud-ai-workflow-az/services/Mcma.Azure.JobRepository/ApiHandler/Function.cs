@@ -10,7 +10,6 @@ using Mcma.Azure.CosmosDb;
 using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
 using Mcma.Core;
-using Mcma.Core.Context;
 using Mcma.Core.Serialization;
 using Mcma.Data;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Mcma.Azure.JobRepository.ApiHandler
 {

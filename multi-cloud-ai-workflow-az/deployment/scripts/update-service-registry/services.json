@@ -1,0 +1,148 @@
+{
+    "ame_service": {
+        "@type": "Service",
+        "name": "MediaInfo AME Service",
+        "resources": [
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "JobAssignment",
+                "httpEndpoint": "/job-assignments"
+            }
+        ],
+        "jobType": "AmeJob",
+        "jobProfiles": [
+            "ExtractTechnicalMetadata"
+        ]
+    },
+    "aws_ai_service": {
+        "@type": "Service",
+        "name": "AWS AI Service",
+        "resources": [
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "JobAssignment",
+                "httpEndpoint": "/job-assignments"
+            }
+        ],
+        "jobType": "AIJob",
+        "jobProfiles": [
+            "AWSTranscribeAudio",
+            "AWSTranslateText",
+            "AWSDetectCelebrities"
+        ]
+    },
+    "azure_ai_service": {
+        "@type": "Service",
+        "name": "AZURE AI Service",
+        "resources": [
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "JobAssignment",
+                "httpEndpoint": "/job-assignments"
+            }
+        ],
+        "jobType": "AIJob",
+        "jobProfiles": [
+            "AzureExtractAllAIMetadata"
+        ]
+    },
+    "job_processor": {
+        "@type": "Service",
+        "name": "Job Processor Service",
+        "resources": [
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "JobProcess",
+                "httpEndpoint": "/job-processes"
+            }
+        ]
+     },
+     "job_repository": {
+        "@type": "Service",
+        "name": "Job Repository",
+        "resources": [
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "AmeJob",
+                "httpEndpoint": "/jobs"
+            },
+            {
+				"resourceType": "AIJob",
+				"httpEndpoint": "/jobs"
+            },
+            {
+				"resourceType": "CaptureJob",
+				"httpEndpoint": "/jobs"
+            },
+            {
+				"resourceType": "QAJob",
+				"httpEndpoint": "/jobs"
+            },
+            {
+				"resourceType": "TransferJob",
+				"httpEndpoint": "/jobs"
+            },
+            {
+				"resourceType": "TransformJob",
+				"httpEndpoint": "/jobs"
+            },
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "WorkflowJob",
+                "httpEndpoint": "/jobs"
+            }
+        ]
+    },
+    "media_repository": {
+        "@type": "Service",
+        "name": "Media Repository",
+        "resources": [
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "BMContent",
+                "httpEndpoint": "/bm-contents"
+            },
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "BMEssence",
+                "httpEndpoint": "/bm-essences"
+            }
+        ]
+    },
+    "transform_service": {
+        "@type": "Service",
+        "name": "FFmpeg TransformService",
+        "resources": [
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "JobAssignment",
+                "httpEndpoint": "/job-assignments"
+            }
+        ],
+        "jobType": "TransformJob",
+        "jobProfiles": [
+            "CreateProxy"
+        ]
+    },
+    "workflow_service": {
+        "@type": "Service",
+        "name": "Workflow Service",
+        "resources": [
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "JobAssignment",
+                "httpEndpoint": "/job-assignments"
+            },
+            {
+                "@type": "ResourceEndpoint",
+                "resourceType": "Notification",
+                "httpEndpoint": "/resource-notifications"
+            }
+        ],
+        "jobType": "WorkflowJob",
+        "jobProfiles": [
+            "ConformWorkflow",
+            "AiWorkflow"
+        ]
+    }
+}

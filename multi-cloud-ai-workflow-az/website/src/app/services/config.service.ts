@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { Observable, BehaviorSubject, of } from "rxjs";
-import { switchMap, map, tap, share } from "rxjs/operators";
+import { Observable, BehaviorSubject } from "rxjs";
+import { map, share } from "rxjs/operators";
 import { emitOnceAndCache } from '../utility-functions';
 
 @Injectable()

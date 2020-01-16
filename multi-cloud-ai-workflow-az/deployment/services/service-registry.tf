@@ -1,12 +1,12 @@
 locals {
-  service_registry_api_zip_file = "./../services/Mcma.Azure.ServiceRegistry/ApiHandler/dist/function.zip"
-  service_registry_subdomain    = "${var.global_prefix_lower_only}serviceregistryapi"
-  service_registry_url          = "https://${local.service_registry_subdomain}.azurewebsites.net"
-  services_url                  = "${local.service_registry_url}/services"
+  service_registry_api_zip_file      = "./../services/Mcma.Azure.ServiceRegistry/ApiHandler/dist/function.zip"
+  service_registry_api_function_name = "${var.global_prefix}-service-registry-api"
+  service_registry_url               = "https://${local.service_registry_api_function_name}.azurewebsites.net"
+  services_url                       = "${local.service_registry_url}/services"
 }
 
 resource "azuread_application" "service_registry_app" {
-  name            = local.service_registry_subdomain
+  name            = local.service_registry_api_function_name
   identifier_uris = [local.service_registry_url]
 }
 
@@ -24,15 +24,8 @@ resource "azurerm_storage_blob" "service_registry_api_function_zip" {
   source                 = local.service_registry_api_zip_file
 }
 
-resource "azurerm_application_insights" "service_registry_api_appinsights" {
-  name                = local.service_registry_subdomain
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "service_registry_api_function" {
-  name                      = local.service_registry_subdomain
+  name                      = local.service_registry_api_function_name
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -65,14 +58,14 @@ resource "azurerm_function_app" "service_registry_api_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.service_registry_api_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.service_registry_api_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.service_registry_api_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.service_registry_api_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     TableName                = "ServiceRegistry"
-    PublicUrl                = "https://${var.global_prefix_lower_only}serviceregistryapi.azurewebsites.net/"
+    PublicUrl                = local.service_registry_url
     CosmosDbEndpoint         = var.cosmosdb_endpoint
     CosmosDbKey              = var.cosmosdb_key
-    CosmosDbDatabaseId       = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId       = local.cosmosdb_id
     CosmosDbRegion           = var.azure_location
   }
 }

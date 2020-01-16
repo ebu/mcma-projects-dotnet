@@ -58,7 +58,7 @@ namespace Mcma.Azure.WorkflowService.Worker
         {
             var azAuthContext =
                 new AuthenticationContext(
-                    $"{AzureEnvironment.AzureGlobalCloud.AuthenticationEndpoint}{jobHelper.Request.AzureTenantName()}");
+                    $"{AzureEnvironment.AzureGlobalCloud.AuthenticationEndpoint}{jobHelper.Request.AzureTenantId()}");
 
             using (var logicAppsClient = new LogicManagementClient(jobHelper.Request.AzureCredentials()) { SubscriptionId = jobHelper.Request.AzureSubscriptionId() })
             {

@@ -18,9 +18,6 @@ namespace Mcma.Azure.WorkflowService.Worker
         public static string AzureTenantId(this IContextVariableProvider contextVariableProvider)
             => contextVariableProvider.GetRequiredContextVariable(nameof(AzureTenantId));
 
-        public static string AzureTenantName(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureTenantName));
-
         public static string AzureResourceGroupName(this IContextVariableProvider contextVariableProvider)
             => contextVariableProvider.GetRequiredContextVariable(nameof(AzureResourceGroupName));
 

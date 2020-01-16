@@ -1,8 +1,10 @@
 locals {
-  workflow_service_api_zip_file    = "./../services/Mcma.Azure.WorkflowService/ApiHandler/dist/function.zip"
-  workflow_service_worker_zip_file = "./../services/Mcma.Azure.WorkflowService/Worker/dist/function.zip"
-  workflow_service_subdomain       = "${var.global_prefix_lower_only}workflowserviceapi"
-  workflow_service_url             = "https://${local.workflow_service_subdomain}.azurewebsites.net"
+  workflow_service_api_zip_file         = "./../services/Mcma.Azure.WorkflowService/ApiHandler/dist/function.zip"
+  workflow_service_worker_zip_file      = "./../services/Mcma.Azure.WorkflowService/Worker/dist/function.zip"
+  workflow_service_api_function_name    = "${var.global_prefix}-workflow-service-api"
+  workflow_service_url                  = "https://${local.workflow_service_api_function_name}.azurewebsites.net"
+  workflow_service_worker_function_name = "${var.global_prefix}-workflow-service-worker"
+  workflow_service_worker_function_key  = "${lookup(azurerm_template_deployment.workflow_service_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -23,15 +25,8 @@ resource "azurerm_storage_blob" "workflow_service_worker_function_zip" {
   source                 = local.workflow_service_worker_zip_file
 }
 
-resource "azurerm_application_insights" "workflow_service_worker_appinsights" {
-  name                = "${var.global_prefix_lower_only}workflowserviceworker_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "workflow_service_worker_function" {
-  name                      = "${var.global_prefix_lower_only}workflowserviceworker"
+  name                      = "${var.global_prefix}-workflow-service-worker"
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -47,21 +42,20 @@ resource "azurerm_function_app" "workflow_service_worker_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.workflow_service_worker_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.workflow_service_worker_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.workflow_service_worker_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.workflow_service_worker_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     WorkQueueStorage             = var.app_storage_connection_string
     TableName                    = "WorkflowService"
-    PublicUrl                    = "https://${var.global_prefix_lower_only}workflowserviceworker.azurewebsites.net/"
+    PublicUrl                    = local.workflow_service_url
     AzureClientId                = var.azure_client_id
     AzureClientSecret            = var.azure_client_secret
     AzureSubscriptionId          = var.azure_subscription_id
     AzureTenantId                = var.azure_tenant_id
-    AzureTenantName              = var.azure_tenant_name
     AzureResourceGroupName       = var.resource_group_name
     CosmosDbEndpoint             = var.cosmosdb_endpoint
     CosmosDbKey                  = var.cosmosdb_key
-    CosmosDbDatabaseId           = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId           = local.cosmosdb_id
     CosmosDbRegion               = var.azure_location
     ServicesUrl                  = local.services_url
     ServiceRegistryUrl           = local.service_registry_url
@@ -72,12 +66,24 @@ resource "azurerm_function_app" "workflow_service_worker_function" {
   }
 }
 
+resource "azurerm_template_deployment" "workflow_service_worker_function_key" {
+  name                = "workflow-service-worker-func-key"
+  resource_group_name = var.resource_group_name
+  deployment_mode     = "Incremental"
+
+  parameters = {
+    functionApp = local.workflow_service_worker_function_name
+  }
+
+  template_body = file("./services/function-key-template.json")
+}
+
 #===================================================================
 # API Function
 #===================================================================
 
 resource "azuread_application" "workflow_service_app" {
-  name            = local.workflow_service_subdomain
+  name            = local.workflow_service_api_function_name
   identifier_uris = [local.workflow_service_url]
 }
 
@@ -95,15 +101,8 @@ resource "azurerm_storage_blob" "workflow_service_api_function_zip" {
   source                 = local.workflow_service_api_zip_file
 }
 
-resource "azurerm_application_insights" "workflow_service_api_appinsights" {
-  name                = "${var.global_prefix_lower_only}workflowserviceapi_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "workflow_service_api_function" {
-  name                      = "${var.global_prefix_lower_only}workflowserviceapi"
+  name                      = local.workflow_service_api_function_name
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -130,14 +129,14 @@ resource "azurerm_function_app" "workflow_service_api_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.workflow_service_api_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.workflow_service_api_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.workflow_service_api_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.workflow_service_api_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     TableName                = "WorkflowService"
     PublicUrl                = local.workflow_service_url
     CosmosDbEndpoint         = var.cosmosdb_endpoint
     CosmosDbKey              = var.cosmosdb_key
-    CosmosDbDatabaseId       = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId       = local.cosmosdb_id
     CosmosDbRegion           = var.azure_location
     WorkerFunctionId         = azurerm_storage_queue.workflow_service_worker_function_queue.name
     ServicesUrl              = local.services_url
@@ -148,5 +147,13 @@ resource "azurerm_function_app" "workflow_service_api_function" {
 
 
 output workflow_service_url {
-  value = "https://${azurerm_function_app.workflow_service_api_function.default_hostname}/"
+  value = "${local.workflow_service_url}/"
+}
+
+output workflow_service_worker_function_name {
+    value = local.workflow_service_worker_function_name
+}
+
+output workflow_service_worker_function_key {
+    value = local.workflow_service_worker_function_key
 }

@@ -1,8 +1,10 @@
 locals {
-  ame_service_api_zip_file    = "./../services/Mcma.Azure.AmeService/ApiHandler/dist/function.zip"
-  ame_service_worker_zip_file = "./../services/Mcma.Azure.AmeService/Worker/dist/function.zip"
-  ame_service_subdomain       = "${var.global_prefix_lower_only}ameserviceapi"
-  ame_service_url             = "https://${local.ame_service_subdomain}.azurewebsites.net"
+  ame_service_api_zip_file         = "./../services/Mcma.Azure.AmeService/ApiHandler/dist/function.zip"
+  ame_service_worker_zip_file      = "./../services/Mcma.Azure.AmeService/Worker/dist/function.zip"
+  ame_service_api_function_name    = "${var.global_prefix}-ame-service-api"
+  ame_service_url                  = "https://${local.ame_service_api_function_name}.azurewebsites.net"
+  ame_service_worker_function_name = "${var.global_prefix}-ame-service-worker"
+  ame_service_worker_function_key  = "${lookup(azurerm_template_deployment.ame_service_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -23,15 +25,8 @@ resource "azurerm_storage_blob" "ame_service_worker_function_zip" {
   source                 = local.ame_service_worker_zip_file
 }
 
-resource "azurerm_application_insights" "ame_service_worker_appinsights" {
-  name                = "${var.global_prefix_lower_only}ameserviceworker_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "ame_service_worker_function" {
-  name                      = "${var.global_prefix_lower_only}ameserviceworker"
+  name                      = local.ame_service_worker_function_name
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -47,15 +42,15 @@ resource "azurerm_function_app" "ame_service_worker_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.ame_service_worker_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.ame_service_worker_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.ame_service_worker_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.ame_service_worker_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     WorkQueueStorage             = var.app_storage_connection_string
     TableName                    = "AmeService"
     PublicUrl                    = local.ame_service_url
     CosmosDbEndpoint             = var.cosmosdb_endpoint
     CosmosDbKey                  = var.cosmosdb_key
-    CosmosDbDatabaseId           = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId           = local.cosmosdb_id
     CosmosDbRegion               = var.azure_location
     ServicesUrl                  = local.services_url
     ServicesAuthType             = "AzureAD"
@@ -65,12 +60,24 @@ resource "azurerm_function_app" "ame_service_worker_function" {
   }
 }
 
+resource "azurerm_template_deployment" "ame_service_worker_function_key" {
+  name                = "ame-service-worker-func-key"
+  resource_group_name = var.resource_group_name
+  deployment_mode     = "Incremental"
+
+  parameters = {
+    functionApp = local.ame_service_worker_function_name
+  }
+
+  template_body = file("./services/function-key-template.json")
+}
+
 #===================================================================
 # API Function
 #===================================================================
 
 resource "azuread_application" "ame_service_app" {
-  name            = local.ame_service_subdomain
+  name            = local.ame_service_api_function_name
   identifier_uris = [local.ame_service_url]
 }
 
@@ -88,15 +95,8 @@ resource "azurerm_storage_blob" "ame_service_api_function_zip" {
   source                 = local.ame_service_api_zip_file
 }
 
-resource "azurerm_application_insights" "ame_service_api_appinsights" {
-  name                = "${var.global_prefix_lower_only}ameserviceapi_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "ame_service_api_function" {
-  name                      = "${var.global_prefix_lower_only}ameserviceapi"
+  name                      = local.ame_service_api_function_name
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -119,19 +119,27 @@ resource "azurerm_function_app" "ame_service_api_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.ame_service_api_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.ame_service_api_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.ame_service_api_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.ame_service_api_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     TableName                = "AmeService"
-    PublicUrl                = "https://${var.global_prefix_lower_only}ameserviceapi.azurewebsites.net/"
+    PublicUrl                = local.ame_service_url
     CosmosDbEndpoint         = var.cosmosdb_endpoint
     CosmosDbKey              = var.cosmosdb_key
-    CosmosDbDatabaseId       = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId       = local.cosmosdb_id
     CosmosDbRegion           = var.azure_location
     WorkerFunctionId         = azurerm_storage_queue.ame_service_worker_function_queue.name
   }
 }
 
 output ame_service_url {
-  value = "https://${azurerm_function_app.ame_service_api_function.default_hostname}/"
+  value = "${local.ame_service_url}/"
+}
+
+output ame_service_worker_function_name {
+    value = local.ame_service_worker_function_name
+}
+
+output ame_service_worker_function_key {
+    value = local.ame_service_worker_function_key
 }

@@ -64,15 +64,6 @@ export class AzureAdAuthService {
                 if (!this.accountPromise) {
                     this.accountPromise = new Promise<Account>((resolve, reject) => {
                         console.log("Logging in...");
-                        userAgentApp.handleRedirectCallback(
-                            (err,loginResp) => {
-                                if (err) {
-                                    reject(err);
-                                } else {
-                                    resolve(loginResp.account);
-                                }
-                            }
-                        );
 
                         try {
                             let account = userAgentApp.getAccount();
@@ -81,7 +72,7 @@ export class AzureAdAuthService {
                                 resolve(account);
                             } else {
                                 console.log("Prompting for login via redirect...");
-                                userAgentApp.loginRedirect();
+                                userAgentApp.loginPopup();
                             }
                         } catch (e) {
                             reject(e);

@@ -1,19 +1,18 @@
-#load "build/task.csx"
-#load "build/build.csx"
-#load "build/aggregate-task.csx"
-#load "build/path-helper.csx"
+#load "./tasks/task.csx"
+#load "./tasks/task-runner.csx"
+#load "./tasks/aggregate-task.csx"
+#load "./tasks/path-helper.csx"
 
-#load "services/build-tasks.csx"
-#load "website/build-tasks.csx"
-#load "deployment/build-tasks.csx"
-#load "deployment/registry/register.csx"
-#load "deployment/registry/unregister.csx"
+#load "./services/tasks.csx"
+#load "./website/tasks.csx"
+#load "./deployment/tasks.csx"
+#load "./deployment/scripts/tasks.csx"
 
-using System.Runtime.InteropServices;
+#load "./generate-inputs.csx"
 
-Build.Dirs.Deployment = Terraform.DefaultProjectDir = $"{Build.RootDir.TrimEnd('/')}/deployment";
+TaskRunner.Dirs.Deployment = Terraform.DefaultProjectDir = $"{TaskRunner.RootDir.TrimEnd('/')}/deployment";
 
-Build.ReadInputs(defaults: new Dictionary<string, string>
+TaskRunner.ReadInputs(defaults: new Dictionary<string, string>
 {
     ["azureVideoIndexerLocation"] = "trial",
     ["azureVideoIndexerAccountId"] = "undefined",
@@ -21,28 +20,21 @@ Build.ReadInputs(defaults: new Dictionary<string, string>
     ["azureVideoIndexerApiUrl"] = "https://api.videoindexer.ai"
 });
 
-// Windows seems to require full paths to the executables when using ProcessStartInfo
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-{
-    Npm.Path = PathHelper.Where(Npm.Path);
-    Terraform.Path = PathHelper.Where(Terraform.Path);
-}
+public static readonly ITask BuildAll = new AggregateTask(DotNetCli.Publish("."), BuildServices, BuildWebsite);
 
-public static readonly IBuildTask BuildAll = new AggregateTask(BuildServices, BuildWebsite);
-public static readonly IBuildTask BuildAllSln = new AggregateTask(DotNetCli.Publish("."), BuildServicesSln);//, BuildWorkflowsSln, BuildWebsite);
+TaskRunner.Tasks["generateInputs"] = new GenerateInputs();
+TaskRunner.Tasks["buildServices"] = BuildServices;
+TaskRunner.Tasks["buildWebsite"] = BuildWebsite;
+TaskRunner.Tasks["build"] = BuildAll;
+TaskRunner.Tasks["deployNoBuild"] = Deploy;
+TaskRunner.Tasks["deploy"] = new AggregateTask(BuildAll, Deploy);
+TaskRunner.Tasks["destroy"] = Destroy;
+TaskRunner.Tasks["postDeploy"] = Scripts.PostDeploy;
+TaskRunner.Tasks["unregisterAll"] = Scripts.ClearServiceRegistry;
+TaskRunner.Tasks["startWorkerFunctions"] = Scripts.StartWorkerFunctions;
+TaskRunner.Tasks["tfOutput"] = new RetrieveTerraformOutput();
+TaskRunner.Tasks["generateTfVars"] = new GenerateTerraformTfVars();
+TaskRunner.Tasks["generateWebsiteTf"] = new GenerateTerraformWebsiteTf();
+TaskRunner.Tasks["plan"] = Plan;
 
-Build.Tasks["buildServices"] = BuildServices;
-Build.Tasks["buildWebsite"] = BuildWebsite;
-//Build.Tasks["build"] = BuildAll;
-Build.Tasks["build"] = BuildAllSln;
-Build.Tasks["deployNoBuild"] = Deploy;
-Build.Tasks["deploy"] = new AggregateTask(BuildAllSln, Deploy);
-Build.Tasks["destroy"] = Destroy;
-Build.Tasks["register"] = new UpdateServiceRegistry();
-Build.Tasks["unregister"] = new ClearServiceRegistry();
-Build.Tasks["tfOutput"] = new RetrieveTerraformOutput();
-Build.Tasks["generateTfVars"] = new GenerateTerraformTfVars();
-Build.Tasks["generateWebsiteTf"] = new GenerateTerraformWebsiteTf();
-Build.Tasks["plan"] = Plan;
-
-await Build.Run(Args?.FirstOrDefault());
+await TaskRunner.Run(Args?.FirstOrDefault());

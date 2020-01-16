@@ -34,6 +34,7 @@
         "stream": "0.0.2",
         "timers": "^0.1.1",
         "tslib": "^1.10.0",
+        "uuidv4": "^6.0.0",
         "zone.js": "^0.9.1"
     },
     "devDependencies": {

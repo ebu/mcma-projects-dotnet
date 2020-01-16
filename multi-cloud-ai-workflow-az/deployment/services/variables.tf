@@ -8,7 +8,6 @@ variable "azure_location" {}
 variable "environment_name" {}
 variable "environment_type" {}
 variable "global_prefix" {}
-variable "global_prefix_lower_only" {}
 variable "resource_group_name" {}
 variable "resource_group_id" {}
 

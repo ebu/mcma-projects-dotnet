@@ -1,9 +1,9 @@
 {
   "resourceManager": {
-    "servicesUrl": "https://triskeldevserviceregistryapi.azurewebsites.net/services",
+    "servicesUrl": "https://triskel-dev-service-registry-api.azurewebsites.net/services",
     "servicesAuthType": "AzureAD",
     "servicesAuthContext": {
-      "scope": "https://triskeldevserviceregistryapi.azurewebsites.net/.default"
+      "scope": "https://triskel-dev-service-registry-api.azurewebsites.net/.default"
     }
   },
   "azure": {
@@ -11,7 +11,7 @@
       "config": {
         "tenant": "evanverneyfinklive.onmicrosoft.com",
         "auth": {
-          "clientId": "ef80431e-7aff-4efc-b516-a24c02ff633c"
+          "clientId": "ab338310-b554-45f2-97c5-5d8a4c39e901"
         },
         "cache": {
           "cacheLocation": "localStorage",
@@ -19,10 +19,7 @@
         }
       },
       "scopes": {
-        "blobStorage": "https://triskeldevmedia.blob.core.windows.net/user_impersonation",
-        "serviceRegistry": "https://triskeldevserviceregistryapi.azurewebsites.net/user_impersonation",
-        "jobRepository": "https://triskeldevjobrepositoryapi.azurewebsites.net/user_impersonation",
-        "mediaRepository": "https://triskeldevmediarepositoryapi.azurewebsites.net/user_impersonation"
+        "blobStorage": "https://triskeldevmedia.blob.core.windows.net/user_impersonation"
       }
     },
     "storage": {

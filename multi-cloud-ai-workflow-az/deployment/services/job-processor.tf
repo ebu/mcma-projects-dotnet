@@ -1,8 +1,10 @@
 locals {
-  job_processor_api_zip_file    = "./../services/Mcma.Azure.JobProcessor/ApiHandler/dist/function.zip"
-  job_processor_worker_zip_file = "./../services/Mcma.Azure.JobProcessor/Worker/dist/function.zip"
-  job_processor_subdomain       = "${var.global_prefix_lower_only}jobprocessorapi"
-  job_processor_url             = "https://${local.job_processor_subdomain}.azurewebsites.net"
+  job_processor_api_zip_file         = "./../services/Mcma.Azure.JobProcessor/ApiHandler/dist/function.zip"
+  job_processor_worker_zip_file      = "./../services/Mcma.Azure.JobProcessor/Worker/dist/function.zip"
+  job_processor_api_function_name    = "${var.global_prefix}-job-processor-api"
+  job_processor_url                  = "https://${local.job_processor_api_function_name}.azurewebsites.net"
+  job_processor_worker_function_name = "${var.global_prefix}-job-processor-worker"
+  job_processor_worker_function_key  = "${lookup(azurerm_template_deployment.job_processor_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -23,15 +25,8 @@ resource "azurerm_storage_blob" "job_processor_worker_function_zip" {
   source                 = local.job_processor_worker_zip_file
 }
 
-resource "azurerm_application_insights" "job_processor_worker_appinsights" {
-  name                = "${var.global_prefix_lower_only}jobprocessorworker_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "job_processor_worker_function" {
-  name                      = "${var.global_prefix_lower_only}jobprocessorworker"
+  name                      = "${var.global_prefix}-job-processor-worker"
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -47,15 +42,15 @@ resource "azurerm_function_app" "job_processor_worker_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.job_processor_worker_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.job_processor_worker_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.job_processor_worker_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.job_processor_worker_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
     
     WorkQueueStorage         = var.app_storage_connection_string
     TableName                = "JobProcessor"
     PublicUrl                = local.job_processor_url
     CosmosDbEndpoint         = var.cosmosdb_endpoint
     CosmosDbKey              = var.cosmosdb_key
-    CosmosDbDatabaseId       = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId       = local.cosmosdb_id
     CosmosDbRegion           = var.azure_location
     ServicesUrl              = local.services_url
     ServicesAuthType         = "AzureAD"
@@ -63,12 +58,24 @@ resource "azurerm_function_app" "job_processor_worker_function" {
   }
 }
 
+resource "azurerm_template_deployment" "job_processor_worker_function_key" {
+  name                = "job-processor-worker-func-key"
+  resource_group_name = var.resource_group_name
+  deployment_mode     = "Incremental"
+
+  parameters = {
+    functionApp = local.job_processor_worker_function_name
+  }
+
+  template_body = file("./services/function-key-template.json")
+}
+
 #===================================================================
 # API Function
 #===================================================================
 
 resource "azuread_application" "job_processor_app" {
-  name            = local.job_processor_subdomain
+  name            = local.job_processor_api_function_name
   identifier_uris = [local.job_processor_url]
 }
 
@@ -86,15 +93,8 @@ resource "azurerm_storage_blob" "job_processor_api_function_zip" {
   source                 = local.job_processor_api_zip_file
 }
 
-resource "azurerm_application_insights" "job_processor_api_appinsights" {
-  name                = "${var.global_prefix_lower_only}jobprocessorapi_appinsights"
-  resource_group_name = var.resource_group_name
-  location            = var.azure_location
-  application_type    = "Web"
-}
-
 resource "azurerm_function_app" "job_processor_api_function" {
-  name                      = "${var.global_prefix_lower_only}jobprocessorapi"
+  name                      = local.job_processor_api_function_name
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -117,19 +117,27 @@ resource "azurerm_function_app" "job_processor_api_function" {
     FUNCTION_APP_EDIT_MODE         = "readonly"
     https_only                     = true
     HASH                           = filesha256(local.job_processor_api_zip_file)
-    WEBSITE_RUN_FROM_PACKAGE       = "https://${var.app_storage_account_name}.blob.core.windows.net/${var.deploy_container}/${azurerm_storage_blob.job_processor_api_function_zip.name}${var.app_storage_sas}"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.job_processor_api_appinsights.instrumentation_key
+    WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.job_processor_api_function_zip.name}${var.app_storage_sas}"
+    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
     TableName                = "JobProcessor"
     PublicUrl                = local.job_processor_url
     CosmosDbEndpoint         = var.cosmosdb_endpoint
     CosmosDbKey              = var.cosmosdb_key
-    CosmosDbDatabaseId       = "${var.global_prefix_lower_only}db"
+    CosmosDbDatabaseId       = local.cosmosdb_id
     CosmosDbRegion           = var.azure_location
     WorkerFunctionId         = azurerm_storage_queue.job_processor_worker_function_queue.name
   }
 }
 
 output job_processor_url {
-  value = "https://${azurerm_function_app.job_processor_api_function.default_hostname}/"
+  value = "${local.job_processor_url}/"
+}
+
+output job_processor_worker_function_name {
+    value = local.job_processor_worker_function_name
+}
+
+output job_processor_worker_function_key {
+    value = local.job_processor_worker_function_key
 }

@@ -20,7 +20,7 @@ dotnet tool install -g dotnet-script
 2. Navigate to the `multi-cloud-ai-workflow-az` folder.
 3. Create a new file named `task-inputs.json`
 4. Add the following information to the created file and update the parameter values reflecting your AWS account and Azure account 
-```json
+```jsonc
 {
   // general MCMA settings
   "environmentName": "",                    // A unique name for grouping your resources

@@ -10,16 +10,9 @@ This example workflow demonstrates how you can leverage AI technologies from mul
 dotnet tool install -g dotnet-script
 ```
 * Latest version of Terraform and available in PATH. See the [Terraform website](https://www.terraform.io/)
-* Azure account with a service principal for use by Terraform deployment process (see [Setting up your Service Principal](##Setting up your Service Principal) below)
+* Azure account with a service principal for use by Terraform deployment process (see [Setting up your Service Principal](#setting-up-your-service-principal) below)
 * AWS account
 * Azure video indexer account, a free account can be used for testing. Follow these instructions: https://docs.microsoft.com/en-us/azure/cognitive-services/video-indexer/video-indexer-use-apis
-
-## Setting up your Service Principal
-1. Login to the Azure Portal
-2. Open Azure AD
-3. On the left-hand side, find the App Registrations section
-4. Create a new App Registration for Terraform
-![Create new App Registration](https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-1.png)
 
 ## Setup procedure
 1. Clone this repository to your local harddrive
@@ -56,3 +49,21 @@ dotnet tool install -g dotnet-script
     * Windows: `./tasks deploy`
     * Mac/Linux: `./tasks.sh deploy`
 8. If no errors have occured until now you have successfully setup the infrastructure in your Azure cloud. Go to https://portal.azure.com/ and sign in to see your cloud infrastructure.
+
+## Setting up your Service Principal
+1. Login to the Azure Portal
+2. Open Azure AD
+3. In the Default Directory, find the `App registrations` section on the left-hand side
+4. Create a new App Registration for Terraform
+![Create new App Registration](https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-1.png)
+5. Copy the client ID from the new app registration and set it as the `azureClientId` in the `task-inputs.json`
+![Copy App Registration Client ID](https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-3.png)
+6. Under the new App Registration, click `Certificates & secrets` on the left-hand side
+7. Click on `New client secret` to generate a new key
+![Generate App Registration Client Secret](https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-5.png)
+8. Copy the new key and set it as the `azureClientSecret` in the `task-inputs.json`
+![Copy App Registration Client Secret](https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-8.png)
+9. Return to the Default Directory and find the `Roles and administrators` section on the left-hand side
+10. Find the `Global administrator` built-in role and click on it
+11. Add your new Terraform Service Principal to the role
+![Make Terraform an Admin](https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-2.png)

@@ -10,10 +10,16 @@ This example workflow demonstrates how you can leverage AI technologies from mul
 dotnet tool install -g dotnet-script
 ```
 * Latest version of Terraform and available in PATH. See the [Terraform website](https://www.terraform.io/)
-* Azure account
+* Azure account with a service principal for use by Terraform deployment process (see [Setting up your Service Principal](##Setting up your Service Principal) below)
 * AWS account
 * Azure video indexer account, a free account can be used for testing. Follow these instructions: https://docs.microsoft.com/en-us/azure/cognitive-services/video-indexer/video-indexer-use-apis
 
+## Setting up your Service Principal
+1. Login to the Azure Portal
+2. Open Azure AD
+3. On the left-hand side, find the App Registrations section
+4. Create a new App Registration for Terraform
+(https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-1.png)
 
 ## Setup procedure
 1. Clone this repository to your local harddrive

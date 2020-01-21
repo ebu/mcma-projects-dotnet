@@ -58,7 +58,7 @@ resource "azuread_service_principal" "website_sp" {
 resource "azuread_user" "website_user" {
   user_principal_name = "mcma-demo@evanverneyfinklive.onmicrosoft.com"
   display_name        = "MCMA Demo"
-  password            = "W3lc0m32McmA!"
+  password            = "Welcome2MCMA!"
 }
 
 resource "azurerm_role_assignment" "website_user_storage_access_role_assignment" {

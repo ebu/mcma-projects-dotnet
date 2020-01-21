@@ -7,13 +7,6 @@ using Microsoft.Azure.Storage.Blob;
 
 public class StorageApiVersionSetter
 {
-    public StorageApiVersionSetter(TerraformOutput terraformOutput)
-    {
-        TerraformOutput = terraformOutput;
-    }
-
-    private TerraformOutput TerraformOutput { get; }
-
     public void SetDefaultServiceVersion(string storageConnectionString)
     {
         var cloudStorageAccount = CloudStorageAccount.Parse(storageConnectionString);

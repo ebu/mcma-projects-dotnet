@@ -6,19 +6,12 @@
 
 public class UploadWebsiteConfig : TaskBase
 {
-    public UploadWebsiteConfig()
-    {
-        WebsiteConfigUploader = new WebsiteConfigUploader(TerraformOutput);
-    }
-                
-    private TerraformOutput TerraformOutput { get; } = TerraformOutput.Load();
-
-    private WebsiteConfigUploader WebsiteConfigUploader { get; }
-
     protected override async Task<bool> ExecuteTask()
     {
+        var websiteConfigUploader = new WebsiteConfigUploader(TerraformOutput.Instance);
+
         // upload website config file generated from terraform output
-        await WebsiteConfigUploader.UploadConfigAsync();
+        await websiteConfigUploader.UploadConfigAsync();
         
         return true;
     }

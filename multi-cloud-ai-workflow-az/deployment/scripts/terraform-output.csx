@@ -2,30 +2,26 @@
 
 public class TerraformOutput
 {
-    private static TerraformOutput Instance { get; set; }
+    private static TerraformOutput _instance;
 
     private TerraformOutput(IDictionary<string, string> outputs)
     {
         Outputs = outputs;
 
         ServiceUrls = outputs.Where(x => x.Key.EndsWith("_url")).ToDictionary(x => x.Key.Replace("_url", string.Empty), x => x.Value);
-
-        WorkerKeys =
-            outputs
-                .Where(x => x.Key.EndsWith("_worker_function_name") || x.Key.EndsWith("_worker_function_key"))
-                .GroupBy(x => x.Key.Substring(0, x.Key.IndexOf("_worker_function_")))
-                .ToDictionary(x => x.FirstOrDefault(y => y.Key.EndsWith("_name")).Value, x => x.FirstOrDefault(y => y.Key.EndsWith("_key")).Value);
     }
+
+    public static TerraformOutput Instance => _instance ?? (_instance = new TerraformOutput(ParseContent()));
 
     private IDictionary<string, string> Outputs { get; }
 
     public IDictionary<string, string> ServiceUrls { get; }
 
-    public IDictionary<string, string> WorkerKeys { get; }
-
     public string ServiceRegistryUrl => ServiceUrls["service_registry"];
 
     public string ServicesUrl => $"{ServiceRegistryUrl}services";
+
+    public string ServiceRegistryAppId => Outputs["service_registry_app_id"];
 
     public string JobProfilesUrl => $"{ServiceRegistryUrl}job-profiles";
 
@@ -49,27 +45,27 @@ public class TerraformOutput
 
     public string JobRepositoryScope => Outputs["job_repository_scope"];
 
-    public static TerraformOutput Load()
-    {
-        if (Instance == null)
-        {
-            var outputs = ParseContent(File.ReadAllText($"{TaskRunner.Dirs.Deployment.TrimEnd('/')}/terraform.output"));
-            
-            Instance = new TerraformOutput(outputs);
-        }
-        return Instance;
-    }
-
-    private static IDictionary<string, string> ParseContent(string content)
+    private static IDictionary<string, string> ParseContent()
     {
         var settings = new Dictionary<string, string>();
+        var tfOutput = $"{TaskRunner.Dirs.Deployment.TrimEnd('/')}/terraform.output";
+
+        if (!File.Exists(tfOutput))
+            return settings;
+
+        var content = File.ReadAllText(tfOutput);
 
         foreach (var line in content.Split('\n'))
         {
             var parts = line.Split('=');
 
             if (parts.Length > 1)
-                settings[parts[0].Trim()] = string.Join("=", parts.Skip(1).Select(x => x.Trim()));
+            {
+                var key = parts[0].Trim();
+                var value = string.Join("=", parts.Skip(1).Select(x => x.Trim()));
+                
+                settings[key] = value;
+            }
         }
 
         return settings;

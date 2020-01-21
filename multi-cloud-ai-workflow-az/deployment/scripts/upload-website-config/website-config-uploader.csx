@@ -27,14 +27,14 @@ public class WebsiteConfigUploader
         var resourceManagerConfig = ConfigJson["resourceManager"];
         resourceManagerConfig["servicesUrl"] = TerraformOutput.ServicesUrl;
         resourceManagerConfig["servicesAuthType"] = "AzureAD";
-        resourceManagerConfig["servicesAuthContext"] = JToken.FromObject(new { scope = TerraformOutput.ServicesUrl.TrimEnd('/') + "/.default" });
+        resourceManagerConfig["servicesAuthContext"] = JToken.FromObject(new { scope = TerraformOutput.ServiceRegistryUrl.TrimEnd('/') + "/.default" });
 
         var azureConfig = (JObject)ConfigJson["azure"];
         
         // configure authentication
         var azureAdConfig = (JObject)azureConfig["ad"];
         azureAdConfig["config"]["auth"]["clientId"] = TerraformOutput.WebsiteClientId;
-        azureAdConfig["config"]["tenant"] = TaskRunner.Inputs.azureTenantName;
+        azureAdConfig["config"]["tenant"] = TaskRunner.Inputs.azureTenantId;
         azureAdConfig["scopes"] = new JObject
         {
             ["blobStorage"] = $"https://{TerraformOutput.MediaStorageAccountName}.blob.core.windows.net/user_impersonation"

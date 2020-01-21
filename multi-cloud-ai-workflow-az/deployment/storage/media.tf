@@ -31,14 +31,14 @@ resource "azurerm_storage_container" "preview_container" {
   container_access_type = "blob"
 }
 
-output "media_storage_connection_string" {
+output media_storage_connection_string {
   value = azurerm_storage_account.media_storage_account.primary_connection_string
 }
 
-output "media_storage_account_name" {
+output media_storage_account_name {
   value = azurerm_storage_account.media_storage_account.name
 }
 
-output "media_storage_access_key" {
+output media_storage_access_key {
   value = azurerm_storage_account.media_storage_account.primary_access_key
 }

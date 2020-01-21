@@ -5,8 +5,6 @@ locals {
   azure_ai_service_api_function_name     = "${var.global_prefix}-azure-ai-service-api"
   azure_ai_service_url                   = "https://${local.azure_ai_service_api_function_name}.azurewebsites.net"
   azure_ai_service_notification_func_key = "${lookup(azurerm_template_deployment.azure_ai_service_notification_func_key.outputs, "functionkey")}"
-  azure_ai_service_worker_function_name  = "${var.global_prefix}-azure-ai-service-worker"
-  azure_ai_service_worker_function_key   = "${lookup(azurerm_template_deployment.azure_ai_service_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -65,18 +63,6 @@ resource "azurerm_function_app" "azure_ai_service_worker_function" {
     AzureVideoIndexerSubscriptionKey = var.azure_videoindexer_subscription_key
     NotificationHandlerKey           = local.azure_ai_service_notification_func_key
   }
-}
-
-resource "azurerm_template_deployment" "azure_ai_service_worker_function_key" {
-  name                = "azure-ai-service-worker-func-key"
-  resource_group_name = var.resource_group_name
-  deployment_mode     = "Incremental"
-
-  parameters = {
-    functionApp = local.azure_ai_service_worker_function_name
-  }
-
-  template_body = file("./services/function-key-template.json")
 }
 
 #===================================================================
@@ -211,12 +197,4 @@ resource "azurerm_template_deployment" "azure_ai_service_notification_func_key" 
 
 output azure_ai_service_url {
   value = "${local.azure_ai_service_url}/"
-}
-
-output azure_ai_service_worker_function_name {
-    value = local.azure_ai_service_worker_function_name
-}
-
-output azure_ai_service_worker_function_key {
-    value = local.azure_ai_service_worker_function_key
 }

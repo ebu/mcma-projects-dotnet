@@ -44,14 +44,18 @@ resource "azurerm_storage_container" "deploy_container" {
   container_access_type = "private"
 }
 
-output "app_storage_connection_string" {
+output app_storage_connection_string {
   value = azurerm_storage_account.app_storage_account.primary_connection_string
 }
 
-output "app_storage_account_name" {
+output app_storage_account_name {
   value = azurerm_storage_account.app_storage_account.name
 }
 
-output "app_storage_sas" {
+output app_storage_sas {
   value = data.azurerm_storage_account_sas.app_storage_sas.sas
+}
+
+output deploy_container {
+  value = azurerm_storage_container.deploy_container.name
 }

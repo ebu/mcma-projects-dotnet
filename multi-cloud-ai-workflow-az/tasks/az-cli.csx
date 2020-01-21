@@ -13,6 +13,32 @@ public class AzCli : CmdTask
     }
 }
 
+public class AzAccountShow : AzCli
+{
+    public AzAccountShow()
+        : base("account", "show")
+    {
+    }
+
+    protected override bool RedirectStandardOutput => true;
+
+    public JObject Account { get; private set; }
+
+    protected override Task<bool> OnExit()
+    {
+        try
+        {
+            Account = JObject.Parse(StandardOutput);
+
+            return Task.FromResult(true);
+        }
+        catch
+        {
+            return Task.FromResult(false);
+        }
+    }
+}
+
 public class AzLogin : AzCli
 {
     public AzLogin()
@@ -26,16 +52,23 @@ public class AzLogin : AzCli
 
     protected override Task<bool> OnExit()
     {
-        Account = JArray.Parse(StandardOutput).OfType<JObject>().FirstOrDefault();
-
-        return Task.FromResult(true);
+        try
+        {
+            Account = JArray.Parse(StandardOutput).OfType<JObject>().FirstOrDefault();
+            
+            return Task.FromResult(true);
+        }
+        catch
+        {
+            return Task.FromResult(false);
+        }
     }
 }
 
 public class AzSpCreate : AzCli
 {
-    public AzSpCreate(string name, string role)
-        : base("ad", "sp", "create-for-rbac", "--name", name, "--role", role)
+    public AzSpCreate(string name, string role, string subscriptionId)
+        : base("ad", "sp", "create-for-rbac", $"--name={name}", $"--role={role}", $"--scopes=/subscriptions/{subscriptionId}")
     {
     }
 
@@ -50,3 +83,13 @@ public class AzSpCreate : AzCli
         return Task.FromResult(true);
     }
 }
+
+public class AzAdAppPermissionGrant : AzCli
+{
+    public AzAdAppPermissionGrant(string appToAccessId, string callingAppId, string scope, string consentType = "AllPrincipals")
+        : base("ad", "app", "permission", "grant", $"--id={callingAppId}", $"--api={appToAccessId}", $"--scope={scope}", $"--consent-type={consentType}")
+    {
+    }
+}
+
+public class AzA

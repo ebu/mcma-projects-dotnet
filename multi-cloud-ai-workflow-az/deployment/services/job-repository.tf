@@ -3,8 +3,6 @@ locals {
   job_repository_worker_zip_file      = "./../services/Mcma.Azure.JobRepository/Worker/dist/function.zip"
   job_repository_api_function_name    = "${var.global_prefix}-job-repository-api"
   job_repository_url                  = "https://${local.job_repository_api_function_name}.azurewebsites.net"
-  job_repository_worker_function_name = "${var.global_prefix}-job-repository-worker"
-  job_repository_worker_function_key  = "${lookup(azurerm_template_deployment.job_repository_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -56,18 +54,6 @@ resource "azurerm_function_app" "job_repository_worker_function" {
     ServicesAuthType         = "AzureAD"
     ServicesAuthContext      = "{ \"scope\": \"${local.service_registry_url}/.default\" }"
   }
-}
-
-resource "azurerm_template_deployment" "job_repository_worker_function_key" {
-  name                = "job-repository-worker-func-key"
-  resource_group_name = var.resource_group_name
-  deployment_mode     = "Incremental"
-
-  parameters = {
-    functionApp = local.job_repository_worker_function_name
-  }
-
-  template_body = file("./services/function-key-template.json")
 }
 
 #===================================================================
@@ -150,12 +136,4 @@ output job_repository_app_id {
 
 output job_repository_scope {
   value = azuread_application.job_repository_app.oauth2_permissions[0].id
-}
-
-output job_repository_worker_function_name {
-    value = local.job_repository_worker_function_name
-}
-
-output job_repository_worker_function_key {
-    value = local.job_repository_worker_function_key
 }

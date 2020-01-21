@@ -1,10 +1,8 @@
 locals {
-  workflow_service_api_zip_file         = "./../services/Mcma.Azure.WorkflowService/ApiHandler/dist/function.zip"
-  workflow_service_worker_zip_file      = "./../services/Mcma.Azure.WorkflowService/Worker/dist/function.zip"
-  workflow_service_api_function_name    = "${var.global_prefix}-workflow-service-api"
-  workflow_service_url                  = "https://${local.workflow_service_api_function_name}.azurewebsites.net"
-  workflow_service_worker_function_name = "${var.global_prefix}-workflow-service-worker"
-  workflow_service_worker_function_key  = "${lookup(azurerm_template_deployment.workflow_service_worker_function_key.outputs, "functionkey")}"
+  workflow_service_api_zip_file      = "./../services/Mcma.Azure.WorkflowService/ApiHandler/dist/function.zip"
+  workflow_service_worker_zip_file   = "./../services/Mcma.Azure.WorkflowService/Worker/dist/function.zip"
+  workflow_service_api_function_name = "${var.global_prefix}-workflow-service-api"
+  workflow_service_url               = "https://${local.workflow_service_api_function_name}.azurewebsites.net"
 }
 
 #===================================================================
@@ -48,8 +46,6 @@ resource "azurerm_function_app" "workflow_service_worker_function" {
     WorkQueueStorage             = var.app_storage_connection_string
     TableName                    = "WorkflowService"
     PublicUrl                    = local.workflow_service_url
-    AzureClientId                = var.azure_client_id
-    AzureClientSecret            = var.azure_client_secret
     AzureSubscriptionId          = var.azure_subscription_id
     AzureTenantId                = var.azure_tenant_id
     AzureResourceGroupName       = var.resource_group_name
@@ -66,16 +62,28 @@ resource "azurerm_function_app" "workflow_service_worker_function" {
   }
 }
 
-resource "azurerm_template_deployment" "workflow_service_worker_function_key" {
-  name                = "workflow-service-worker-func-key"
-  resource_group_name = var.resource_group_name
-  deployment_mode     = "Incremental"
+data "azurerm_subscription" "primary" {}
 
-  parameters = {
-    functionApp = local.workflow_service_worker_function_name
+resource "azurerm_role_definition" "workflow_service_worker_role" {
+  name  = "Workflow Invoker"
+  scope = data.azurerm_subscription.primary.id
+
+  permissions {
+    actions = [
+      "Microsoft.Logic/workflows/read",
+      "Microsoft.Logic/workflows/triggers/listCallbackUrl/action",
+      "Microsoft.Logic/workflows/run/action"
+    ]
+    not_actions = []
   }
 
-  template_body = file("./services/function-key-template.json")
+  assignable_scopes = [data.azurerm_subscription.primary.id]
+}
+
+resource "azurerm_role_assignment" "workflow_service_worker_role_assignment" {
+  scope              = data.azurerm_subscription.primary.id
+  role_definition_id = azurerm_role_definition.workflow_service_worker_role.id
+  principal_id       = azurerm_function_app.workflow_service_worker_function.identity[0].principal_id
 }
 
 #===================================================================
@@ -132,28 +140,19 @@ resource "azurerm_function_app" "workflow_service_api_function" {
     WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.workflow_service_api_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
-    TableName                = "WorkflowService"
-    PublicUrl                = local.workflow_service_url
-    CosmosDbEndpoint         = var.cosmosdb_endpoint
-    CosmosDbKey              = var.cosmosdb_key
-    CosmosDbDatabaseId       = local.cosmosdb_id
-    CosmosDbRegion           = var.azure_location
-    WorkerFunctionId         = azurerm_storage_queue.workflow_service_worker_function_queue.name
-    ServicesUrl              = local.services_url
-    ServicesAuthType         = "AzureAD"
-    ServicesAuthContext      = "{ \"scope\": \"${local.service_registry_url}/.default\" }"
+    TableName           = "WorkflowService"
+    PublicUrl           = local.workflow_service_url
+    CosmosDbEndpoint    = var.cosmosdb_endpoint
+    CosmosDbKey         = var.cosmosdb_key
+    CosmosDbDatabaseId  = local.cosmosdb_id
+    CosmosDbRegion      = var.azure_location
+    WorkerFunctionId    = azurerm_storage_queue.workflow_service_worker_function_queue.name
+    ServicesUrl         = local.services_url
+    ServicesAuthType    = "AzureAD"
+    ServicesAuthContext = "{ \"scope\": \"${local.service_registry_url}/.default\" }"
   }
 }
 
-
 output workflow_service_url {
   value = "${local.workflow_service_url}/"
-}
-
-output workflow_service_worker_function_name {
-    value = local.workflow_service_worker_function_name
-}
-
-output workflow_service_worker_function_key {
-    value = local.workflow_service_worker_function_key
 }

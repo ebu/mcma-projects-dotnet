@@ -44,10 +44,10 @@ resource "azurerm_cosmosdb_account" "cosmosdb_account" {
 
 module "storage" {
   source = "./storage"
-
+  
   azure_client_id          = var.azure_client_id
   azure_client_secret      = var.azure_client_secret
-  azure_tenant_name        = var.azure_tenant_name
+  azure_tenant_id          = var.azure_tenant_id
   azure_location           = var.azure_location
   resource_group_name      = azurerm_resource_group.resource_group.name
   global_prefix            = var.global_prefix
@@ -80,11 +80,8 @@ module "workflows" {
 module "services" {
   source = "./services"
 
-  azure_client_id       = var.azure_client_id
-  azure_client_secret   = var.azure_client_secret
   azure_subscription_id = var.azure_subscription_id
   azure_tenant_id       = var.azure_tenant_id
-  azure_tenant_name     = var.azure_tenant_name
   azure_location        = var.azure_location
 
   environment_name         = var.environment_name
@@ -99,7 +96,7 @@ module "services" {
   app_storage_connection_string = module.storage.app_storage_connection_string
   app_storage_account_name      = module.storage.app_storage_account_name
   app_storage_sas               = module.storage.app_storage_sas
-  deploy_container              = var.deploy_container
+  deploy_container              = module.storage.deploy_container
 
   media_storage_connection_string = module.storage.media_storage_connection_string
   media_storage_account_name      = module.storage.media_storage_account_name
@@ -136,138 +133,86 @@ module "website" {
   media_repository_scope  = module.services.media_repository_scope
 }
 
-output "service_registry_url" {
+output service_registry_url {
   value = module.services.service_registry_url
 }
 
-output "service_registry_scope" {
+output service_registry_scope {
   value  = module.services.service_registry_scope
 }
 
-output "job_repository_url" {
+output service_registry_app_id {
+  value = module.services.service_registry_app_id
+}
+
+output job_repository_url {
   value = module.services.job_repository_url
 }
 
-output "job_repository_scope" {
+output job_repository_scope {
   value  = module.services.job_repository_scope
 }
 
-output "job_repository_worker_function_name" {
-  value  = module.services.job_repository_worker_function_name
-}
-
-output "job_repository_worker_function_key" {
-  value  = module.services.job_repository_worker_function_key
-}
-
-output "job_processor_url" {
+output job_processor_url {
   value = module.services.job_processor_url
 }
 
-output "job_processor_worker_function_name" {
-  value  = module.services.job_processor_worker_function_name
-}
-
-output "job_processor_worker_function_key" {
-  value  = module.services.job_processor_worker_function_key
-}
-
-output "ame_service_url" {
+output ame_service_url {
   value = module.services.ame_service_url
 }
 
-output "ame_service_worker_function_name" {
-  value  = module.services.ame_service_worker_function_name
-}
-
-output "ame_service_worker_function_key" {
-  value  = module.services.ame_service_worker_function_key
-}
-
-output "aws_ai_service_url" {
+output aws_ai_service_url {
   value = module.services.aws_ai_service_url
 }
 
-output "aws_ai_service_worker_function_name" {
-  value  = module.services.aws_ai_service_worker_function_name
-}
-
-output "aws_ai_service_worker_function_key" {
-  value  = module.services.aws_ai_service_worker_function_key
-}
-
-output "azure_ai_service_url" {
+output azure_ai_service_url {
   value = module.services.azure_ai_service_url
 }
 
-output "azure_ai_service_worker_function_name" {
-  value  = module.services.azure_ai_service_worker_function_name
-}
-
-output "azure_ai_service_worker_function_key" {
-  value  = module.services.azure_ai_service_worker_function_key
-}
-
-output "transform_service_url" {
+output transform_service_url {
   value = module.services.transform_service_url
 }
 
-output "transform_service_worker_function_name" {
-  value  = module.services.transform_service_worker_function_name
-}
-
-output "transform_service_worker_function_key" {
-  value  = module.services.transform_service_worker_function_key
-}
-
-output "workflow_service_url" {
+output workflow_service_url {
   value = module.services.workflow_service_url
 }
 
-output "workflow_service_worker_function_name" {
-  value  = module.services.workflow_service_worker_function_name
-}
-
-output "workflow_service_worker_function_key" {
-  value  = module.services.workflow_service_worker_function_key
-}
-
-output "media_repository_url" {
+output media_repository_url {
   value = module.services.media_repository_url
 }
 
-output "media_storage_account_name" {
+output media_storage_account_name {
   value = module.storage.media_storage_account_name
 }
 
-output "media_storage_connection_string" {
+output media_storage_connection_string {
   value = module.storage.media_storage_connection_string
 }
 
-output "upload_container" {
+output upload_container {
   value = var.upload_container
 }
 
-output "website_storage_connection_string" {
+output website_storage_connection_string {
   value = module.storage.website_storage_connection_string
 }
 
-output "website_storage_account_name" {
+output website_storage_account_name {
   value = module.storage.website_storage_account_name
 }
 
-output "website_container" {
+output website_container {
   value = var.website_container
 }
 
-output "website_domain" {
+output website_domain {
   value = module.storage.website_domain
 }
 
-output "website_url" {
+output website_url {
   value = module.storage.website_url
 }
 
-output "website_client_id" {
+output website_client_id {
   value = module.website.website_client_id
 }

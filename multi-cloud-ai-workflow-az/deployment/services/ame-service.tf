@@ -3,8 +3,6 @@ locals {
   ame_service_worker_zip_file      = "./../services/Mcma.Azure.AmeService/Worker/dist/function.zip"
   ame_service_api_function_name    = "${var.global_prefix}-ame-service-api"
   ame_service_url                  = "https://${local.ame_service_api_function_name}.azurewebsites.net"
-  ame_service_worker_function_name = "${var.global_prefix}-ame-service-worker"
-  ame_service_worker_function_key  = "${lookup(azurerm_template_deployment.ame_service_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -26,7 +24,7 @@ resource "azurerm_storage_blob" "ame_service_worker_function_zip" {
 }
 
 resource "azurerm_function_app" "ame_service_worker_function" {
-  name                      = local.ame_service_worker_function_name
+  name                      = "${var.global_prefix}-ame-service-worker"
   location                  = var.azure_location
   resource_group_name       = var.resource_group_name
   app_service_plan_id       = azurerm_app_service_plan.mcma_services.id
@@ -58,18 +56,6 @@ resource "azurerm_function_app" "ame_service_worker_function" {
     MediaStorageAccountName      = var.media_storage_account_name
     MediaStorageConnectionString = var.media_storage_connection_string
   }
-}
-
-resource "azurerm_template_deployment" "ame_service_worker_function_key" {
-  name                = "ame-service-worker-func-key"
-  resource_group_name = var.resource_group_name
-  deployment_mode     = "Incremental"
-
-  parameters = {
-    functionApp = local.ame_service_worker_function_name
-  }
-
-  template_body = file("./services/function-key-template.json")
 }
 
 #===================================================================
@@ -134,12 +120,4 @@ resource "azurerm_function_app" "ame_service_api_function" {
 
 output ame_service_url {
   value = "${local.ame_service_url}/"
-}
-
-output ame_service_worker_function_name {
-    value = local.ame_service_worker_function_name
-}
-
-output ame_service_worker_function_key {
-    value = local.ame_service_worker_function_key
 }

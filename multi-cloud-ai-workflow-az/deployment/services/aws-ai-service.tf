@@ -8,8 +8,6 @@ locals {
   aws_ai_service_api_function_name    = "${var.global_prefix}-aws-ai-service-api"
   aws_ai_service_url                  = "https://${local.aws_ai_service_api_function_name}.azurewebsites.net"
   aws_ai_service_sns_func_key         = "${lookup(azurerm_template_deployment.aws_ai_service_sns_func_key.outputs, "functionkey")}"
-  aws_ai_service_worker_function_name = "${var.global_prefix}-aws-ai-service-worker"
-  aws_ai_service_worker_function_key  = "${lookup(azurerm_template_deployment.aws_ai_service_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -70,18 +68,6 @@ resource "azurerm_function_app" "aws_ai_service_worker_function" {
     AwsAiOutputBucket            = aws_s3_bucket.aws_ai_output_bucket.id
     AwsRekoSnsRoleArn            = aws_iam_role.aws_reko_sns_role.arn
   }
-}
-
-resource "azurerm_template_deployment" "aws_ai_service_worker_function_key" {
-  name                = "aws-ai-service-worker-func-key"
-  resource_group_name = var.resource_group_name
-  deployment_mode     = "Incremental"
-
-  parameters = {
-    functionApp = local.aws_ai_service_worker_function_name
-  }
-
-  template_body = file("./services/function-key-template.json")
 }
 
 #===================================================================
@@ -216,12 +202,4 @@ resource "azurerm_template_deployment" "aws_ai_service_sns_func_key" {
 
 output aws_ai_service_url {
   value = "${local.aws_ai_service_url}/"
-}
-
-output aws_ai_service_worker_function_name {
-    value = local.aws_ai_service_worker_function_name
-}
-
-output aws_ai_service_worker_function_key {
-    value = local.aws_ai_service_worker_function_key
 }

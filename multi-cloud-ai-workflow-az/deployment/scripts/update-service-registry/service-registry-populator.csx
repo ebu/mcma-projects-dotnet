@@ -39,17 +39,15 @@ public class ServiceRegistryPopulator
     public ServiceRegistryPopulator(TerraformOutput terraformOutput)
     {
         TerraformOutput = terraformOutput;
-
-        ServiceRegistry = GetServiceFromJson(JToken.Parse(ServiceRegistryJson), TerraformOutput.ServiceRegistryUrl);
-
-        JobProfiles = JobProfilesJson.Select(j => j.ToMcmaObject<JobProfile>()).ToArray();
     }
 
     private TerraformOutput TerraformOutput { get; }
 
-    public Service ServiceRegistry { get; }
+    public Service ServiceRegistry => _serviceRegistry ?? (_serviceRegistry = GetServiceFromJson(JToken.Parse(ServiceRegistryJson), TerraformOutput.ServiceRegistryUrl));
+    private Service _serviceRegistry;
 
-    public JobProfile[] JobProfiles { get; }
+    public JobProfile[] JobProfiles => _jobProfiles ?? (_jobProfiles = JobProfilesJson.Select(j => j.ToMcmaObject<JobProfile>()).ToArray());
+    private JobProfile[] _jobProfiles;
 
     public Service[] Services { get; private set; }
 

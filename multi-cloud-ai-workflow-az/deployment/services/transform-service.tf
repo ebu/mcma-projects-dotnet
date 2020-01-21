@@ -3,8 +3,6 @@ locals {
   transform_service_worker_zip_file      = "./../services/Mcma.Azure.TransformService/Worker/dist/function.zip"
   transform_service_api_function_name    = "${var.global_prefix}-transform-service-api"
   transform_service_url                  = "https://${local.transform_service_api_function_name}.azurewebsites.net"
-  transform_service_worker_function_name = "${var.global_prefix}-transform-service-worker"
-  transform_service_worker_function_key  = "${lookup(azurerm_template_deployment.transform_service_worker_function_key.outputs, "functionkey")}"
 }
 
 #===================================================================
@@ -58,18 +56,6 @@ resource "azurerm_function_app" "transform_service_worker_function" {
     MediaStorageAccountName      = var.media_storage_account_name
     MediaStorageConnectionString = var.media_storage_connection_string
   }
-}
-
-resource "azurerm_template_deployment" "transform_service_worker_function_key" {
-  name                = "transform-service-worker-func-key"
-  resource_group_name = var.resource_group_name
-  deployment_mode     = "Incremental"
-
-  parameters = {
-    functionApp = local.transform_service_worker_function_name
-  }
-
-  template_body = file("./services/function-key-template.json")
 }
 
 #===================================================================
@@ -134,12 +120,4 @@ resource "azurerm_function_app" "transform_service_api_function" {
 
 output transform_service_url {
   value = "${local.transform_service_url}/"
-}
-
-output transform_service_worker_function_name {
-    value = local.transform_service_worker_function_name
-}
-
-output transform_service_worker_function_key {
-    value = local.transform_service_worker_function_key
 }

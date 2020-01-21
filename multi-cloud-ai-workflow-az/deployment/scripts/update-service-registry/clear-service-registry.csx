@@ -22,11 +22,11 @@ using Mcma.Client;
 
 public class ClearServiceRegistry : TaskBase
 {
-    private ServiceRegistryPopulator ServiceRegistryPopulator { get; } = new ServiceRegistryPopulator(TerraformOutput.Load());                
-
     protected override async Task<bool> ExecuteTask()
     {
-        var resourceManager = ServiceRegistryPopulator.GetResourceManager();
+        var serviceRegistryPopulator = new ServiceRegistryPopulator(TerraformOutput.Instance);
+
+        var resourceManager = serviceRegistryPopulator.GetResourceManager();
 
         await resourceManager.InitAsync();
 

@@ -72,7 +72,7 @@ export class AzureAdAuthService {
                                 resolve(account);
                             } else {
                                 console.log("Prompting for login via redirect...");
-                                userAgentApp.loginPopup();
+                                userAgentApp.loginPopup().then(authResp => resolve(authResp.account)).catch(e => reject(e));
                             }
                         } catch (e) {
                             reject(e);

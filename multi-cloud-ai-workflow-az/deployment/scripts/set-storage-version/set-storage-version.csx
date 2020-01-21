@@ -6,19 +6,12 @@
 
 public class SetStorageVersion : TaskBase
 {
-    public SetStorageVersion()
-    {
-        StorageApiVersionSetter = new StorageApiVersionSetter(TerraformOutput);
-    }
-
-    private TerraformOutput TerraformOutput { get; } = TerraformOutput.Load();
-
-    private StorageApiVersionSetter StorageApiVersionSetter { get; }
-
     protected override Task<bool> ExecuteTask()
     {   
+        var storageApiVersionSetter = new StorageApiVersionSetter();
+
         // set storage version in order to enable partial content for seeking in videos
-        StorageApiVersionSetter.SetDefaultServiceVersion(TerraformOutput.MediaStorageConnectionString);
+        storageApiVersionSetter.SetDefaultServiceVersion(TerraformOutput.Instance.MediaStorageConnectionString);
         
         return Task.FromResult(true);
     }

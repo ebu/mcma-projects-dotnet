@@ -6,12 +6,6 @@ namespace Mcma.Azure.WorkflowService.Worker
 {
     internal static class ContextVariableExtensions
     {
-        public static string AzureClientId(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureClientId));
-
-        public static string AzureClientSecret(this IContextVariableProvider contextVariableProvider)
-            => contextVariableProvider.GetRequiredContextVariable(nameof(AzureClientSecret));
-
         public static string AzureSubscriptionId(this IContextVariableProvider contextVariableProvider)
             => contextVariableProvider.GetRequiredContextVariable(nameof(AzureSubscriptionId));
 
@@ -27,11 +21,7 @@ namespace Mcma.Azure.WorkflowService.Worker
         public static AzureCredentials AzureCredentials(this IContextVariableProvider contextVariableProvider)
             => 
             SdkContext.AzureCredentialsFactory
-                .FromServicePrincipal(
-                    contextVariableProvider.AzureClientId(),
-                    contextVariableProvider.AzureClientSecret(),
-                    contextVariableProvider.AzureTenantId(),
-                    AzureEnvironment.AzureGlobalCloud)
+                .FromMSI(new MSILoginInformation(MSIResourceType.AppService), AzureEnvironment.AzureGlobalCloud)
                 .WithDefaultSubscription(contextVariableProvider.AzureSubscriptionId());
 
         public static string ServiceRegistryUrl(this IContextVariableProvider contextVariableProvider)

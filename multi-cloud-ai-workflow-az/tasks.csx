@@ -8,8 +8,6 @@
 #load "./deployment/tasks.csx"
 #load "./deployment/scripts/tasks.csx"
 
-#load "./generate-inputs.csx"
-
 TaskRunner.Dirs.Deployment = Terraform.DefaultProjectDir = $"{TaskRunner.RootDir.TrimEnd('/')}/deployment";
 
 TaskRunner.ReadInputs(defaults: new Dictionary<string, string>
@@ -22,7 +20,6 @@ TaskRunner.ReadInputs(defaults: new Dictionary<string, string>
 
 public static readonly ITask BuildAll = new AggregateTask(DotNetCli.Publish("."), BuildServices, BuildWebsite);
 
-TaskRunner.Tasks["generateInputs"] = new GenerateInputs();
 TaskRunner.Tasks["buildServices"] = BuildServices;
 TaskRunner.Tasks["buildWebsite"] = BuildWebsite;
 TaskRunner.Tasks["build"] = BuildAll;
@@ -31,7 +28,6 @@ TaskRunner.Tasks["deploy"] = new AggregateTask(BuildAll, Deploy);
 TaskRunner.Tasks["destroy"] = Destroy;
 TaskRunner.Tasks["postDeploy"] = Scripts.PostDeploy;
 TaskRunner.Tasks["unregisterAll"] = Scripts.ClearServiceRegistry;
-TaskRunner.Tasks["startWorkerFunctions"] = Scripts.StartWorkerFunctions;
 TaskRunner.Tasks["tfOutput"] = new RetrieveTerraformOutput();
 TaskRunner.Tasks["generateTfVars"] = new GenerateTerraformTfVars();
 TaskRunner.Tasks["generateWebsiteTf"] = new GenerateTerraformWebsiteTf();

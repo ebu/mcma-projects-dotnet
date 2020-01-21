@@ -15,6 +15,7 @@
 
 .workflow-jobs-table {
     flex: 1;
+    width: calc(100% - 60px);
 }
 
 tr.mat-row {

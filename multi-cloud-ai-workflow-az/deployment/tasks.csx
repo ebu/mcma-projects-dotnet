@@ -23,7 +23,6 @@ public class GenerateTerraformTfVars : TaskBase
                 .AppendLine($"azure_client_id                       = \"{TaskRunner.Inputs.azureClientId}\"")
                 .AppendLine($"azure_client_secret                   = \"{TaskRunner.Inputs.azureClientSecret}\"")
                 .AppendLine($"azure_tenant_id                       = \"{TaskRunner.Inputs.azureTenantId}\"")
-                .AppendLine($"azure_tenant_name                     = \"{TaskRunner.Inputs.azureTenantName}\"")
                 .AppendLine($"azure_subscription_id                 = \"{TaskRunner.Inputs.azureSubscriptionId}\"")
                 .AppendLine($"azure_location                        = \"{TaskRunner.Inputs.azureLocation}\"")
                 .AppendLine($"aws_access_key                        = \"{TaskRunner.Inputs.awsAccessKey}\"")

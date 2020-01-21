@@ -1,9 +1,11 @@
 #load "task.csx"
+#load "aggregate-task.csx"
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 
 public static class TaskRunner
@@ -49,7 +51,15 @@ public static class TaskRunner
                     inputs[def.Key] = def.Value;
     }
 
-    public static async Task Run(string name)
+    public static void AddRuntimeInputs(params (string, string)[] additionalInputs)
+    {
+        IDictionary<string, object> inputs = Inputs;
+
+        foreach (var (name, value) in additionalInputs)
+            inputs[name] = value;
+    }
+
+    public static async Task Run(string name, ITask startWith = null, ITask endWith = null)
     {
         if (name == null)
         {
@@ -60,11 +70,21 @@ public static class TaskRunner
         Console.WriteLine("Executing MCMA tasks...");
         if (Tasks.ContainsKey(name))
         {
+            var tasks = new List<ITask>();
+            
+            if (startWith != null)
+                tasks.Add(startWith);
+            tasks.Add(Tasks[name]);
+            if (endWith != null)
+                tasks.Add(endWith);
+
+            var aggTask = new AggregateTask(tasks.ToArray());
+
             var started = DateTime.Now;
             string error = null;
             try
             {
-                await Tasks[name].Run();
+                await aggTask.Run();
             }
             catch (Exception ex)
             {

@@ -23,62 +23,63 @@ using Mcma.Client;
 
 public class UpdateServiceRegistry : TaskBase
 {
-    private ServiceRegistryPopulator ServiceRegistryPopulator { get; } = new ServiceRegistryPopulator(TerraformOutput.Load());
 
     protected override async Task<bool> ExecuteTask()
     {
-        var resourceManager = ServiceRegistryPopulator.GetResourceManager();
+        var serviceRegistryPopulator = new ServiceRegistryPopulator(TerraformOutput.Instance);
+
+        var resourceManager = serviceRegistryPopulator.GetResourceManager();
 
         // ensure the service registry record exists
-        await InsertOrUpdateServiceRegistryAsync(resourceManager);
+        await InsertOrUpdateServiceRegistryAsync(serviceRegistryPopulator, resourceManager);
 
         // re-initialize now that the service registry records is in place
         await resourceManager.InitAsync();
 
         // populate job profiles in the registry
-        await PopulateJobProfilesAsync(resourceManager);
+        await PopulateJobProfilesAsync(serviceRegistryPopulator, resourceManager);
 
         // load service data with job profile IDs populated
-        ServiceRegistryPopulator.LoadServicesWithJobProfileIds();
+        serviceRegistryPopulator.LoadServicesWithJobProfileIds();
 
         // populate services in the registry
-        await PopulateServicesAsync(resourceManager);
+        await PopulateServicesAsync(serviceRegistryPopulator, resourceManager);
 
         return true;
     }
 
-    private async Task InsertOrUpdateServiceRegistryAsync(ResourceManager resourceManager)
+    private async Task InsertOrUpdateServiceRegistryAsync(ServiceRegistryPopulator serviceRegistryPopulator, ResourceManager resourceManager)
     {
         var retrievedServiceRegistry = (await resourceManager.QueryAsync<Service>(("name", "Service Registry"))).FirstOrDefault();
         if (retrievedServiceRegistry != null)
         {
-            ServiceRegistryPopulator.ServiceRegistry.Id = retrievedServiceRegistry.Id;
+            serviceRegistryPopulator.ServiceRegistry.Id = retrievedServiceRegistry.Id;
             Console.WriteLine("Updating Service Registry");
-            await resourceManager.UpdateAsync(ServiceRegistryPopulator.ServiceRegistry);
+            await resourceManager.UpdateAsync(serviceRegistryPopulator.ServiceRegistry);
         }
         else
         {
             Console.WriteLine("Inserting Service Registry");
-            ServiceRegistryPopulator.ServiceRegistry.Id = (await resourceManager.CreateAsync(ServiceRegistryPopulator.ServiceRegistry)).Id;
+            serviceRegistryPopulator.ServiceRegistry.Id = (await resourceManager.CreateAsync(serviceRegistryPopulator.ServiceRegistry)).Id;
         }
     }
 
-    private async Task PopulateJobProfilesAsync(ResourceManager resourceManager)
+    private async Task PopulateJobProfilesAsync(ServiceRegistryPopulator serviceRegistryPopulator, ResourceManager resourceManager)
         =>
         await PopulateAsync(
             resourceManager,
             (await resourceManager.QueryAsync<JobProfile>()).ToArray(),
-            ServiceRegistryPopulator.JobProfiles,
+            serviceRegistryPopulator.JobProfiles,
             jp => jp.Name);
 
-    private async Task PopulateServicesAsync(ResourceManager resourceManager)
+    private async Task PopulateServicesAsync(ServiceRegistryPopulator serviceRegistryPopulator, ResourceManager resourceManager)
         =>
         await PopulateAsync(
             resourceManager,
             (await resourceManager.QueryAsync<Service>())
-                .Where(s => !ServiceRegistryPopulator.ServiceRegistry.Name.Equals(s.Name, StringComparison.OrdinalIgnoreCase))
+                .Where(s => !serviceRegistryPopulator.ServiceRegistry.Name.Equals(s.Name, StringComparison.OrdinalIgnoreCase))
                 .ToArray(),
-            ServiceRegistryPopulator.Services,
+            serviceRegistryPopulator.Services,
             s => s.Name);
 
     private async Task PopulateAsync<T>(ResourceManager resourceManager, T[] retrievedItems, T[] expectedItems, Func<T, string> getName) where T : McmaResource

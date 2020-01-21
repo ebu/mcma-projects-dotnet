@@ -19,7 +19,7 @@ dotnet tool install -g dotnet-script
 2. Open Azure AD
 3. On the left-hand side, find the App Registrations section
 4. Create a new App Registration for Terraform
-[Create new App Registration](https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-1.png)
+![Create new App Registration](https://raw.githubusercontent.com/ebu/mcma-projects-dotnet/master/multi-cloud-ai-workflow-az/screenshots/terraform-sp-setup-1.png)
 
 ## Setup procedure
 1. Clone this repository to your local harddrive

@@ -12,7 +12,7 @@ resource "azurerm_storage_account" "website_storage_account" {
   account_replication_type = "LRS"
 
   provisioner "local-exec" {
-    command = "az login  --service-principal -u ${var.azure_client_id} -p ${var.azure_client_secret} --tenant ${var.azure_tenant_id} | az storage blob service-properties update --account-name ${azurerm_storage_account.website_storage_account.name} --static-website  --index-document index.html --404-document 404.html"
+    command = "az storage blob service-properties update --account-name ${azurerm_storage_account.website_storage_account.name} --static-website  --index-document index.html --404-document 404.html"
   }
 }
 

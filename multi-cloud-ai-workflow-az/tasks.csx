@@ -2,6 +2,7 @@
 #load "./tasks/task-runner.csx"
 #load "./tasks/aggregate-task.csx"
 #load "./tasks/path-helper.csx"
+#load "./tasks/az-cli.csx"
 
 #load "./services/tasks.csx"
 #load "./website/tasks.csx"
@@ -13,13 +14,14 @@ TaskRunner.Dirs.Deployment = Terraform.DefaultProjectDir = $"{TaskRunner.RootDir
 TaskRunner.ReadInputs(defaults: new Dictionary<string, string>
 {
     ["azureVideoIndexerLocation"] = "trial",
-    ["azureVideoIndexerAccountId"] = "undefined",
-    ["azureVideoIndexerSubscriptionKey"] = "undefined",
     ["azureVideoIndexerApiUrl"] = "https://api.videoindexer.ai"
 });
 
 public static readonly ITask BuildAll = new AggregateTask(DotNetCli.Publish("."), BuildServices, BuildWebsite);
 
+private static readonly ITask CliLogin = new AzLogin(TaskRunner.Inputs.azureClientId, TaskRunner.Inputs.azureClientSecret, TaskRunner.Inputs.azureTenantId, true);
+
+TaskRunner.Tasks["cliLogin"] = CliLogin;
 TaskRunner.Tasks["buildServices"] = BuildServices;
 TaskRunner.Tasks["buildWebsite"] = BuildWebsite;
 TaskRunner.Tasks["build"] = BuildAll;
@@ -33,4 +35,4 @@ TaskRunner.Tasks["generateTfVars"] = new GenerateTerraformTfVars();
 TaskRunner.Tasks["generateWebsiteTf"] = new GenerateTerraformWebsiteTf();
 TaskRunner.Tasks["plan"] = Plan;
 
-await TaskRunner.Run(Args?.FirstOrDefault());
+await TaskRunner.Run(Args?.FirstOrDefault(), CliLogin);

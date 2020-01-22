@@ -60,6 +60,10 @@ resource "azurerm_function_app" "workflow_service_worker_function" {
     MediaStorageAccountName      = var.media_storage_account_name
     MediaStorageConnectionString = var.media_storage_connection_string
   }
+
+  provisioner "local-exec" {
+    command = "az webapp start --name ${azurerm_function_app.workflow_service_worker_function.name}"
+  }
 }
 
 data "azurerm_subscription" "primary" {}

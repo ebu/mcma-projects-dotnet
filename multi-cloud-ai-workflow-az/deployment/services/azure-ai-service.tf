@@ -63,6 +63,10 @@ resource "azurerm_function_app" "azure_ai_service_worker_function" {
     AzureVideoIndexerSubscriptionKey = var.azure_videoindexer_subscription_key
     NotificationHandlerKey           = local.azure_ai_service_notification_func_key
   }
+
+  provisioner "local-exec" {
+    command = "az webapp start --name ${azurerm_function_app.azure_ai_service_worker_function.name}"
+  }
 }
 
 #===================================================================

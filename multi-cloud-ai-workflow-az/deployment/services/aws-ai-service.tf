@@ -68,6 +68,10 @@ resource "azurerm_function_app" "aws_ai_service_worker_function" {
     AwsAiOutputBucket            = aws_s3_bucket.aws_ai_output_bucket.id
     AwsRekoSnsRoleArn            = aws_iam_role.aws_reko_sns_role.arn
   }
+
+  provisioner "local-exec" {
+    command = "az webapp start --name ${azurerm_function_app.aws_ai_service_worker_function.name}"
+  }
 }
 
 #===================================================================

@@ -1,7 +1,7 @@
 #load "../terraform-output.csx"
 
 #r "nuget:Newtonsoft.Json, 11.0.2"
-#r "nuget:Mcma.Core, 0.8.6-beta5"
+#r "nuget:Mcma.Core, 0.8.7"
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

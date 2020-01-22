@@ -46,6 +46,11 @@ public class AzLogin : AzCli
     {
     }
 
+    public AzLogin(string userName, string password, string tenant, bool isServicePrincipal)
+        : base("login", isServicePrincipal ? "--service-principal" : "", "-u", userName, "-p", password, "--tenant", tenant)
+    {
+    }
+
     protected override bool RedirectStandardOutput => true;
 
     public JObject Account { get; private set; }
@@ -91,5 +96,3 @@ public class AzAdAppPermissionGrant : AzCli
     {
     }
 }
-
-public class AzA

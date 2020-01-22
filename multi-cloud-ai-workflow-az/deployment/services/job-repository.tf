@@ -54,6 +54,10 @@ resource "azurerm_function_app" "job_repository_worker_function" {
     ServicesAuthType         = "AzureAD"
     ServicesAuthContext      = "{ \"scope\": \"${local.service_registry_url}/.default\" }"
   }
+
+  provisioner "local-exec" {
+    command = "az webapp start --name ${azurerm_function_app.job_repository_worker_function.name}"
+  }
 }
 
 #===================================================================

@@ -56,6 +56,10 @@ resource "azurerm_function_app" "transform_service_worker_function" {
     MediaStorageAccountName      = var.media_storage_account_name
     MediaStorageConnectionString = var.media_storage_connection_string
   }
+
+  provisioner "local-exec" {
+    command = "az webapp start --name ${azurerm_function_app.transform_service_worker_function.name}"
+  }
 }
 
 #===================================================================

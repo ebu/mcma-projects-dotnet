@@ -18,7 +18,7 @@ resource "azurerm_storage_blob" "website_file_uap8M4aTQkqumVmb7IdbXw--" {
   content_type             = "image/x-icon"
 }
 
-resource "azurerm_storage_blob" "website_file_NL8vrYNgnSQ6dzCDp8i9dQ--" {
+resource "azurerm_storage_blob" "website_file_FoIPwznGIGC-u9qAaTFP1Q--" {
   name                     = "index.html"
   resource_group_name      = var.resource_group_name
   storage_account_name     = azurerm_storage_account.website_storage_account.name
@@ -28,13 +28,13 @@ resource "azurerm_storage_blob" "website_file_NL8vrYNgnSQ6dzCDp8i9dQ--" {
   content_type             = "text/html"
 }
 
-resource "azurerm_storage_blob" "website_file_yGxksORAuil6x8Z9bw9uRw--" {
-  name                     = "main.612738ca14ccbe34717d.js"
+resource "azurerm_storage_blob" "website_file_qbVNHFsrPOsL58r6O7rJXA--" {
+  name                     = "main.bf60fad597ab79dbacbf.js"
   resource_group_name      = var.resource_group_name
   storage_account_name     = azurerm_storage_account.website_storage_account.name
   storage_container_name   = azurerm_storage_container.website_container.name
   type                     = "block"
-  source                   = "../website/dist/website/main.612738ca14ccbe34717d.js"
+  source                   = "../website/dist/website/main.bf60fad597ab79dbacbf.js"
   content_type             = "application/javascript"
 }
 

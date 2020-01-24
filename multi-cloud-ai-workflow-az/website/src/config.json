@@ -1,4 +1,5 @@
 {
+  "enablePolling": true,
   "resourceManager": {
     "servicesUrl": "https://triskel-dev-service-registry-api.azurewebsites.net/services",
     "servicesAuthType": "AzureAD",

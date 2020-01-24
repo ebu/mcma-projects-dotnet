@@ -56,7 +56,7 @@ resource "azurerm_function_app" "job_repository_worker_function" {
   }
 
   provisioner "local-exec" {
-    command = "az webapp start --name ${azurerm_function_app.job_repository_worker_function.name}"
+    command = "az webapp start --resource-group ${var.resource_group_name} --name ${azurerm_function_app.job_repository_worker_function.name}"
   }
 }
 
@@ -140,4 +140,8 @@ output job_repository_app_id {
 
 output job_repository_scope {
   value = azuread_application.job_repository_app.oauth2_permissions[0].id
+}
+
+output job_repository_worker_url {
+  value = "https://${azurerm_function_app.job_repository_worker_function.default_hostname}/"
 }

@@ -153,28 +153,56 @@ output job_repository_scope {
   value  = module.services.job_repository_scope
 }
 
+output job_repository_worker_url {
+  value = module.services.job_repository_worker_url
+}
+
 output job_processor_url {
   value = module.services.job_processor_url
+}
+
+output job_processor_worker_url {
+  value = module.services.job_processor_worker_url
 }
 
 output ame_service_url {
   value = module.services.ame_service_url
 }
 
+output ame_service_worker_url {
+  value = module.services.ame_service_worker_url
+}
+
 output aws_ai_service_url {
   value = module.services.aws_ai_service_url
+}
+
+output aws_ai_service_worker_url {
+  value = module.services.aws_ai_service_worker_url
 }
 
 output azure_ai_service_url {
   value = module.services.azure_ai_service_url
 }
 
+output azure_ai_service_worker_url {
+  value = module.services.azure_ai_service_worker_url
+}
+
 output transform_service_url {
   value = module.services.transform_service_url
 }
 
+output transform_service_worker_url {
+  value = module.services.transform_service_worker_url
+}
+
 output workflow_service_url {
   value = module.services.workflow_service_url
+}
+
+output workflow_service_worker_url {
+  value = module.services.workflow_service_worker_url
 }
 
 output media_repository_url {

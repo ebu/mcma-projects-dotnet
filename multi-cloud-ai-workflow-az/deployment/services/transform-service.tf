@@ -58,7 +58,7 @@ resource "azurerm_function_app" "transform_service_worker_function" {
   }
 
   provisioner "local-exec" {
-    command = "az webapp start --name ${azurerm_function_app.transform_service_worker_function.name}"
+    command = "az webapp start --resource-group ${var.resource_group_name} --name ${azurerm_function_app.transform_service_worker_function.name}"
   }
 }
 
@@ -124,4 +124,8 @@ resource "azurerm_function_app" "transform_service_api_function" {
 
 output transform_service_url {
   value = "${local.transform_service_url}/"
+}
+
+output transform_service_worker_url {
+  value = "https://${azurerm_function_app.transform_service_worker_function.default_hostname}/"
 }

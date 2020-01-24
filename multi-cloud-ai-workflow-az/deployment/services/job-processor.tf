@@ -56,7 +56,7 @@ resource "azurerm_function_app" "job_processor_worker_function" {
   }
 
   provisioner "local-exec" {
-    command = "az webapp start --name ${azurerm_function_app.job_processor_worker_function.name}"
+    command = "az webapp start --resource-group ${var.resource_group_name} --name ${azurerm_function_app.job_processor_worker_function.name}"
   }
 }
 
@@ -122,4 +122,8 @@ resource "azurerm_function_app" "job_processor_api_function" {
 
 output job_processor_url {
   value = "${local.job_processor_url}/"
+}
+
+output job_processor_worker_url {
+  value = "https://${azurerm_function_app.job_processor_worker_function.default_hostname}/"
 }

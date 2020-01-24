@@ -8,7 +8,8 @@ public class TerraformOutput
     {
         Outputs = outputs;
 
-        ServiceUrls = outputs.Where(x => x.Key.EndsWith("_url")).ToDictionary(x => x.Key.Replace("_url", string.Empty), x => x.Value);
+        ServiceUrls = outputs.Where(x => x.Key.EndsWith("_url") && !x.Key.EndsWith("_worker_url")).ToDictionary(x => x.Key.Replace("_url", string.Empty), x => x.Value);
+        WorkerUrls = outputs.Where(x => x.Key.EndsWith("_worker_url")).Select(kvp => kvp.Value).ToArray();
     }
 
     public static TerraformOutput Instance => _instance ?? (_instance = new TerraformOutput(ParseContent()));
@@ -44,6 +45,10 @@ public class TerraformOutput
     public string JobRepositoryUrl => ServiceUrls["job_repository"];
 
     public string JobRepositoryScope => Outputs["job_repository_scope"];
+    
+    public string WebsiteUrl => $"{Outputs["website_url"]}/index.html";
+
+    public string[] WorkerUrls { get; }
 
     private static IDictionary<string, string> ParseContent()
     {

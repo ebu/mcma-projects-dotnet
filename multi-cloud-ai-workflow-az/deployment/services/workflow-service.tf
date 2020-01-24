@@ -62,7 +62,7 @@ resource "azurerm_function_app" "workflow_service_worker_function" {
   }
 
   provisioner "local-exec" {
-    command = "az webapp start --name ${azurerm_function_app.workflow_service_worker_function.name}"
+    command = "az webapp start --resource-group ${var.resource_group_name} --name ${azurerm_function_app.workflow_service_worker_function.name}"
   }
 }
 
@@ -159,4 +159,8 @@ resource "azurerm_function_app" "workflow_service_api_function" {
 
 output workflow_service_url {
   value = "${local.workflow_service_url}/"
+}
+
+output workflow_service_worker_url {
+  value = "https://${azurerm_function_app.workflow_service_worker_function.default_hostname}/"
 }

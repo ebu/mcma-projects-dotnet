@@ -70,7 +70,7 @@ resource "azurerm_function_app" "aws_ai_service_worker_function" {
   }
 
   provisioner "local-exec" {
-    command = "az webapp start --name ${azurerm_function_app.aws_ai_service_worker_function.name}"
+    command = "az webapp start --resource-group ${var.resource_group_name} --name ${azurerm_function_app.aws_ai_service_worker_function.name}"
   }
 }
 
@@ -206,4 +206,8 @@ resource "azurerm_template_deployment" "aws_ai_service_sns_func_key" {
 
 output aws_ai_service_url {
   value = "${local.aws_ai_service_url}/"
+}
+
+output aws_ai_service_worker_url {
+  value = "https://${azurerm_function_app.aws_ai_service_worker_function.default_hostname}/"
 }

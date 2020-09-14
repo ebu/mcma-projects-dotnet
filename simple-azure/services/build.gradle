@@ -1,0 +1,22 @@
+task publish(type: Exec) {
+    commandLine dotnetExecutable
+    args "publish"
+    args "-c"
+    args "Release"
+}
+
+task packageOutput {
+    dependsOn "FFmpegService:packageOutput"
+    dependsOn "JobProcessor:packageOutput"
+    dependsOn "MediaInfoService:packageOutput"
+    dependsOn "ServiceRegistry:packageOutput"
+}
+
+task build {
+    dependsOn "publish"
+}
+
+task restore(type: Exec) {
+    commandLine dotnetExecutable
+    args "restore"
+}

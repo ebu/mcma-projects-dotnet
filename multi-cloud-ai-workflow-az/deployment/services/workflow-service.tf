@@ -69,7 +69,7 @@ resource "azurerm_function_app" "workflow_service_worker_function" {
 data "azurerm_subscription" "primary" {}
 
 resource "azurerm_role_definition" "workflow_service_worker_role" {
-  name  = "Workflow Invoker"
+  name  = "${var.global_prefix}-workflow-invoker"
   scope = data.azurerm_subscription.primary.id
 
   permissions {

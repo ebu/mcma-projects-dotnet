@@ -1,18 +1,18 @@
 {
-  "enablePolling": true,
+  "enablePolling": false,
   "resourceManager": {
-    "servicesUrl": "https://triskel-dev-service-registry-api.azurewebsites.net/services",
+    "servicesUrl": "https://pts-demo-service-registry-api.azurewebsites.net/services",
     "servicesAuthType": "AzureAD",
     "servicesAuthContext": {
-      "scope": "https://triskel-dev-service-registry-api.azurewebsites.net/.default"
+      "scope": "https://pts-demo-service-registry-api.azurewebsites.net/.default"
     }
   },
   "azure": {
     "ad": {
       "config": {
-        "tenant": "evanverneyfinklive.onmicrosoft.com",
+        "tenant": "40e1b75f-bb2f-4862-b34e-2d990ae2d92a",
         "auth": {
-          "clientId": "ab338310-b554-45f2-97c5-5d8a4c39e901"
+          "clientId": "a235e728-aff5-4296-899a-15582ab10bac"
         },
         "cache": {
           "cacheLocation": "localStorage",
@@ -20,13 +20,13 @@
         }
       },
       "scopes": {
-        "blobStorage": "https://triskeldevmedia.blob.core.windows.net/user_impersonation"
+        "blobStorage": "https://ptsdemomedia.blob.core.windows.net/user_impersonation"
       }
     },
     "storage": {
-      "websiteStorageAccountName": "triskeldevwebsite",
-      "mediaStorageAccountName": "triskeldevmedia",
-      "uploadContainer": "triskel-dev-upload"
+      "websiteStorageAccountName": "ptsdemowebsite",
+      "mediaStorageAccountName": "ptsdemomedia",
+      "uploadContainer": "pts-demo-upload"
     }
   }
 }

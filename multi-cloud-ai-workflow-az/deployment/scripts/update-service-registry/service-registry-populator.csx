@@ -14,18 +14,18 @@ using Mcma.Core.Serialization;
 public class ServiceRegistryPopulator
 {
     private const string ServiceRegistryJson = @"{
-    ""@type"": ""Service"",
-    ""name"": ""Service Registry"",
-    ""resources"": [
+    '@type': 'Service',
+    'name': 'Service Registry',
+    'resources': [
         {
-            ""@type"": ""ResourceEndpoint"",
-            ""resourceType"": ""Service"",
-            ""httpEndpoint"": ""/services""
+            '@type': 'ResourceEndpoint',
+            'resourceType': 'Service',
+            'httpEndpoint': '/services'
         },
         {
-            ""@type"": ""ResourceEndpoint"",
-            ""resourceType"": ""JobProfile"",
-            ""httpEndpoint"": ""/job-profiles""
+            '@type': 'ResourceEndpoint',
+            'resourceType': 'JobProfile',
+            'httpEndpoint': '/job-profiles'
         }
     ]
 }";

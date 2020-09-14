@@ -1,0 +1,4 @@
+task runAll {
+    dependsOn "post-deploy:run"
+    dependsOn "run-jobs:run"
+}

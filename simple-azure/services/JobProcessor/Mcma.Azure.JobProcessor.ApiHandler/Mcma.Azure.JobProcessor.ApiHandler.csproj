@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <OutputPath>dist\staging</OutputPath>
+    <PublishDir>dist\staging</PublishDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Mcma.Azure.BlobStorage" Version="0.13.0" />
+    <PackageReference Include="Mcma.Azure.Functions.Api" Version="0.13.0" />
+    <PackageReference Include="Mcma.Azure.Functions.Logging" Version="0.13.0" />
+    <PackageReference Include="Mcma.Core" Version="0.13.0" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.9" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+    <None Remove="dist\**" />
+    <None Remove=".gitignore" />
+    <None Remove="build.gradle" />
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="dist\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="dist\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mcma.Azure.JobProcessor.Common\Mcma.Azure.JobProcessor.Common.csproj" />
+  </ItemGroup>
+</Project>

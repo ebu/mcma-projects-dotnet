@@ -1,0 +1,6 @@
+task packageOutput {
+    dependsOn "Mcma.Azure.JobProcessor.ApiHandler:packageOutput"
+    dependsOn "Mcma.Azure.JobProcessor.PeriodicJobChecker:packageOutput"
+    dependsOn "Mcma.Azure.JobProcessor.PeriodicJobCleanup:packageOutput"
+    dependsOn "Mcma.Azure.JobProcessor.Worker:packageOutput"
+}

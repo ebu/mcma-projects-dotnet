@@ -1,0 +1,4 @@
+task packageOutput {
+    dependsOn "Mcma.Azure.FFmpegService.ApiHandler:packageOutput"
+    dependsOn "Mcma.Azure.FFmpegService.Worker:packageOutput"
+}

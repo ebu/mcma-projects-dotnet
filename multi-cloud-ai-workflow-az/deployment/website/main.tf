@@ -56,7 +56,7 @@ resource "azuread_service_principal" "website_sp" {
 }
 
 resource "azuread_user" "website_user" {
-  user_principal_name = "mcma-demo@evanverneyfinklive.onmicrosoft.com"
+  user_principal_name = "mcma-${var.global_prefix}@evanverneyfinklive.onmicrosoft.com"
   display_name        = "MCMA Demo"
   password            = "Welcome2MCMA!"
 }

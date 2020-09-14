@@ -15,12 +15,9 @@ mat-toolbar {
     align-items: center;
     flex: 1;
 
-    img, h2 {
-        margin: 5px;
-    }
-
-    h2 {
-        font-size: 24px;
+    img {
+        height: 130px;
+        margin: 25px;
     }
 }
 

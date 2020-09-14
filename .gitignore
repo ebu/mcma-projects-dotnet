@@ -1,6 +1,8 @@
 bin
 obj
 dist
+.idea
+.gradle
 
 .terraform
 terraform.output

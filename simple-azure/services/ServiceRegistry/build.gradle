@@ -1,0 +1,3 @@
+task packageOutput {
+    dependsOn "Mcma.Azure.ServiceRegistry.ApiHandler:packageOutput"
+}

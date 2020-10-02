@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs.Models;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.BlobStorage.Proxies;
 using Mcma.Worker;
@@ -38,11 +38,16 @@ namespace Mcma.Azure.MediaInfoService.Worker.Profiles
 
             var outputFileName = Guid.NewGuid() + ".json";
 
-            workerJobHelper.Logger.Debug($"Writing MediaInfo output to container {outputLocation.Container} in folder {outputLocation.FolderPath} with file name {outputFileName}...");
+            workerJobHelper.Logger.Debug(
+                $"Writing MediaInfo output to container {outputLocation.Container} in folder {outputLocation.FolderPath} with file name {outputFileName}...");
 
-            var outputFile = await outputLocation.Proxy(workerJobHelper.RequestContext).PutAsync(outputFileName, new MemoryStream(Encoding.UTF8.GetBytes(mediaInfoProcess.StdOut)));
+            var outputFile = await outputLocation.Proxy(workerJobHelper.RequestContext)
+                                                 .PutAsTextAsync(outputFileName,
+                                                                 mediaInfoProcess.StdOut,
+                                                                 new BlobHttpHeaders {ContentType = "application/json"});
 
-            workerJobHelper.Logger.Debug($"Successfully wrote MediaInfo output to container {outputLocation.Container} in folder {outputLocation.FolderPath} with file name {outputFileName}");
+            workerJobHelper.Logger.Debug(
+                $"Successfully wrote MediaInfo output to container {outputLocation.Container} in folder {outputLocation.FolderPath} with file name {outputFileName}");
 
             workerJobHelper.JobOutput[nameof(outputFile)] = outputFile;
 

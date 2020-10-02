@@ -6,7 +6,7 @@ namespace Mcma.Azure.JobProcessor.Common
     {
         public string PartitionKey { get; set; }
         
-        public JobStatus Status { get; set; }
+        public JobStatus? Status { get; set; }
         
         public DateTime? From { get; set; }
         
@@ -18,7 +18,7 @@ namespace Mcma.Azure.JobProcessor.Common
 
         public void Deconstruct(
             out string partitionKey,
-            out JobStatus status,
+            out JobStatus? status,
             out DateTime? from,
             out DateTime? to,
             out bool? ascending,

@@ -1,5 +1,5 @@
 #r "nuget:Newtonsoft.Json, 12.0.3"
-#r "nuget:Mcma.Core, 0.13.0"
+#r "nuget:Mcma.Core, 0.13.12"
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -39,17 +39,17 @@ public class JsonData
 
     public void SetJobProfileIds()
     {
-        foreach (var service in Services.Value.Where(s => s.JobProfiles != null && s.JobProfiles.Length > 0))
+        foreach (var service in Services.Value.Where(s => s.JobProfileIds != null && s.JobProfileIds.Length > 0))
         {
-            for (var i = 0; i < service.JobProfiles.Length; i++)
+            for (var i = 0; i < service.JobProfileIds.Length; i++)
             {
-                var jobProfileName = service.JobProfiles[i];
+                var jobProfileName = service.JobProfileIds[i];
 
                 var jobProfileId = JobProfiles.Value.FirstOrDefault(p => p.Name.Equals(jobProfileName, StringComparison.OrdinalIgnoreCase))?.Id;
                 if (jobProfileId == null)
                     throw new Exception($"Service {service.Name} references job profile '{jobProfileName}', but the profile has not been defined.");
                 
-                service.JobProfiles[i] = jobProfileId;
+                service.JobProfileIds[i] = jobProfileId;
             }
         }
     }

@@ -8,9 +8,9 @@ using Mcma.Azure.MediaInfoService.Worker.Profiles;
 using Mcma.Client;
 using Mcma.Serialization;
 using Mcma.Worker;
+using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Queue;
 
 namespace Mcma.Azure.MediaInfoService.Worker
 {

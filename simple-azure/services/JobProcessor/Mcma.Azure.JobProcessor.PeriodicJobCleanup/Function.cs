@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Mcma.Api;
-using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
 using Mcma.Azure.JobProcessor.Common;
+using Mcma.Azure.WorkerInvoker;
 using Mcma.Context;
+using Mcma.WorkerInvoker;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -20,7 +20,7 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobCleanup
         private static IContextVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
         
         private static DataController DataController { get; } =
-            new DataController(EnvironmentVariableProvider.TableName(), EnvironmentVariableProvider.PublicUrl());
+            new DataController(EnvironmentVariableProvider.TableName(), EnvironmentVariableProvider.GetRequiredContextVariable("PublicUrl"));
 
         private static IWorkerInvoker WorkerInvoker { get; } = new QueueWorkerInvoker(EnvironmentVariableProvider);
 
@@ -75,7 +75,7 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobCleanup
 
         private static async Task DeleteJobAsync(Job job)
         {
-            await WorkerInvoker.InvokeAsync(EnvironmentVariableProvider.WorkerFunctionId(),
+            await WorkerInvoker.InvokeAsync(EnvironmentVariableProvider.GetRequiredContextVariable("WorkerFunctionId"),
                                             "DeleteJob",
                                             input: new
                                             {

@@ -15,6 +15,23 @@ locals {
   job_processor_job_cleanup_url           = "https://${local.job_processor_job_cleanup_function_name}.azurewebsites.net"
 }
 
+data "azurerm_subscription" "primary" {}
+
+resource "azurerm_role_definition" "job_checker_workflow_toggler_role" {
+  name  = "${var.global_prefix}-job-checker-workflow-toggler"
+  scope = data.azurerm_subscription.primary.id
+
+  permissions {
+    actions = [
+      "Microsoft.Logic/workflows/enable/action",
+      "Microsoft.Logic/workflows/disable/action",
+    ]
+    not_actions = []
+  }
+
+  assignable_scopes = [data.azurerm_subscription.primary.id]
+}
+
 resource "azurerm_cosmosdb_sql_container" "job_processor_cosmosdb_container" {
   name                = "JobProcessor"
   resource_group_name = var.resource_group_name
@@ -80,6 +97,12 @@ resource "azurerm_function_app" "job_processor_worker_function" {
   provisioner "local-exec" {
     command = "az webapp start --resource-group ${var.resource_group_name} --name ${azurerm_function_app.job_processor_worker_function.name}"
   }
+}
+
+resource "azurerm_role_assignment" "job_processor_worker_role_assignment" {
+  scope              = data.azurerm_subscription.primary.id
+  role_definition_id = azurerm_role_definition.job_checker_workflow_toggler_role.id
+  principal_id       = azurerm_function_app.job_processor_worker_function.identity[0].principal_id
 }
 
 #===================================================================
@@ -286,6 +309,12 @@ resource "azurerm_template_deployment" "job_processor_job_checker_workflow" {
 DEPLOY
 }
 
+resource "azurerm_role_assignment" "job_processor_job_checker_role_assignment" {
+  scope              = data.azurerm_subscription.primary.id
+  role_definition_id = azurerm_role_definition.job_checker_workflow_toggler_role.id
+  principal_id       = azurerm_function_app.job_processor_job_checker_function.identity[0].principal_id
+}
+
 
 #===================================================================
 # Job Cleanup Function
@@ -422,33 +451,4 @@ resource "azurerm_template_deployment" "job_processor_job_cleanup_workflow" {
     ]
 }
 DEPLOY
-}
-
-data "azurerm_subscription" "primary" {}
-
-resource "azurerm_role_definition" "job_checker_workflow_toggler_role" {
-  name  = "${var.global_prefix}-job-checker-workflow-toggler"
-  scope = data.azurerm_subscription.primary.id
-
-  permissions {
-    actions = [
-      "Microsoft.Logic/workflows/enable/action",
-      "Microsoft.Logic/workflows/disable/action",
-    ]
-    not_actions = []
-  }
-
-  assignable_scopes = [data.azurerm_subscription.primary.id]
-}
-
-resource "azurerm_role_assignment" "job_processor_worker_role_assignment" {
-  scope              = data.azurerm_subscription.primary.id
-  role_definition_id = azurerm_role_definition.job_checker_workflow_toggler_role.id
-  principal_id       = azurerm_function_app.job_processor_worker_function.identity[0].principal_id
-}
-
-resource "azurerm_role_assignment" "job_processor_job_checker_role_assignment" {
-  scope              = data.azurerm_subscription.primary.id
-  role_definition_id = azurerm_role_definition.job_checker_workflow_toggler_role.id
-  principal_id       = azurerm_function_app.job_processor_job_checker_function.identity[0].principal_id
 }

@@ -14,7 +14,7 @@ public static async Task<string> RunMediaInfoJobAsync(IResourceManager resourceM
 
     var ameJob = new AmeJob
     {
-        JobProfile = jobProfiles[0].Id,
+        JobProfileId = jobProfiles[0].Id,
         JobInput =
             new JobParameterBag
             {

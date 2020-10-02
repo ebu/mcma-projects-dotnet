@@ -7,6 +7,7 @@ using Mcma.Api;
 using Mcma.Api.Routes;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Context;
+using Mcma.WorkerInvoker;
 
 namespace Mcma.Azure.JobProcessor.ApiHandler
 {
@@ -90,7 +91,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                 return;
             }
 
-            if (jobExecution.JobAssignment != null && jobExecution.JobAssignment != notification.Source)
+            if (jobExecution.JobAssignmentId != null && jobExecution.JobAssignmentId != notification.Source)
             {
                 requestContext.SetResponseStatus((int)HttpStatusCode.BadRequest, $"Unexpected notification from '{notification.Source}'");
                 return;

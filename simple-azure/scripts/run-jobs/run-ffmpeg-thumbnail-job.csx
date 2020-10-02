@@ -14,7 +14,7 @@ public static async Task<string> RunFFmpegThumbnailJobAsync(IResourceManager res
 
     var transformJob = new TransformJob
     {
-        JobProfile = jobProfiles[0].Id,
+        JobProfileId = jobProfiles[0].Id,
         JobInput =
             new JobParameterBag
             {

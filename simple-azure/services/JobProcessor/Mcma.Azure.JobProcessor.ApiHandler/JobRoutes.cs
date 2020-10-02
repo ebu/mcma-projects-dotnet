@@ -7,8 +7,7 @@ using Mcma.Api.Routes;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Client;
 using Mcma.Context;
-using Mcma.Serialization;
-using Newtonsoft.Json.Linq;
+using Mcma.WorkerInvoker;
 
 namespace Mcma.Azure.JobProcessor.ApiHandler
 {
@@ -56,7 +55,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                 try
                 {
                     var resourceManager = ResourceManagerProvider.Get(requestContext);
-                    var jobProfile = await resourceManager.GetAsync<JobProfile>(job.JobProfile);
+                    var jobProfile = await resourceManager.GetAsync<JobProfile>(job.JobProfileId);
                     label += " with JobProfile " + jobProfile.Name;
                 }
                 catch (Exception error)

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs.Models;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.BlobStorage.Proxies;
-
 using Mcma.Worker;
 
 namespace Mcma.Azure.FFmpegService.Worker
@@ -46,7 +46,10 @@ namespace Mcma.Azure.FFmpegService.Worker
 
             using (var outputFileStream = File.Open(outputFilePath, FileMode.Open))
                 jobHelper.JobOutput["outputFile"] =
-                    await outputLocation.Proxy(requestContext).PutAsync(Path.GetFileName(outputFilePath), outputFileStream);
+                    await outputLocation.Proxy(requestContext)
+                                        .PutAsync(Path.GetFileName(outputFilePath),
+                                                  outputFileStream,
+                                                  new BlobHttpHeaders {ContentType = "image/png"});
 
             await jobHelper.CompleteAsync();
         }

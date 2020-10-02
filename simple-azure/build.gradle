@@ -3,6 +3,8 @@ def requiredVersionTerraform = "~0.12.19"
 
 allprojects {
     ext {
+		mcmaVersion = "0.13.12"
+		
         if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
             dotnetExecutable = ["dotnet"]
             terraformExecutable = ["cmd", "/c", "terraform"]
@@ -118,4 +120,8 @@ task deploy {
     dependsOn packageOutput
     dependsOn "deployment:deploy"
     dependsOn "scripts:post-deploy:run"
+}
+
+task runJobs {
+    dependsOn "scripts:run-jobs:run"
 }

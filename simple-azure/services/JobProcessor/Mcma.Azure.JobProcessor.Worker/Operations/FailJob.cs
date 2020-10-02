@@ -45,16 +45,16 @@ namespace Mcma.Azure.JobProcessor.Worker
                     return;
                 }
 
-                if (jobExecution.JobAssignment != null)
+                if (jobExecution.JobAssignmentId != null)
                 {
                     try
                     {
-                        var client = await resourceManager.GetResourceEndpointAsync(jobExecution.JobAssignment);
-                        await client.PostAsync(null, $"{jobExecution.JobAssignment}/cancel");
+                        var client = await resourceManager.GetResourceEndpointAsync(jobExecution.JobAssignmentId);
+                        await client.PostAsync(null, $"{jobExecution.JobAssignmentId}/cancel");
                     }
                     catch (Exception error)
                     {
-                        requestContext.Logger.Warn($"Canceling job assignment '{jobExecution.JobAssignment} failed");
+                        requestContext.Logger.Warn($"Canceling job assignment '{jobExecution.JobAssignmentId} failed");
                         requestContext.Logger.Warn(error);
                     }
                 }

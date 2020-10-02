@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Client;
-using Mcma.Context;
 using Mcma.Serialization;
 using Mcma.Worker;
 
@@ -56,7 +55,7 @@ namespace Mcma.Azure.JobProcessor.Worker
                     return;
                 }
 
-                if (!string.Equals(job.Status, notificationContent.Status, StringComparison.OrdinalIgnoreCase))
+                if (job.Status != notificationContent.Status)
                 {
                     logger.Info($"Job changed status from {job.Status} to {notificationContent.Status}: {job.Id}");
 

@@ -10,10 +10,10 @@ namespace Mcma.Azure.JobProcessor
             
             JobId = job.Id;
             JobType = job.Type;
-            JobProfile = job.JobProfile;
+            JobProfileId = job.JobProfileId;
             JobProfileName = jobProfile?.Name;
-            JobExecution = jobExecution?.Id;
-            JobAssignment = jobExecution?.JobAssignment;
+            JobExecutionId = jobExecution?.Id;
+            JobAssignmentId = jobExecution?.JobAssignmentId;
             JobInput = job.JobInput;
             JobStatus = job.Status;
             JobError = job.Error;
@@ -27,23 +27,23 @@ namespace Mcma.Azure.JobProcessor
 
         public string JobType { get; }
 
-        public string JobProfile { get; }
+        public string JobProfileId { get; }
 
         public string JobProfileName { get; }
 
-        public string JobExecution { get; }
+        public string JobExecutionId { get; }
 
-        public string JobAssignment { get; }
+        public string JobAssignmentId { get; }
 
         public JobParameterBag JobInput { get; }
 
-        public string JobStatus { get; }
+        public JobStatus JobStatus { get; }
 
         public ProblemDetail JobError { get; }
 
-        public DateTime? JobActualStartDate { get; }
+        public DateTimeOffset? JobActualStartDate { get; }
 
-        public DateTime? JobActualEndDate { get; }
+        public DateTimeOffset? JobActualEndDate { get; }
 
         public long? JobActualDuration { get; }
 

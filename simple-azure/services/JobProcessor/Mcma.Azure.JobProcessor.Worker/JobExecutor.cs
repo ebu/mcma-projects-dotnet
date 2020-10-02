@@ -36,9 +36,9 @@ namespace Mcma.Azure.JobProcessor.Worker
             {
                 ProblemType = "uri://mcma.ebu.ch/rfc7807/job-processor/job-start-failure",
                 Title = "Failed to start job",
-                Detail = error?.Message,
-                StackTrace = error?.StackTrace
+                Detail = error?.Message
             };
+            jobExecution.Error.Set(nameof(Exception.StackTrace), error?.StackTrace);
             await DataController.UpdateExecutionAsync(jobExecution);
 
             Logger.Error("Failed to start job due to error '" + error?.Message + "'");
@@ -71,7 +71,7 @@ namespace Mcma.Azure.JobProcessor.Worker
                 Logger.Info("Creating Job Assignment");
                 
                 // retrieving the jobProfile
-                var jobProfile = await ResourceManager.GetAsync<JobProfile>(job.JobProfile);
+                var jobProfile = await ResourceManager.GetAsync<JobProfile>(job.JobProfileId);
 
                 // validating job.JobInput with required input parameters of jobProfile
                 var jobInput = job.JobInput; //await resourceManager.ResolveAsync<JobParameterBag>(job.JobInput);
@@ -104,8 +104,8 @@ namespace Mcma.Azure.JobProcessor.Worker
                         if (jobAssignmentResourceEndpoint == null)
                             continue;
 
-                        if (service.JobProfiles != null &&
-                            service.JobProfiles.Any(serviceJobProfile => serviceJobProfile == job.JobProfile))
+                        if (service.JobProfileIds != null &&
+                            service.JobProfileIds.Any(serviceJobProfile => serviceJobProfile == job.JobProfileId))
                             selectedService = service;
                     }
 
@@ -118,7 +118,7 @@ namespace Mcma.Azure.JobProcessor.Worker
 
                 var jobAssignment = new JobAssignment
                 {
-                    Job = job.Id,
+                    JobId = job.Id,
                     NotificationEndpoint = new NotificationEndpoint
                     {
                         HttpEndpoint = $"{jobExecution.Id}/notifications"
@@ -139,7 +139,7 @@ namespace Mcma.Azure.JobProcessor.Worker
                 Logger.Info(jobAssignment);
 
                 jobExecution.Status = JobStatus.Scheduled;
-                jobExecution.JobAssignment = jobAssignment.Id;
+                jobExecution.JobAssignmentId = jobAssignment.Id;
                 jobExecution = await DataController.UpdateExecutionAsync(jobExecution);
 
                 Logger.Info(jobExecution);
@@ -167,16 +167,16 @@ namespace Mcma.Azure.JobProcessor.Worker
             var jobExecution = (await DataController.GetExecutionsAsync(job.Id)).Results.FirstOrDefault();
             if (jobExecution != null)
             {
-                if (jobExecution.JobAssignment != null)
+                if (jobExecution.JobAssignmentId != null)
                 {
                     try
                     {
-                        var client = await ResourceManager.GetResourceEndpointAsync(jobExecution.JobAssignment);
-                        await client.PostAsync(null, $"{jobExecution.JobAssignment}/cancel");
+                        var client = await ResourceManager.GetResourceEndpointAsync(jobExecution.JobAssignmentId);
+                        await client.PostAsync(null, $"{jobExecution.JobAssignmentId}/cancel");
                     }
                     catch (Exception error)
                     {
-                        Logger.Warn($"Canceling job assignment '{jobExecution.JobAssignment} failed");
+                        Logger.Warn($"Canceling job assignment '{jobExecution.JobAssignmentId} failed");
                         Logger.Warn(error);
                     }
                 }

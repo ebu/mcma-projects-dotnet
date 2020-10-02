@@ -1,7 +1,7 @@
 #r "nuget:Newtonsoft.Json, 12.0.3"
-#r "nuget:Mcma.Core, 0.13.0"
-#r "nuget:Mcma.Client, 0.13.0"
-#r "nuget:Mcma.Azure.Client, 0.13.0"
+#r "nuget:Mcma.Core, 0.13.12"
+#r "nuget:Mcma.Client, 0.13.12"
+#r "nuget:Mcma.Azure.Client, 0.13.12"
 
 #load "./json-data.csx"
 

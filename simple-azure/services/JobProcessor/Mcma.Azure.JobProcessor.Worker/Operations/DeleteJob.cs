@@ -38,15 +38,15 @@ namespace Mcma.Azure.JobProcessor.Worker
 
                 foreach (var execution in executions.Results)
                 {
-                    if (execution.JobAssignment != null)
+                    if (execution.JobAssignmentId != null)
                     {
                         try
                         {
-                            await resourceManager.DeleteAsync<JobAssignment>(execution.JobAssignment);
+                            await resourceManager.DeleteAsync<JobAssignment>(execution.JobAssignmentId);
                         }
                         catch (Exception error)
                         {
-                            logger.Warn($"Failed to delete job assignment {execution.JobAssignment}");
+                            logger.Warn($"Failed to delete job assignment {execution.JobAssignmentId}");
                             logger.Warn(error);
                         }
                     }

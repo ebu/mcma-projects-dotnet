@@ -16,8 +16,8 @@ task generateTerraformTFVars {
         def data = [
                 environment_name               : environmentName,
                 environment_type               : environmentType,
-                global_prefix                  : "${environmentName}.${environmentType}".replace(".", "-"),
-                global_prefix_lower_only       : "${environmentName}${environmentType}".toLowerCase(),
+                global_prefix                  : "${environmentName}.${environmentType}".replaceAll("\\.", "-"),
+                global_prefix_lower_only       : "${environmentName}${environmentType}".replaceAll("-", "").toLowerCase(),
 
                 azure_client_id                : azureClientId,
                 azure_client_secret            : azureClientSecret,

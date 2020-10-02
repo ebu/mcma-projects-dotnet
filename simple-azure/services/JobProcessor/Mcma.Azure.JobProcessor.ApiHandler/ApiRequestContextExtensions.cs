@@ -18,7 +18,8 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var parameters = new JobResourceQueryParameters();
 
-            if (requestContext.Request.QueryStringParameters.TryGetValue("status", out var status))
+            if (requestContext.Request.QueryStringParameters.TryGetValue("status", out var statusText) &&
+                Enum.TryParse<JobStatus>(statusText, true, out var status))
                 parameters.Status = status;
 
             if (requestContext.Request.QueryStringParameters.TryGetValue("from", out var tmpFrom) && DateTime.TryParse(tmpFrom, out var from))

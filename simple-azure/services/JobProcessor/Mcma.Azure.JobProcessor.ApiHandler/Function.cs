@@ -1,24 +1,21 @@
-using System;
 using System.Threading.Tasks;
 using Mcma.Api;
 using Mcma.Api.Routes;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.Client;
-using Mcma.Azure.CosmosDb;
 using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
 using Mcma.Azure.JobProcessor.Common;
+using Mcma.Azure.WorkerInvoker;
 using Mcma.Client;
 using Mcma.Context;
 using Mcma.Serialization;
-using Mcma.Data;
+using Mcma.WorkerInvoker;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-
-using McmaLogger = Mcma.Logging.Logger;
 
 namespace Mcma.Azure.JobProcessor.ApiHandler
 {
@@ -39,15 +36,11 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
 
         private static IWorkerInvoker WorkerInvoker { get; } = new QueueWorkerInvoker(EnvironmentVariableProvider);
 
-        private static JobRoutes JobRoutes { get; } =
-            new JobRoutes(DataController, ResourceManagerProvider, EnvironmentVariableProvider, WorkerInvoker);
-
-        private static JobExecutionRoutes JobExecutionRoutes { get; } =
-            new JobExecutionRoutes(DataController, EnvironmentVariableProvider, WorkerInvoker);
-
-        private static McmaApiRouteCollection Routes { get; } = new McmaApiRouteCollection().AddRoutes(JobRoutes).AddRoutes(JobExecutionRoutes);
-
-        private static AzureFunctionApiController ApiController { get; } = Routes.ToAzureFunctionApiController(LoggerProvider);
+        private static AzureFunctionApiController ApiController { get; } =
+            new McmaApiRouteCollection()
+                .AddRoutes(new JobRoutes(DataController, ResourceManagerProvider, EnvironmentVariableProvider, WorkerInvoker))
+                .AddRoutes(new JobExecutionRoutes(DataController, EnvironmentVariableProvider, WorkerInvoker))
+                .ToAzureFunctionApiController(LoggerProvider);
 
         [FunctionName("JobProcessorApiHandler")]
         public static async Task<IActionResult> Run(

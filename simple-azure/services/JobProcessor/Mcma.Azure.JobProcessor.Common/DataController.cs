@@ -41,7 +41,7 @@ namespace Mcma.Azure.JobProcessor.Common
 
         private static Query<T> BuildQuery<T>(JobResourceQueryParameters queryParameters, string pageStartToken) where T : JobBase
         {
-            var (partitionKey, status, from, to, @ascending, limit) = queryParameters;
+            var (partitionKey, status, from, to, ascending, limit) = queryParameters;
             var query = new Query<T>
             {
                 Path = partitionKey,
@@ -51,17 +51,17 @@ namespace Mcma.Azure.JobProcessor.Common
                 PageStartToken = pageStartToken
             };
 
-            if (!(status is null))
+            if (status.HasValue)
                 query.AddFilterExpression(
-                    new FilterCriteria<T, string>(j => j.Status, BinaryOperator.EqualTo, status));
+                    new FilterCriteria<T, JobStatus>(j => j.Status, BinaryOperator.EqualTo, status.Value));
             
             if (from.HasValue)
                 query.AddFilterExpression(
-                    new FilterCriteria<T, DateTime?>(j => j.DateCreated, BinaryOperator.GreaterThanOrEqualTo, from.Value));
+                    new FilterCriteria<T, DateTimeOffset?>(j => j.DateCreated, BinaryOperator.GreaterThanOrEqualTo, from.Value));
             
             if (to.HasValue)
                 query.AddFilterExpression(
-                    new FilterCriteria<T, DateTime?>(j => j.DateCreated, BinaryOperator.LessThanOrEqualTo, to.Value));
+                    new FilterCriteria<T, DateTimeOffset?>(j => j.DateCreated, BinaryOperator.LessThanOrEqualTo, to.Value));
 
             return query;
         }

@@ -9,9 +9,9 @@ using Mcma.Client;
 using Mcma.Context;
 using Mcma.Serialization;
 using Mcma.Worker;
+using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Queue;
 
 using McmaLogger = Mcma.Logging.Logger;
 

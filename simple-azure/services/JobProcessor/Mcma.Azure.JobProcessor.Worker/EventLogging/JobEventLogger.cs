@@ -22,7 +22,7 @@ namespace Mcma.Azure.JobProcessor
             JobProfile jobProfile = null;
             try
             {
-                jobProfile = await ResourceManager.GetAsync<JobProfile>(job.JobProfile);
+                jobProfile = await ResourceManager.GetAsync<JobProfile>(job.JobProfileId);
             }
             catch (Exception exception)
             {

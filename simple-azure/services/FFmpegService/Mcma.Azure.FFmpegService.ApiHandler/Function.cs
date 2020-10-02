@@ -4,6 +4,7 @@ using Mcma.Azure.BlobStorage;
 using Mcma.Azure.CosmosDb;
 using Mcma.Azure.Functions.Api;
 using Mcma.Azure.Functions.Logging;
+using Mcma.Azure.WorkerInvoker;
 using Mcma.Context;
 using Mcma.Data;
 using Mcma.Serialization;

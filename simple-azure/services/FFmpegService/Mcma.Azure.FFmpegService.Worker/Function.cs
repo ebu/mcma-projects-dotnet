@@ -7,11 +7,9 @@ using Mcma.Azure.Functions.Worker;
 using Mcma.Client;
 using Mcma.Serialization;
 using Mcma.Worker;
+using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Queue;
-
-using McmaLogger = Mcma.Logging.Logger;
 
 namespace Mcma.Azure.FFmpegService.Worker
 {

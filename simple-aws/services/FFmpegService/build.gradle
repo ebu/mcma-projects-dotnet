@@ -1,0 +1,4 @@
+task packageOutput {
+    dependsOn "Mcma.Aws.FFmpegService.ApiHandler:packageOutput"
+    dependsOn "Mcma.Aws.FFmpegService.Worker:packageOutput"
+}

@@ -1,0 +1,6 @@
+task packageOutput {
+    dependsOn "Mcma.Aws.JobProcessor.ApiHandler:packageOutput"
+    dependsOn "Mcma.Aws.JobProcessor.PeriodicJobChecker:packageOutput"
+    dependsOn "Mcma.Aws.JobProcessor.PeriodicJobCleanup:packageOutput"
+    dependsOn "Mcma.Aws.JobProcessor.Worker:packageOutput"
+}

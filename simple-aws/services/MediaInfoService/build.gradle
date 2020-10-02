@@ -1,0 +1,4 @@
+task packageOutput {
+    dependsOn "Mcma.Aws.MediaInfoService.ApiHandler:packageOutput"
+    dependsOn "Mcma.Aws.MediaInfoService.Worker:packageOutput"
+}

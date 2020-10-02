@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>  
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.CloudWatchEvents" Version="3.5.1.5" />
+    <PackageReference Include="Mcma.Aws.DynamoDb" Version="0.13.12" />
+  </ItemGroup>
+</Project>

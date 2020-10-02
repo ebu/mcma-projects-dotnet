@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <OutputPath>dist\staging</OutputPath>
+    <PublishDir>dist\staging</PublishDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
+    <PackageReference Include="Mcma.Aws.LambdaWorkerInvoker" Version="0.13.12" />
+    <PackageReference Include="Mcma.Aws.Logger" Version="0.13.12" />
+    <PackageReference Include="Mcma.Aws.Serialization" Version="0.13.12" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mcma.Aws.JobProcessor.Common\Mcma.Aws.JobProcessor.Common.csproj" />
+  </ItemGroup>
+</Project>

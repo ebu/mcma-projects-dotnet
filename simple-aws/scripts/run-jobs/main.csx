@@ -1,8 +1,5 @@
-#r "nuget:AWSSDK.S3, 3.5.2.1"
-#r "nuget:Newtonsoft.Json, 12.0.3"
-#r "nuget:Mcma.Aws.Client, 0.13.12"
-#r "nuget:Mcma.Aws.S3, 0.13.12"
-#r "nuget:Mcma.Core, 0.13.12"
+#r "nuget:Mcma.Aws.Client, 0.13.14"
+#r "nuget:Mcma.Aws.S3, 0.13.14"
 
 #load "../aws-creds.csx"
 #load "./upload-file.csx"

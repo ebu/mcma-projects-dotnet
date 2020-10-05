@@ -8,13 +8,13 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Mcma.Aws.ApiGateway" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.Client" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.DynamoDb" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.LambdaWorkerInvoker" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.Logger" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.S3" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.Serialization" Version="0.13.12" />
+    <PackageReference Include="Mcma.Aws.ApiGateway" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.Client" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.DynamoDb" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.LambdaWorkerInvoker" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.Logger" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.S3" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.Serialization" Version="0.13.14" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mcma.Aws.JobProcessor.Common\Mcma.Aws.JobProcessor.Common.csproj" />

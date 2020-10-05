@@ -9,11 +9,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
-    <PackageReference Include="Mcma.Aws.Client" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.DynamoDb" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.Logger" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.S3" Version="0.13.12" />
-    <PackageReference Include="Mcma.Aws.Serialization" Version="0.13.12" />
-    <PackageReference Include="Mcma.Worker" Version="0.13.12" />
+    <PackageReference Include="Mcma.Aws.Client" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.DynamoDb" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.Logger" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.S3" Version="0.13.14" />
+    <PackageReference Include="Mcma.Aws.Serialization" Version="0.13.14" />
+    <PackageReference Include="Mcma.Worker" Version="0.13.14" />
   </ItemGroup>
 </Project>

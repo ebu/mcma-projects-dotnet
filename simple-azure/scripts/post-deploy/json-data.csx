@@ -1,6 +1,3 @@
-#r "nuget:Newtonsoft.Json, 12.0.3"
-#r "nuget:Mcma.Core, 0.13.12"
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Mcma;

@@ -1,7 +1,5 @@
-#r "nuget:Newtonsoft.Json, 12.0.3"
-#r "nuget:Mcma.Azure.BlobStorage, 0.13.12"
-#r "nuget:Mcma.Azure.Client, 0.13.12"
-#r "nuget:Mcma.Core, 0.13.12"
+#r "nuget:Mcma.Azure.BlobStorage, 0.13.14"
+#r "nuget:Mcma.Azure.Client, 0.13.14"
 
 #load "./upload-file.csx"
 #load "./run-mediainfo-job.csx"
@@ -49,6 +47,7 @@ async Task ExecuteAsync()
     {
         var resourceManager = resourceManagerProvider.Get();
 
+        Console.WriteLine("Uploading test file...");
         var uploadedFileLocator = await UploadFileAsync(testFilePath);
 
         var uuid = Guid.NewGuid().ToString();

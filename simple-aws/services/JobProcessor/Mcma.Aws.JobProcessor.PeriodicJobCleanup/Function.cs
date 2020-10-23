@@ -5,7 +5,6 @@ using Amazon.Lambda.Core;
 using Mcma.Aws.CloudWatch;
 using Mcma.Aws.JobProcessor.Common;
 using Mcma.Aws.Lambda;
-using Mcma.Context;
 using Mcma.WorkerInvoker;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
@@ -14,14 +13,11 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobCleanup
 {
     public class Function
     {
-        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("job-processor-periodic-job-checker", Environment.GetEnvironmentVariable("LogGroupName"));
-
-        private static IContextVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("job-processor-periodic-job-checker");
         
-        private static DataController DataController { get; } =
-            new DataController(EnvironmentVariableProvider.TableName(), EnvironmentVariableProvider.GetRequiredContextVariable("PublicUrl"));
+        private static DataController DataController { get; } = new DataController();
 
-        private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker(EnvironmentVariableProvider);
+        private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker();
 
         public static async Task Handler(ILambdaContext context)
         {
@@ -34,7 +30,7 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobCleanup
             var logger = LoggerProvider.Get(context.AwsRequestId, tracker);
             try
             {
-                var jobRetentionPeriodInDays = EnvironmentVariableProvider.JobRetentionPeriodInDays();
+                var jobRetentionPeriodInDays = EnvironmentVariables.Instance.JobRetentionPeriodInDays();
                 
                 logger.Info($"Job Retention Period set to {jobRetentionPeriodInDays} days");
 
@@ -70,7 +66,7 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobCleanup
 
         private static async Task DeleteJobAsync(Job job)
         {
-            await WorkerInvoker.InvokeAsync(EnvironmentVariableProvider.GetRequiredContextVariable("WorkerFunctionId"),
+            await WorkerInvoker.InvokeAsync(EnvironmentVariables.Instance.WorkerFunctionId(),
                                             "DeleteJob",
                                             input: new
                                             {

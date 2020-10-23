@@ -8,7 +8,6 @@ using Mcma.Aws.DynamoDb;
 using Mcma.Aws.ApiGateway;
 using Mcma.Aws.CloudWatch;
 using Mcma.Aws.Lambda;
-using Mcma.Context;
 using Mcma.Serialization;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
@@ -19,13 +18,10 @@ namespace Mcma.Aws.FFmpegService.ApiHandler
     {
         static Function() => McmaTypes.Add<AwsS3FileLocator>().Add<AwsS3FolderLocator>();
 
-        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } =
-            new AwsCloudWatchLoggerProvider("ffmpeg-service-api-handler", Environment.GetEnvironmentVariable("LogGroupName"));
-
-        private static DynamoDbTableProvider DbTableProvider { get; } = new DynamoDbTableProvider();
-
+        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("ffmpeg-service-api-handler");
+        
         private static ApiGatewayApiController ApiController { get; } =
-            new DefaultJobRouteCollection(DbTableProvider, new LambdaWorkerInvoker(new EnvironmentVariableProvider()))
+            new DefaultJobRouteCollection(new DynamoDbTableProvider(), new LambdaWorkerInvoker())
                 .ToApiGatewayApiController(LoggerProvider);
 
         public static async Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)

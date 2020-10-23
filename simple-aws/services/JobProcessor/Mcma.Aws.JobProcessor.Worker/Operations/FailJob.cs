@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Mcma.Aws.JobProcessor.Common;
-using Mcma.Client;
 using Mcma.Worker;
 
 namespace Mcma.Aws.JobProcessor.Worker
@@ -22,7 +21,7 @@ namespace Mcma.Aws.JobProcessor.Worker
         protected override async Task ExecuteAsync(WorkerRequestContext requestContext, JobFailure jobFailure)
         {
             var logger = requestContext.Logger;
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext);
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get();
             var jobEventLogger = new JobEventLogger(logger, resourceManager);
 
             var mutex = await DataController.CreateMutexAsync(jobFailure.JobId, requestContext.RequestId);

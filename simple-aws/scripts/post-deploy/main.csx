@@ -1,5 +1,5 @@
 #r "nuget:AWSSDK.Core, 3.5.1.20"
-#r "nuget:Mcma.Aws.Client, 0.13.14"
+#r "nuget:Mcma.Aws.Client, 0.13.16"
 
 #load "../aws-creds.csx"
 #load "./json-data.csx"

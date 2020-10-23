@@ -58,6 +58,8 @@ resource "aws_lambda_function" "job_processor_api_handler" {
       LogGroupName     = var.global_prefix
       TableName        = aws_dynamodb_table.job_processor_table.name
       PublicUrl        = local.job_processor_url
+      ServicesUrl      = local.services_url
+      ServicesAuthType = local.service_registry_auth_type
       WorkerFunctionId = aws_lambda_function.job_processor_worker.function_name
     }
   }
@@ -175,7 +177,9 @@ resource "aws_lambda_function" "job_processor_worker" {
       LogGroupName        = var.global_prefix
       TableName           = aws_dynamodb_table.job_processor_table.name
       PublicUrl           = local.job_processor_url
-      CloudwatchEventRule = aws_cloudwatch_event_rule.job_processor_periodic_job_checker_trigger.name,
+      ServicesUrl         = local.services_url
+      ServicesAuthType    = local.service_registry_auth_type
+      CloudwatchEventRule = aws_cloudwatch_event_rule.job_processor_periodic_job_checker_trigger.name
     }
   }
 }
@@ -341,11 +345,6 @@ resource "aws_api_gateway_stage" "job_processor_gateway_stage" {
   rest_api_id   = aws_api_gateway_rest_api.job_processor_api.id
 
   variables = {
-    TableName        = aws_dynamodb_table.job_processor_table.name
-    PublicUrl        = local.job_processor_url
-    ServicesUrl      = local.services_url
-    ServicesAuthType = local.service_registry_auth_type
-    WorkerFunctionId = aws_lambda_function.job_processor_worker.function_name
     DeploymentHash   = filesha256("./services/job-processor.tf")
   }
 }

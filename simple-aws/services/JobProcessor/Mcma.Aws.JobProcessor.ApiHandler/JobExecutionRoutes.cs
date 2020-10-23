@@ -6,17 +6,15 @@ using System.Threading.Tasks;
 using Mcma.Api;
 using Mcma.Api.Routes;
 using Mcma.Aws.JobProcessor.Common;
-using Mcma.Context;
 using Mcma.WorkerInvoker;
 
 namespace Mcma.Aws.JobProcessor.ApiHandler
 {
     public class JobExecutionRoutes : McmaApiRouteCollection
     {
-        public JobExecutionRoutes(DataController dataController, IContextVariableProvider contextVariableProvider, IWorkerInvoker workerInvoker)
+        public JobExecutionRoutes(DataController dataController, IWorkerInvoker workerInvoker)
         {
             DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
-            ContextVariableProvider = contextVariableProvider ?? throw new ArgumentNullException(nameof(contextVariableProvider));
             WorkerInvoker = workerInvoker ?? throw new ArgumentNullException(nameof(workerInvoker));
 
             AddRoute(new McmaApiRoute(HttpMethod.Get, "/jobs/{jobId}/executions", QueryAsync));
@@ -26,15 +24,13 @@ namespace Mcma.Aws.JobProcessor.ApiHandler
         
         private DataController DataController { get; }
 
-        private IContextVariableProvider ContextVariableProvider { get; }
-
         private IWorkerInvoker WorkerInvoker { get; }
 
         private async Task QueryAsync(McmaApiRequestContext requestContext)
         {
             var jobId = requestContext.JobId();
             
-            var job = await DataController.GetJobAsync($"{ContextVariableProvider.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -50,7 +46,7 @@ namespace Mcma.Aws.JobProcessor.ApiHandler
             var jobId = requestContext.JobId();
             var executionId = requestContext.ExecutionId();
 
-            var jobUrl = $"{ContextVariableProvider.PublicUrl()}/jobs/{jobId}";
+            var jobUrl = $"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}";
 
             JobExecution execution;
             if (executionId == "latest")
@@ -75,8 +71,8 @@ namespace Mcma.Aws.JobProcessor.ApiHandler
             var jobId = requestContext.JobId();
             var executionId = requestContext.ExecutionId();
 
-            var job = await DataController.GetJobAsync($"{ContextVariableProvider.PublicUrl()}/jobs/{jobId}");
-            var jobExecution = await DataController.GetExecutionAsync($"{ContextVariableProvider.PublicUrl()}/jobs/{jobId}/executions/{executionId}");
+            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
+            var jobExecution = await DataController.GetExecutionAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}/executions/{executionId}");
 
             if (job == null || jobExecution == null)
             {
@@ -99,9 +95,8 @@ namespace Mcma.Aws.JobProcessor.ApiHandler
             
             requestContext.SetResponseStatusCode(HttpStatusCode.Accepted);
 
-            await WorkerInvoker.InvokeAsync(requestContext.WorkerFunctionId(),
+            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
                                             "ProcessNotification",
-                                            requestContext.ToDictionary(),
                                             new
                                             {
                                                 jobId = job.Id,

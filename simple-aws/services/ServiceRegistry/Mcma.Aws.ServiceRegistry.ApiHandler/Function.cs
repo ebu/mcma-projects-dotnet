@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Mcma.Api.Routes;
@@ -16,8 +15,7 @@ namespace Mcma.Aws.ServiceRegistry.ApiHandler
 {
     public static class Function
     {
-        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } =
-            new AwsCloudWatchLoggerProvider("service-registry-api-handler", Environment.GetEnvironmentVariable("LogGroupName"));
+        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("service-registry-api-handler");
 
         private static IDocumentDatabaseTableProvider DbTableProvider { get; } = new DynamoDbTableProvider();
 

@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Mcma.Aws.JobProcessor.Common;
-using Mcma.Client;
 using Mcma.Serialization;
 using Mcma.Worker;
 
@@ -27,7 +26,7 @@ namespace Mcma.Aws.JobProcessor.Worker
             var notificationContent = notification.Content.ToMcmaObject<JobBase>();
 
             var logger = requestContext.Logger;
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext);
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get();
             var jobEventLogger = new JobEventLogger(logger, resourceManager);
             
             var mutex = await DataController.CreateMutexAsync(jobId, requestContext.RequestId);

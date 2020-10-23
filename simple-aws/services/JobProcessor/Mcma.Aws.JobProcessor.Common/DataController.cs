@@ -9,10 +9,10 @@ namespace Mcma.Aws.JobProcessor.Common
 {
     public class DataController
     {
-        public DataController(string tableName, string publicUrl, bool? consistentRead = null)
+        public DataController(bool? consistentRead = null)
         {
-            TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
-            PublicUrl = publicUrl ?? throw new ArgumentNullException(nameof(publicUrl));
+            TableName = EnvironmentVariables.Instance.TableName();
+            PublicUrl = EnvironmentVariables.Instance.Get("PublicUrl");
             
             DbTableProvider = new DynamoDbTableProvider(GetDbTableOptions(consistentRead));
         }

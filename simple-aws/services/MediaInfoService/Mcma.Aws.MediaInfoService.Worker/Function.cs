@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Mcma.Aws.S3;
@@ -19,21 +18,15 @@ namespace Mcma.Aws.MediaInfoService.Worker
     {
         static Function() => McmaTypes.Add<AwsS3FileLocator>().Add<AwsS3FolderLocator>();
 
-        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } =
-            new AwsCloudWatchLoggerProvider("mediainfo-service-worker", Environment.GetEnvironmentVariable("LogGroupName"));
-
-        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global);
-
-        private static ProviderCollection ProviderCollection { get; } =
-            new ProviderCollection(
-                LoggerProvider,
-                new ResourceManagerProvider(AuthProvider),
-                new DynamoDbTableProvider(),
-                AuthProvider
-            );
-
+        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("mediainfo-service-worker");
+        
         private static IWorker Worker { get; } =
-            new Mcma.Worker.Worker(ProviderCollection)
+            new Mcma.Worker.Worker(
+                    new ProviderCollection(
+                        LoggerProvider,
+                        new ResourceManagerProvider(new AuthProvider().AddAwsV4Auth(AwsV4AuthContext.Global)),
+                        new DynamoDbTableProvider()
+                    ))
                 .AddJobProcessing<AmeJob>(op => op.AddProfile<ExtractTechnicalMetadata>());
             
         public static async Task Handler(WorkerRequest request, ILambdaContext context)

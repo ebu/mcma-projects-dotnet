@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using Mcma.Aws.JobProcessor.Common;
-using Mcma.Client;
 using Mcma.Worker;
 
 namespace Mcma.Aws.JobProcessor.Worker
@@ -19,7 +18,7 @@ namespace Mcma.Aws.JobProcessor.Worker
 
         protected override async Task ExecuteAsync(WorkerRequestContext requestContext, JobReference jobReference)
         {
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext);
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get();
 
             var mutex = await DataController.CreateMutexAsync(jobReference.JobId, requestContext.RequestId);
 

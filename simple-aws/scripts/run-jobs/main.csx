@@ -1,5 +1,5 @@
-#r "nuget:Mcma.Aws.Client, 0.13.14"
-#r "nuget:Mcma.Aws.S3, 0.13.14"
+#r "nuget:Mcma.Aws.Client, 0.13.16"
+#r "nuget:Mcma.Aws.S3, 0.13.16"
 
 #load "../aws-creds.csx"
 #load "./upload-file.csx"

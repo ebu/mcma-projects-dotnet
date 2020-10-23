@@ -5,7 +5,6 @@ using Amazon.Lambda.Core;
 using Mcma.Aws.CloudWatch;
 using Mcma.Aws.JobProcessor.Common;
 using Mcma.Aws.Lambda;
-using Mcma.Context;
 using Mcma.WorkerInvoker;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
@@ -14,14 +13,11 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobChecker
 {
     public class Function
     {
-        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("job-processor-periodic-job-checker", Environment.GetEnvironmentVariable("LogGroupName"));
+        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("job-processor-periodic-job-checker");
 
-        private static IContextVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+        private static DataController DataController { get; } = new DataController();
 
-        private static DataController DataController { get; } =
-            new DataController(EnvironmentVariableProvider.TableName(), EnvironmentVariableProvider.GetRequiredContextVariable("PublicUrl"));
-
-        private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker(EnvironmentVariableProvider);
+        private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker();
 
         private static IJobCheckerTrigger CheckerTrigger { get; } = new CloudWatchEventsJobCheckerTrigger();
 
@@ -56,7 +52,7 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobChecker
                     var deadlinePassed = false;
                     var timeoutPassed = false;
 
-                    var defaultTimeout = EnvironmentVariableProvider.DefaultJobTimeoutInMinutes();
+                    var defaultTimeout = EnvironmentVariables.Instance.DefaultJobTimeoutInMinutes();
 
                     if (job.Deadline != null)
                     {
@@ -124,7 +120,7 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobChecker
 
         private static async Task FailJobAsync(Job job, ProblemDetail error)
         {
-            await WorkerInvoker.InvokeAsync(EnvironmentVariableProvider.GetRequiredContextVariable("WorkerFunctionId"),
+            await WorkerInvoker.InvokeAsync(EnvironmentVariables.Instance.WorkerFunctionId(),
                                             "FailJob",
                                             input: new
                                             {

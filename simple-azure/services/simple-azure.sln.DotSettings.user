@@ -1,4 +1,5 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;&#xD;
   &lt;Assembly Path="C:\Users\evanv\.nuget\packages\microsoft.azure.management.fluent\1.34.0\lib\netstandard1.4\Microsoft.Azure.Management.Fluent.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Users\evanv\.nuget\packages\mcma.azure.cosmosdb\0.13.12-beta1\lib\netstandard2.0\Mcma.Azure.CosmosDb.dll" /&gt;&#xD;
@@ -6,6 +7,10 @@
   &lt;Assembly Path="C:\Users\evanv\.nuget\packages\mcma.azure.workerinvoker\0.13.12-beta5\lib\netstandard2.0\Mcma.Azure.WorkerInvoker.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Users\evanv\.nuget\packages\mcma.azure.workerinvoker\0.13.11\lib\netstandard2.0\Mcma.Azure.WorkerInvoker.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Users\evanv\.nuget\packages\microsoft.azure.storage.queue\11.1.7\lib\netstandard2.0\Microsoft.Azure.Storage.Queue.dll" /&gt;&#xD;
+  &lt;Assembly Path="C:\Users\evanv\.nuget\packages\mcma.core\0.13.16-alpha1\lib\netstandard2.0\Mcma.Core.dll" /&gt;&#xD;
+  &lt;Assembly Path="C:\Users\evanv\.nuget\packages\mcma.azure.queueworkerinvoker\0.13.16-alpha9\lib\netstandard2.0\Mcma.Azure.QueueWorkerInvoker.dll" /&gt;&#xD;
+  &lt;Assembly Path="C:\Users\evanv\.nuget\packages\newtonsoft.json\12.0.3\lib\netstandard2.0\Newtonsoft.Json.dll" /&gt;&#xD;
+  &lt;Assembly Path="C:\Users\evanv\.nuget\packages\newtonsoft.json.bson\1.0.1\lib\netstandard1.3\Newtonsoft.Json.Bson.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	
 	

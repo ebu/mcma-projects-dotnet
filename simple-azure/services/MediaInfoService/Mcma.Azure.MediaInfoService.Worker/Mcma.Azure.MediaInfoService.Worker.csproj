@@ -1,17 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <OutputPath>dist\staging</OutputPath>
     <PublishDir>dist\staging</PublishDir>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Mcma.Azure.BlobStorage" Version="0.13.14" />
-    <PackageReference Include="Mcma.Azure.Client" Version="0.13.14" />
-    <PackageReference Include="Mcma.Azure.CosmosDb" Version="0.13.14" />
-    <PackageReference Include="Mcma.Azure.Functions.Logging" Version="0.13.14" />
-    <PackageReference Include="Mcma.Azure.Functions.Worker" Version="0.13.14" />
+    <PackageReference Include="Mcma.Azure.BlobStorage" Version="0.13.16" />
+    <PackageReference Include="Mcma.Azure.Client" Version="0.13.16" />
+    <PackageReference Include="Mcma.Azure.CosmosDb" Version="0.13.16" />
+    <PackageReference Include="Mcma.Azure.Logger" Version="0.13.16" />
+    <PackageReference Include="Mcma.Worker" Version="0.13.16" />
+    <PackageReference Include="Microsoft.Azure.Storage.Queue" Version="11.1.7" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.3" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.9" />
   </ItemGroup>
   <ItemGroup>

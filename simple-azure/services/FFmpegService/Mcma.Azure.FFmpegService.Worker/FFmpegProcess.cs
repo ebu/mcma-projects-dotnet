@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using Mcma.Context;
 using Mcma.Logging;
 
 namespace Mcma.Azure.FFmpegService.Worker

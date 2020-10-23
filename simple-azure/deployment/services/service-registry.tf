@@ -38,7 +38,7 @@ resource "azurerm_function_app" "service_registry_api_function" {
   app_service_plan_id        = azurerm_app_service_plan.mcma_services.id
   storage_account_name       = var.app_storage_account_name
   storage_account_access_key = var.app_storage_access_key
-  version                    = "~2"
+  version                    = "~3"
 
   auth_settings {
     enabled                       = true

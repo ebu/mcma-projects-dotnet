@@ -6,7 +6,6 @@ using Mcma.Api;
 using Mcma.Api.Routes;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Client;
-using Mcma.Context;
 using Mcma.WorkerInvoker;
 
 namespace Mcma.Azure.JobProcessor.ApiHandler
@@ -15,12 +14,10 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
     {
         public JobRoutes(DataController dataController,
                          IResourceManagerProvider resourceManagerProvider,
-                         IContextVariableProvider contextVariableProvider,
                          IWorkerInvoker workerInvoker)
         {
             DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
             ResourceManagerProvider = resourceManagerProvider ?? throw new ArgumentNullException(nameof(resourceManagerProvider));
-            ContextVariableProvider = contextVariableProvider ?? throw new ArgumentNullException(nameof(contextVariableProvider));
             WorkerInvoker = workerInvoker ?? throw new ArgumentNullException(nameof(workerInvoker));
 
             AddRoute(new McmaApiRoute(HttpMethod.Get, "/jobs", QueryAsync));
@@ -35,8 +32,6 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         private DataController DataController { get; }
 
         private IResourceManagerProvider ResourceManagerProvider { get; }
-
-        private IContextVariableProvider ContextVariableProvider { get; }
 
         private IWorkerInvoker WorkerInvoker { get; }
 
@@ -54,7 +49,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
                 var label = job.Type;
                 try
                 {
-                    var resourceManager = ResourceManagerProvider.Get(requestContext);
+                    var resourceManager = ResourceManagerProvider.Get();
                     var jobProfile = await resourceManager.GetAsync<JobProfile>(job.JobProfileId);
                     label += " with JobProfile " + jobProfile.Name;
                 }
@@ -71,9 +66,8 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
             
             requestContext.SetResponseBody(job);
 
-            await WorkerInvoker.InvokeAsync(requestContext.WorkerFunctionId(),
+            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
                                             "StartJob",
-                                            requestContext.ToDictionary(),
                                             new
                                             {
                                                 jobId = job.Id
@@ -85,7 +79,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var jobId = requestContext.JobId();
 
-            var job = await DataController.GetJobAsync($"{ContextVariableProvider.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -99,7 +93,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var jobId = requestContext.JobId();
             
-            var job = await DataController.GetJobAsync($"{ContextVariableProvider.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -116,9 +110,8 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
             
             requestContext.SetResponseStatusCode(HttpStatusCode.Accepted);
 
-            await WorkerInvoker.InvokeAsync(requestContext.WorkerFunctionId(),
+            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
                                             "DeleteJob",
-                                            requestContext.ToDictionary(),
                                             new
                                             {
                                                 jobId = job.Id
@@ -130,7 +123,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var jobId = requestContext.JobId();
             
-            var job = await DataController.GetJobAsync($"{ContextVariableProvider.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -147,9 +140,8 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
             
             requestContext.SetResponseStatusCode(HttpStatusCode.Accepted);
 
-            await WorkerInvoker.InvokeAsync(requestContext.WorkerFunctionId(),
+            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
                                             "CancelJob",
-                                            requestContext.ToDictionary(),
                                             new
                                             {
                                                 jobId = job.Id
@@ -161,7 +153,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var jobId = requestContext.JobId();
             
-            var job = await DataController.GetJobAsync($"{ContextVariableProvider.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -184,9 +176,8 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
             
             requestContext.SetResponseStatusCode(HttpStatusCode.Accepted);
 
-            await WorkerInvoker.InvokeAsync(requestContext.WorkerFunctionId(),
+            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
                                             "CancelJob",
-                                            requestContext.ToDictionary(),
                                             new
                                             {
                                                 jobId = job.Id

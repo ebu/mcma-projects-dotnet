@@ -2,15 +2,15 @@ using System.Threading.Tasks;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.Client;
 using Mcma.Azure.CosmosDb;
-using Mcma.Azure.Functions.Logging;
-using Mcma.Azure.Functions.Worker;
+using Mcma.Azure.Logger;
 using Mcma.Azure.MediaInfoService.Worker.Profiles;
 using Mcma.Client;
+using Mcma.Logging;
 using Mcma.Serialization;
 using Mcma.Worker;
 using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Mcma.Azure.MediaInfoService.Worker
 {
@@ -18,35 +18,27 @@ namespace Mcma.Azure.MediaInfoService.Worker
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
-        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("mediainfo-service-worker");
-
-        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureAdManagedIdentityAuth();
-
-        private static ProviderCollection ProviderCollection { get; } =
-            new ProviderCollection(
-                LoggerProvider,
-                new ResourceManagerProvider(AuthProvider),
-                new CosmosDbTableProvider(new CosmosDbTableProviderConfiguration().FromEnvironmentVariables()),
-                AuthProvider
-            );
+        private static ILoggerProvider LoggerProvider { get; } = new AppInsightsLoggerProvider("mediainfo-service-worker");
 
         private static IWorker Worker { get; } =
-            new Mcma.Worker.Worker(ProviderCollection)
+            new Mcma.Worker.Worker(
+                    new ProviderCollection(
+                        LoggerProvider,
+                        new ResourceManagerProvider(new AuthProvider().AddAzureAdManagedIdentityAuth()),
+                        new CosmosDbTableProvider()))
                 .AddJobProcessing<AmeJob>(op => op.AddProfile<ExtractTechnicalMetadata>());
             
         [FunctionName("MediaInfoServiceWorker")]
         public static async Task Run(
             [QueueTrigger("mediainfo-service-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
-            ILogger log,
             ExecutionContext executionContext)
         {
-            var workerRequest = queueMessage.ToWorkerRequest();
-
-            var logger = LoggerProvider.AddLogger(log, executionContext.InvocationId.ToString(), workerRequest.Tracker);
+            var request = JObject.Parse(queueMessage.AsString).ToMcmaObject<WorkerRequest>();
+            var logger = LoggerProvider.Get(executionContext.InvocationId.ToString(), request.Tracker);
 
             MediaInfoProcess.HostRootDir = executionContext.FunctionAppDirectory;
 
-            await Worker.DoWorkAsync(new WorkerRequestContext(workerRequest, executionContext.InvocationId.ToString(), logger));
+            await Worker.DoWorkAsync(new WorkerRequestContext(request, executionContext.InvocationId.ToString(), logger));
         }
     }
 }

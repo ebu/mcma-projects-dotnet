@@ -1,33 +1,28 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Mcma.Azure.Functions.Logging;
+using Mcma.Azure.Logger;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Azure.WorkerInvoker;
-using Mcma.Context;
+using Mcma.Logging;
 using Mcma.WorkerInvoker;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Logging;
 
 namespace Mcma.Azure.JobProcessor.PeriodicJobCleanup
 {
     public class Function
     {
-        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("job-processor-periodic-job-checker");
-
-        private static IContextVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
+        private static ILoggerProvider LoggerProvider { get; } = new AppInsightsLoggerProvider("job-processor-periodic-job-checker");
         
-        private static DataController DataController { get; } =
-            new DataController(EnvironmentVariableProvider.TableName(), EnvironmentVariableProvider.GetRequiredContextVariable("PublicUrl"));
+        private static DataController DataController { get; } = new DataController();
 
-        private static IWorkerInvoker WorkerInvoker { get; } = new QueueWorkerInvoker(EnvironmentVariableProvider);
+        private static IWorkerInvoker WorkerInvoker { get; } = new QueueWorkerInvoker();
 
         [FunctionName("JobProcessorPeriodicJobCleanup")]
         public static async Task Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest request,
-            ILogger log,
             ExecutionContext executionContext)
         {
             var tracker = new McmaTracker
@@ -36,10 +31,10 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobCleanup
                 Label = $"Periodic Job Cleanup - {DateTime.UtcNow:O}"
             };
 
-            var logger = LoggerProvider.AddLogger(log, executionContext.InvocationId.ToString(), tracker);
+            var logger = LoggerProvider.Get(executionContext.InvocationId.ToString(), tracker);
             try
             {
-                var jobRetentionPeriodInDays = EnvironmentVariableProvider.JobRetentionPeriodInDays();
+                var jobRetentionPeriodInDays = EnvironmentVariables.Instance.JobRetentionPeriodInDays();
                 
                 logger.Info($"Job Retention Period set to {jobRetentionPeriodInDays} days");
 
@@ -75,13 +70,13 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobCleanup
 
         private static async Task DeleteJobAsync(Job job)
         {
-            await WorkerInvoker.InvokeAsync(EnvironmentVariableProvider.GetRequiredContextVariable("WorkerFunctionId"),
+            await WorkerInvoker.InvokeAsync(EnvironmentVariables.Instance.WorkerFunctionId(),
                                             "DeleteJob",
-                                            input: new
+                                            new
                                             {
                                                 jobId = job.Id
                                             },
-                                            tracker: job.Tracker);
+                                            job.Tracker);
         }
     }
 }

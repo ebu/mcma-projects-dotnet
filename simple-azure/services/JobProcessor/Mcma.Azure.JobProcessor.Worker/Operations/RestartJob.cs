@@ -22,7 +22,7 @@ namespace Mcma.Azure.JobProcessor.Worker
                 
         protected override async Task ExecuteAsync(WorkerRequestContext requestContext, JobReference jobReference)
         {
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext);
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext.EnvironmentVariables);
 
             var mutex = await DataController.CreateMutexAsync(jobReference.JobId, requestContext.RequestId);
 

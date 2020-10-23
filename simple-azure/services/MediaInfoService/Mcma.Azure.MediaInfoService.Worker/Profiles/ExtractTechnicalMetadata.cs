@@ -12,10 +12,10 @@ namespace Mcma.Azure.MediaInfoService.Worker.Profiles
     {
         public string Name => nameof(ExtractTechnicalMetadata);
 
-        public async Task ExecuteAsync(ProviderCollection providerCollection, ProcessJobAssignmentHelper<AmeJob> workerJobHelper, WorkerRequestContext requestContext)
+        public async Task ExecuteAsync(ProviderCollection providerCollection, ProcessJobAssignmentHelper<AmeJob> processJobAssignmentHelper, WorkerRequestContext requestContext)
         {
             BlobStorageFileLocator inputFile;
-            if (!workerJobHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
+            if (!processJobAssignmentHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
                 throw new Exception("Unable to parse input file as BlobStorageFileLocator");
             if (string.IsNullOrWhiteSpace(inputFile.Container))
                 throw new Exception("Input file locator does not specify container");
@@ -23,35 +23,35 @@ namespace Mcma.Azure.MediaInfoService.Worker.Profiles
                 throw new Exception("Input file locator does not specify file path.");
 
             BlobStorageFolderLocator outputLocation;
-            if (!workerJobHelper.JobInput.TryGet(nameof(outputLocation), out outputLocation))
+            if (!processJobAssignmentHelper.JobInput.TryGet(nameof(outputLocation), out outputLocation))
                 throw new Exception("Unable to parse output location as BlobStorageFolderLocator");
 
             var localFileName = @"D:\local\temp\" + Guid.NewGuid() + ".tmp";
             using (var localFileStream = File.Open(localFileName, FileMode.Create))
-                await inputFile.Proxy(workerJobHelper.RequestContext).GetAsync(localFileStream);
+                await inputFile.Proxy(processJobAssignmentHelper.RequestContext.EnvironmentVariables).GetAsync(localFileStream);
 
-            workerJobHelper.Logger.Debug("Running MediaInfo against " + localFileName);
-            var mediaInfoProcess = await MediaInfoProcess.RunAsync(workerJobHelper.Logger, "--Output=EBUCore_JSON", localFileName);
+            processJobAssignmentHelper.Logger.Debug("Running MediaInfo against " + localFileName);
+            var mediaInfoProcess = await MediaInfoProcess.RunAsync(processJobAssignmentHelper.Logger, "--Output=EBUCore_JSON", localFileName);
 
             if (string.IsNullOrWhiteSpace(mediaInfoProcess.StdOut))
                 throw new Exception("Failed to obtain mediaInfo output");
 
             var outputFileName = Guid.NewGuid() + ".json";
 
-            workerJobHelper.Logger.Debug(
+            processJobAssignmentHelper.Logger.Debug(
                 $"Writing MediaInfo output to container {outputLocation.Container} in folder {outputLocation.FolderPath} with file name {outputFileName}...");
 
-            var outputFile = await outputLocation.Proxy(workerJobHelper.RequestContext)
+            var outputFile = await outputLocation.Proxy(processJobAssignmentHelper.RequestContext.EnvironmentVariables)
                                                  .PutAsTextAsync(outputFileName,
                                                                  mediaInfoProcess.StdOut,
                                                                  new BlobHttpHeaders {ContentType = "application/json"});
 
-            workerJobHelper.Logger.Debug(
+            processJobAssignmentHelper.Logger.Debug(
                 $"Successfully wrote MediaInfo output to container {outputLocation.Container} in folder {outputLocation.FolderPath} with file name {outputFileName}");
 
-            workerJobHelper.JobOutput[nameof(outputFile)] = outputFile;
+            processJobAssignmentHelper.JobOutput[nameof(outputFile)] = outputFile;
 
-            await workerJobHelper.CompleteAsync();
+            await processJobAssignmentHelper.CompleteAsync();
         }
     }
 }

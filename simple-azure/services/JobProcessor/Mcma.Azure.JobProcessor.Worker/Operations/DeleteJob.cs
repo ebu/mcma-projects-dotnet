@@ -23,7 +23,7 @@ namespace Mcma.Azure.JobProcessor.Worker
             var jobId = jobReference.JobId;
             
             var logger = requestContext.Logger;
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext);
+            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext.EnvironmentVariables);
 
             var mutex = await DataController.CreateMutexAsync(jobReference.JobId, requestContext.RequestId);
 

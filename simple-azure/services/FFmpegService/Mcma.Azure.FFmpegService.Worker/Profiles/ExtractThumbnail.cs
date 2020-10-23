@@ -26,7 +26,7 @@ namespace Mcma.Azure.FFmpegService.Worker
 
             var inputFilePath = @"D:\local\temp\" + Guid.NewGuid() + ".mp4";
             using (var fileStream = File.Open(inputFilePath, FileMode.CreateNew))
-                await inputFile.Proxy(requestContext).GetAsync(fileStream);
+                await inputFile.Proxy(requestContext.EnvironmentVariables).GetAsync(fileStream);
 
             var outputFilePath = @"D:\local\temp\" + Guid.NewGuid() + ".png";
             
@@ -46,7 +46,7 @@ namespace Mcma.Azure.FFmpegService.Worker
 
             using (var outputFileStream = File.Open(outputFilePath, FileMode.Open))
                 jobHelper.JobOutput["outputFile"] =
-                    await outputLocation.Proxy(requestContext)
+                    await outputLocation.Proxy(requestContext.EnvironmentVariables)
                                         .PutAsync(Path.GetFileName(outputFilePath),
                                                   outputFileStream,
                                                   new BlobHttpHeaders {ContentType = "image/png"});

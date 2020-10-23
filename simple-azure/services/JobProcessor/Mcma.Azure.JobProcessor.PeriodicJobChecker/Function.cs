@@ -1,35 +1,30 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Mcma.Azure.Functions.Logging;
+using Mcma.Azure.Logger;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Azure.WorkerInvoker;
-using Mcma.Context;
+using Mcma.Logging;
 using Mcma.WorkerInvoker;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Logging;
 
 namespace Mcma.Azure.JobProcessor.PeriodicJobChecker
 {
     public class Function
     {
-        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("job-processor-periodic-job-checker");
-
-        private static IContextVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
-
-        private static DataController DataController { get; } =
-            new DataController(EnvironmentVariableProvider.TableName(), EnvironmentVariableProvider.GetRequiredContextVariable("PublicUrl"));
-
-        private static IWorkerInvoker WorkerInvoker { get; } = new QueueWorkerInvoker(EnvironmentVariableProvider);
+        private static ILoggerProvider LoggerProvider { get; } = new AppInsightsLoggerProvider("job-processor-periodic-job-checker");
         
-        private static IJobCheckerTrigger CheckerTrigger { get; } = new LogicAppWorkflowCheckerTrigger(EnvironmentVariableProvider);
+        private static DataController DataController { get; } = new DataController();
+
+        private static IWorkerInvoker WorkerInvoker { get; } = new QueueWorkerInvoker();
+        
+        private static IJobCheckerTrigger CheckerTrigger { get; } = new LogicAppWorkflowCheckerTrigger();
 
         [FunctionName("JobProcessorPeriodicJobChecker")]
         public static async Task Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest request,
-            ILogger log,
             ExecutionContext executionContext)
         {
             var tracker = new McmaTracker
@@ -38,7 +33,7 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobChecker
                 Label = $"Periodic Job Checker - {DateTime.UtcNow:O}"
             };
 
-            var logger = LoggerProvider.AddLogger(log, executionContext.InvocationId.ToString(), tracker);
+            var logger = LoggerProvider.Get(executionContext.InvocationId.ToString(), tracker);
             try
             {
                 await CheckerTrigger.DisableAsync();
@@ -61,7 +56,7 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobChecker
                     var deadlinePassed = false;
                     var timeoutPassed = false;
 
-                    var defaultTimeout = EnvironmentVariableProvider.DefaultJobTimeoutInMinutes();
+                    var defaultTimeout = EnvironmentVariables.Instance.DefaultJobTimeoutInMinutes();
 
                     if (job.Deadline != null)
                     {
@@ -129,14 +124,14 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobChecker
 
         private static async Task FailJobAsync(Job job, ProblemDetail error)
         {
-            await WorkerInvoker.InvokeAsync(EnvironmentVariableProvider.GetRequiredContextVariable("WorkerFunctionId"),
+            await WorkerInvoker.InvokeAsync(EnvironmentVariables.Instance.WorkerFunctionId(),
                                             "FailJob",
-                                            input: new
+                                            new
                                             {
                                                 jobId = job.Id,
                                                 error
                                             },
-                                            tracker: job.Tracker);
+                                            job.Tracker);
         }
     }
 }

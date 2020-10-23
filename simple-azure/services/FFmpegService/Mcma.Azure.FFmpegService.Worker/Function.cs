@@ -2,14 +2,14 @@ using System.Threading.Tasks;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.Client;
 using Mcma.Azure.CosmosDb;
-using Mcma.Azure.Functions.Logging;
-using Mcma.Azure.Functions.Worker;
+using Mcma.Azure.Logger;
 using Mcma.Client;
+using Mcma.Logging;
 using Mcma.Serialization;
 using Mcma.Worker;
 using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Mcma.Azure.FFmpegService.Worker
 {
@@ -17,32 +17,24 @@ namespace Mcma.Azure.FFmpegService.Worker
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
 
-        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("ffmpeg-service-worker");
-
-        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureAdManagedIdentityAuth();
-
-        private static ProviderCollection ProviderCollection { get; } = new ProviderCollection(
-            LoggerProvider,
-            new ResourceManagerProvider(AuthProvider),
-            new CosmosDbTableProvider(new CosmosDbTableProviderConfiguration().FromEnvironmentVariables()),
-            AuthProvider
-        );
+        private static ILoggerProvider LoggerProvider { get; } = new AppInsightsLoggerProvider("ffmpeg-service-worker");
 
         private static IWorker Worker { get; } =
-            new Mcma.Worker.Worker(ProviderCollection)
+            new Mcma.Worker.Worker(new ProviderCollection(
+                                       LoggerProvider,
+                                       new ResourceManagerProvider(new AuthProvider().AddAzureAdManagedIdentityAuth()),
+                                       new CosmosDbTableProvider()))
                 .AddJobProcessing<TransformJob>(x => x.AddProfile<ExtractThumbnail>());
             
         [FunctionName("FFmpegServiceWorker")]
         public static async Task Run(
             [QueueTrigger("ffmpeg-service-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
-            ILogger log,
             ExecutionContext executionContext)
         {
-            var request = queueMessage.ToWorkerRequest();
+            var request = JObject.Parse(queueMessage.AsString).ToMcmaObject<WorkerRequest>();
+            var logger = LoggerProvider.Get(executionContext.InvocationId.ToString(), request.Tracker);
 
             FFmpegProcess.HostRootDir = executionContext.FunctionAppDirectory;
-
-            var logger = LoggerProvider.AddLogger(log, executionContext.InvocationId.ToString(), request.Tracker);
 
             await Worker.DoWorkAsync(new WorkerRequestContext(request, executionContext.InvocationId.ToString(), logger));
         }

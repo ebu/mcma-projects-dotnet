@@ -2,42 +2,33 @@ using System.Threading.Tasks;
 using Mcma.Azure.BlobStorage;
 using Mcma.Azure.Client;
 using Mcma.Azure.CosmosDb;
-using Mcma.Azure.Functions.Logging;
-using Mcma.Azure.Functions.Worker;
+using Mcma.Azure.Logger;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Client;
-using Mcma.Context;
+using Mcma.Logging;
 using Mcma.Serialization;
 using Mcma.Worker;
 using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Extensions.Logging;
-
-using McmaLogger = Mcma.Logging.Logger;
+using Newtonsoft.Json.Linq;
 
 namespace Mcma.Azure.JobProcessor.Worker
 {
     public static class Function
     {
         static Function() => McmaTypes.Add<BlobStorageFileLocator>().Add<BlobStorageFolderLocator>();
-        
-        private static IContextVariableProvider EnvironmentVariableProvider { get; } = new EnvironmentVariableProvider();
 
-        private static MicrosoftLoggerProvider LoggerProvider { get; } = new MicrosoftLoggerProvider("job-processor-worker");
-            
-        private static IAuthProvider AuthProvider { get; } = new AuthProvider().AddAzureAdManagedIdentityAuth();
+        private static ILoggerProvider LoggerProvider { get; } = new AppInsightsLoggerProvider("job-processor-worker");
 
-        private static ProviderCollection ProviderCollection { get; } = new ProviderCollection(
-            LoggerProvider,
-            new ResourceManagerProvider(AuthProvider),
-            new CosmosDbTableProvider(new CosmosDbTableProviderConfiguration().FromEnvironmentVariables()),
-            AuthProvider
-        );
+        private static ProviderCollection ProviderCollection { get; } =
+            new ProviderCollection(
+                LoggerProvider,
+                new ResourceManagerProvider(new AuthProvider().AddAzureAdManagedIdentityAuth()),
+                new CosmosDbTableProvider());
 
-        private static DataController DataController { get; } =
-            new DataController(EnvironmentVariableProvider.TableName(), EnvironmentVariableProvider.PublicUrl());
+        private static DataController DataController { get; } = new DataController();
 
-        private static IJobCheckerTrigger JobCheckerTrigger { get; } = new LogicAppWorkflowCheckerTrigger(EnvironmentVariableProvider);
+        private static IJobCheckerTrigger JobCheckerTrigger { get; } = new LogicAppWorkflowCheckerTrigger();
 
         private static IWorker Worker { get; } =
             new Mcma.Worker.Worker(ProviderCollection)
@@ -51,12 +42,10 @@ namespace Mcma.Azure.JobProcessor.Worker
         [FunctionName("JobProcessorWorker")]
         public static async Task Run(
             [QueueTrigger("job-processor-work-queue", Connection = "WorkQueueStorage")] CloudQueueMessage queueMessage,
-            ILogger log,
             ExecutionContext executionContext)
         {
-            var request = queueMessage.ToWorkerRequest();
-
-            var logger = LoggerProvider.AddLogger(log, executionContext.InvocationId.ToString(), request.Tracker);
+            var request = JObject.Parse(queueMessage.AsString).ToMcmaObject<WorkerRequest>();
+            var logger = LoggerProvider.Get(executionContext.InvocationId.ToString(), request.Tracker);
 
             await Worker.DoWorkAsync(new WorkerRequestContext(request, executionContext.InvocationId.ToString(), logger));
         }

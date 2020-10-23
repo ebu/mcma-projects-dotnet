@@ -1,22 +1,21 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Mcma.Context;
 using Microsoft.Azure.Management.Logic;
 
 namespace Mcma.Azure.JobProcessor.Common
 {
     public class LogicAppWorkflowCheckerTrigger : IJobCheckerTrigger, IDisposable
     {
-        public LogicAppWorkflowCheckerTrigger(IContextVariableProvider contextVariableProvider)
+        public LogicAppWorkflowCheckerTrigger()
         {
             LogicManagementClient =
-                new LogicManagementClient(contextVariableProvider.AzureCredentials())
+                new LogicManagementClient(EnvironmentVariables.Instance.AzureCredentials())
                 {
-                    SubscriptionId = contextVariableProvider.AzureSubscriptionId()
+                    SubscriptionId = EnvironmentVariables.Instance.AzureSubscriptionId()
                 };
             
-            ResourceGroupName = contextVariableProvider.AzureResourceGroupName();
-            WorkflowName = contextVariableProvider.JobCheckerWorkflowName();
+            ResourceGroupName = EnvironmentVariables.Instance.AzureResourceGroupName();
+            WorkflowName = EnvironmentVariables.Instance.JobCheckerWorkflowName();
         }
 
         private LogicManagementClient LogicManagementClient { get; }

@@ -1,1 +1,1 @@
-apply from: "../../projectTasks.gradle"
+apply from: "../../../projectTasks.gradle"

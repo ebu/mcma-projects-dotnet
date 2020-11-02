@@ -1,0 +1,30 @@
+task setMcmaVersion {
+    def projectFile = file(getProjectDir().getName() + ".csproj")
+
+    inputs.file(projectFile)
+    inputs.property("VERSION", mcmaVersion)
+    outputs.file(projectFile)
+
+    if (!projectFile.exists()) {
+        throw new Exception("Project file not found: " + projectFile.getPath());
+    }
+
+    doLast {
+        def projectFileContents = projectFile.getText("UTF-8")
+
+        def updated =
+            projectFileContents.replaceAll(
+                /\<PackageReference\s+Include="(Mcma(?:\.\w+)+)"\s+Version="\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\d*)?"\s*\/\>/,
+                '<PackageReference Include="$1" Version="' + mcmaVersion + '" />')
+
+        projectFile.write(updated)
+    }
+}
+
+task packageOutput(type: Zip) {
+    from "dist/staging"
+    archiveFileName = "function.zip"
+    destinationDirectory = file("dist")
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}

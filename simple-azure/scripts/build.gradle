@@ -1,4 +1,19 @@
-task runAll {
-    dependsOn "post-deploy:run"
-    dependsOn "run-jobs:run"
+apply from: "../projectTasks.gradle"
+
+task postDeploy(type: Exec) {
+    dependsOn ":deployment:terraformOutput"
+
+    commandLine dotnetExecutable
+    args "run"
+    args "post-deploy"
+}
+
+task runJobs(type: Exec) {
+    dependsOn ":deployment:terraformOutput"
+
+    commandLine dotnetExecutable
+    args "run"
+    args "run-jobs"
+    args "--"
+    args "--testFilePath=${testFilePath}"
 }

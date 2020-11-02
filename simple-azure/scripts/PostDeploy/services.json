@@ -13,9 +13,10 @@
                 "resourceType": "JobProfile",
                 "httpEndpoint": "/job-profiles"
             }
-        ]
+        ],
+        "authType": "AWS4"
     },
-    "job_processor_api_url": {
+    "job_processor_url": {
         "@type": "Service",
         "name": "Job Processor Service",
         "resources": [
@@ -54,7 +55,8 @@
                 "resourceType": "WorkflowJob",
                 "httpEndpoint": "/jobs"
             }
-        ]
+        ],
+        "authType": "AWS4"
     },
     "ffmpeg_service_url": {
         "@type": "Service",
@@ -69,7 +71,8 @@
         "jobType": "TransformJob",
         "jobProfileIds": [
             "ExtractThumbnail"
-        ]
+        ],
+        "authType": "AWS4"
     },
     "mediainfo_service_url": {
         "@type": "Service",
@@ -84,6 +87,7 @@
         "jobType": "AmeJob",
         "jobProfileIds": [
             "ExtractTechnicalMetadata"
-        ]
+        ],
+        "authType": "AWS4"
     }
 }

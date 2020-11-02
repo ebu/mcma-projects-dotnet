@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Mcma.Azure.JobProcessor.Common;
 using Mcma.Data;
 using Mcma.Data.DocumentDatabase.Queries;
 using Microsoft.Extensions.Options;

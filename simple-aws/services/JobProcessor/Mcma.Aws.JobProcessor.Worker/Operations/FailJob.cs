@@ -2,26 +2,29 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Mcma.Aws.JobProcessor.Common;
+using Mcma.Client;
 using Mcma.Worker;
 
 namespace Mcma.Aws.JobProcessor.Worker
 {
-    internal class FailJob : WorkerOperation<JobFailure>
+    internal class FailJob : McmaWorkerOperation<JobFailure>
     {
-        public FailJob(ProviderCollection providerCollection, DataController dataController)
-            : base(providerCollection)
+        public FailJob(IResourceManagerProvider resourceManagerProvider, IDataController dataController)
         {
-            DataController = dataController;
+            ResourceManagerProvider = resourceManagerProvider ?? throw new ArgumentNullException(nameof(resourceManagerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
         }
 
-        private DataController DataController { get; }
+        private IResourceManagerProvider ResourceManagerProvider { get; }
+
+        private IDataController DataController { get; }
 
         public override string Name => nameof(FailJob);
 
-        protected override async Task ExecuteAsync(WorkerRequestContext requestContext, JobFailure jobFailure)
+        protected override async Task ExecuteAsync(McmaWorkerRequestContext requestContext, JobFailure jobFailure)
         {
             var logger = requestContext.Logger;
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get();
+            var resourceManager = ResourceManagerProvider.Get(requestContext.Tracker);
             var jobEventLogger = new JobEventLogger(logger, resourceManager);
 
             var mutex = await DataController.CreateMutexAsync(jobFailure.JobId, requestContext.RequestId);
@@ -48,7 +51,7 @@ namespace Mcma.Aws.JobProcessor.Worker
                 {
                     try
                     {
-                        var client = await resourceManager.GetResourceEndpointAsync(jobExecution.JobAssignmentId);
+                        var client = await resourceManager.GetResourceEndpointClientAsync(jobExecution.JobAssignmentId);
                         await client.PostAsync(null, $"{jobExecution.JobAssignmentId}/cancel");
                     }
                     catch (Exception error)
@@ -59,7 +62,7 @@ namespace Mcma.Aws.JobProcessor.Worker
                 }
 
                 if (!jobExecution.ActualEndDate.HasValue)
-                    jobExecution.ActualEndDate = DateTime.UtcNow;
+                    jobExecution.ActualEndDate = DateTimeOffset.UtcNow;
 
                 jobExecution.ActualDuration =
                     jobExecution.ActualStartDate.HasValue
@@ -81,7 +84,7 @@ namespace Mcma.Aws.JobProcessor.Worker
                 await mutex.UnlockAsync();
             }
 
-            await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint, job.Tracker);
+            await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint);
         }
     }
 }

@@ -10,9 +10,9 @@ namespace Mcma.Aws.JobProcessor.Worker
 {
     internal class JobExecutor
     {
-        public JobExecutor(DataController dataController,
+        public JobExecutor(IDataController dataController,
                            IResourceManager resourceManager,
-                           WorkerRequestContext requestContext)
+                           McmaWorkerRequestContext requestContext)
         {
             DataController = dataController;
             ResourceManager = resourceManager;
@@ -21,7 +21,7 @@ namespace Mcma.Aws.JobProcessor.Worker
             JobEventLogger = new JobEventLogger(requestContext.Logger, resourceManager);
         }
 
-        private DataController DataController { get; }
+        private IDataController DataController { get; }
 
         private IResourceManager ResourceManager { get; }
 
@@ -86,10 +86,10 @@ namespace Mcma.Aws.JobProcessor.Worker
                 }
 
                 // finding a service that is capable of handling the job type and job profile
-                var services = await ResourceManager.QueryAsync<Service>();
+                var services = await ResourceManager.QueryAsync<Service>(new (string, string)[0]);
 
                 Service selectedService = null;
-                ResourceEndpointClient jobAssignmentResourceEndpoint = null;
+                IResourceEndpointClient jobAssignmentResourceEndpoint = null;
 
                 foreach (var service in services)
                 {
@@ -128,7 +128,7 @@ namespace Mcma.Aws.JobProcessor.Worker
 
                 try
                 {
-                    jobAssignment = await jobAssignmentResourceEndpoint.PostAsync(jobAssignment);
+                    jobAssignment = await jobAssignmentResourceEndpoint.PostAsync<JobAssignment>(jobAssignment);
                 }
                 catch (Exception error)
                 {
@@ -171,7 +171,7 @@ namespace Mcma.Aws.JobProcessor.Worker
                 {
                     try
                     {
-                        var client = await ResourceManager.GetResourceEndpointAsync(jobExecution.JobAssignmentId);
+                        var client = await ResourceManager.GetResourceEndpointClientAsync(jobExecution.JobAssignmentId);
                         await client.PostAsync(null, $"{jobExecution.JobAssignmentId}/cancel");
                     }
                     catch (Exception error)

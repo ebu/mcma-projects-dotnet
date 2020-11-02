@@ -13,7 +13,7 @@ resource "aws_lambda_function" "mediainfo_service_api_handler" {
   filename         = local.mediainfo_api_handler_zip_file
   function_name    = format("%.64s", "${var.global_prefix}-mediainfo-service-api-handler")
   role             = aws_iam_role.iam_for_exec_lambda.arn
-  handler          = "Mcma.Aws.MediaInfoService.ApiHandler::Mcma.Aws.MediaInfoService.ApiHandler.Function::Handler"
+  handler          = "Mcma.Aws.MediaInfoService.ApiHandler::Mcma.Aws.MediaInfoService.ApiHandler.MediaInfoServiceApiHandler::ExecuteAsync"
   source_code_hash = filebase64sha256(local.mediainfo_api_handler_zip_file)
   runtime          = "dotnetcore3.1"
   timeout          = "30"
@@ -21,12 +21,12 @@ resource "aws_lambda_function" "mediainfo_service_api_handler" {
 
   environment {
     variables = {
-      LogGroupName     = var.global_prefix
-      TableName        = aws_dynamodb_table.mediainfo_service_table.name
-      PublicUrl        = local.mediainfo_service_url
-      ServicesUrl      = local.services_url
-      ServicesAuthType = local.service_registry_auth_type
-      WorkerFunctionId = aws_lambda_function.mediainfo_service_worker.function_name
+      MCMA_LOG_GROUP_NAME              = var.global_prefix
+      MCMA_TABLE_NAME                  = aws_dynamodb_table.mediainfo_service_table.name
+      MCMA_PUBLIC_URL                  = local.mediainfo_service_url
+      MCMA_SERVICES_URL                = local.services_url
+      MCMA_SERVICES_AUTH_TYPE          = local.service_registry_auth_type
+      MCMA_WORKER_LAMBDA_FUNCTION_NAME = aws_lambda_function.mediainfo_service_worker.function_name
     }
   }
 }
@@ -45,7 +45,7 @@ resource "aws_lambda_function" "mediainfo_service_worker" {
   filename         = local.mediainfo_worker_zip_file
   function_name    = format("%.64s", "${var.global_prefix}-mediainfo-service-worker")
   role             = aws_iam_role.iam_for_exec_lambda.arn
-  handler          = "Mcma.Aws.MediaInfoService.Worker::Mcma.Aws.MediaInfoService.Worker.Function::Handler"
+  handler          = "Mcma.Aws.MediaInfoService.Worker::Mcma.Aws.MediaInfoService.Worker.MediaInfoServiceWorker::ExecuteAsync"
   source_code_hash = filebase64sha256(local.mediainfo_worker_zip_file)
   runtime          = "dotnetcore3.1"
   timeout          = "900"
@@ -55,11 +55,11 @@ resource "aws_lambda_function" "mediainfo_service_worker" {
 
   environment {
     variables = {
-      LogGroupName     = var.global_prefix
-      TableName        = aws_dynamodb_table.mediainfo_service_table.name
-      PublicUrl        = local.mediainfo_service_url
-      ServicesUrl      = local.services_url
-      ServicesAuthType = local.service_registry_auth_type
+      MCMA_LOG_GROUP_NAME     = var.global_prefix
+      MCMA_TABLE_NAME         = aws_dynamodb_table.mediainfo_service_table.name
+      MCMA_PUBLIC_URL         = local.mediainfo_service_url
+      MCMA_SERVICES_URL       = local.services_url
+      MCMA_SERVICES_AUTH_TYPE = local.service_registry_auth_type
     }
   }
 }
@@ -204,7 +204,7 @@ resource "aws_api_gateway_stage" "mediainfo_service_gateway_stage" {
   rest_api_id   = aws_api_gateway_rest_api.mediainfo_service_api.id
 
   variables = {
-    DeploymentHash   = filesha256("./services/mediainfo-service.tf")
+    DeploymentHash = filesha256("./services/mediainfo-service.tf")
   }
 }
 

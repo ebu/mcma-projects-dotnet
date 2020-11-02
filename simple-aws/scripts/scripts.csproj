@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <OutputType>exe</OutputType>
+        <RootNamespace>Mcma.Aws.Sample.Scripts</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AWSSDK.Core" Version="3.5.1.32" />
+        <PackageReference Include="Mcma.Aws.Client" Version="0.14.0-alpha32" />
+        <PackageReference Include="Mcma.Aws.S3" Version="0.14.0-alpha32" />
+    </ItemGroup>
+    
+</Project>

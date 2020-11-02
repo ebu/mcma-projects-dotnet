@@ -1,44 +1,19 @@
-using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
-using Mcma.Api.Routing.Defaults;
-using Mcma.Aws.S3;
-using Mcma.Aws.DynamoDb;
-using Mcma.Aws.ApiGateway;
-using Mcma.Aws.CloudWatch;
+using Mcma.Aws.Functions;
+using Mcma.Aws.Functions.ApiHandler;
 using Mcma.Aws.Lambda;
-using Mcma.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 
 [assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
 
 namespace Mcma.Aws.MediaInfoService.ApiHandler
 {
-    public static class Function
+    public class MediaInfoServiceApiHandler : McmaLambdaFunction<McmaLambdaApiHandler, APIGatewayProxyRequest, APIGatewayProxyResponse>
     {
-        static Function() => McmaTypes.Add<AwsS3FileLocator>().Add<AwsS3FolderLocator>();
-
-        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("mediainfo-service-worker");
-        
-        private static ApiGatewayApiController ApiController { get; } =
-            new DefaultJobRouteCollection(new DynamoDbTableProvider(), new LambdaWorkerInvoker())
-                .ToApiGatewayApiController(LoggerProvider);
-
-        public static async Task<APIGatewayProxyResponse> Handler(APIGatewayProxyRequest request, ILambdaContext context)
+        protected override void Configure(IServiceCollection services)
         {
-            var logger = LoggerProvider.Get(context.AwsRequestId);
-            try
-            {
-                logger.FunctionStart(context.AwsRequestId);
-                logger.Debug(request);
-                logger.Debug(context);
-                
-                return await ApiController.HandleRequestAsync(request, context);
-            }
-            finally
-            {
-                logger.FunctionEnd(context.AwsRequestId);
-                await LoggerProvider.FlushAsync();
-            }
+            services.AddMcmaLambdaJobAssignmentApiHandler("mediainfo-service-api-handler");
         }
     }
 }

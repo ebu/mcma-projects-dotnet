@@ -1,7 +1,5 @@
 include "deployment",
         "scripts",
-        "scripts:post-deploy",
-        "scripts:run-jobs",
         "services",
         "services:FFmpegService",
         "services:FFmpegService:Mcma.Aws.FFmpegService.ApiHandler",

@@ -2,24 +2,36 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Mcma.Aws.CloudWatch;
+using Mcma.Aws.Functions;
 using Mcma.Aws.JobProcessor.Common;
-using Mcma.Aws.Lambda;
+using Mcma.Logging;
 using Mcma.WorkerInvoker;
-
-[assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
+using Microsoft.Extensions.Options;
 
 namespace Mcma.Aws.JobProcessor.PeriodicJobCleanup
 {
-    public class Function
+    public class PeriodicJobCleanupHandler : IMcmaLambdaFunctionHandler
     {
-        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("job-processor-periodic-job-checker");
+        public PeriodicJobCleanupHandler(ILoggerProvider loggerProvider,
+                                         IDataController dataController,
+                                         IWorkerInvoker workerInvoker,
+                                         IOptions<PeriodicJobCleanupOptions> options)
+        {
+            LoggerProvider = loggerProvider ?? throw new ArgumentNullException(nameof(loggerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
+            WorkerInvoker = workerInvoker ?? throw new ArgumentNullException(nameof(workerInvoker));
+            Options = options?.Value ?? new PeriodicJobCleanupOptions();
+        }
+
+        private ILoggerProvider LoggerProvider { get; }
         
-        private static DataController DataController { get; } = new DataController();
+        private IDataController DataController { get; }
 
-        private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker();
+        private IWorkerInvoker WorkerInvoker { get; }
+        
+        private PeriodicJobCleanupOptions Options { get; }
 
-        public static async Task Handler(ILambdaContext context)
+        public async Task ExecuteAsync(ILambdaContext context)
         {
             var tracker = new McmaTracker
             {
@@ -29,18 +41,16 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobCleanup
 
             var logger = LoggerProvider.Get(context.AwsRequestId, tracker);
             try
-            {
-                var jobRetentionPeriodInDays = EnvironmentVariables.Instance.JobRetentionPeriodInDays();
-                
-                logger.Info($"Job Retention Period set to {jobRetentionPeriodInDays} days");
+            {   
+                logger.Info($"Job Retention Period set to {Options.JobRetentionPeriodInDays} days");
 
-                if (!jobRetentionPeriodInDays.HasValue || jobRetentionPeriodInDays.Value <= 0)
+                if (!Options.JobRetentionPeriodInDays.HasValue || Options.JobRetentionPeriodInDays.Value <= 0)
                 {
                     logger.Info("Exiting");
                     return;
                 }
 
-                var retentionDateLimit = DateTime.UtcNow - TimeSpan.FromDays(jobRetentionPeriodInDays.Value);
+                var retentionDateLimit = DateTime.UtcNow - TimeSpan.FromDays(Options.JobRetentionPeriodInDays.Value);
 
                 var completedJobs = await DataController.QueryJobsAsync(new JobResourceQueryParameters {Status = JobStatus.Completed});
                 var failedJobs = await DataController.QueryJobsAsync(new JobResourceQueryParameters {Status = JobStatus.Failed});
@@ -64,15 +74,14 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobCleanup
             }
         }
 
-        private static async Task DeleteJobAsync(Job job)
+        private async Task DeleteJobAsync(Job job)
         {
-            await WorkerInvoker.InvokeAsync(EnvironmentVariables.Instance.WorkerFunctionId(),
-                                            "DeleteJob",
-                                            input: new
+            await WorkerInvoker.InvokeAsync("DeleteJob",
+                                            new
                                             {
                                                 jobId = job.Id
                                             },
-                                            tracker: job.Tracker);
+                                            job.Tracker);
         }
     }
 }

@@ -12,11 +12,9 @@ namespace Mcma.Aws.FFmpegService.Worker
     {
         public string Name => nameof(ExtractThumbnail);
 
-        public async Task ExecuteAsync(ProviderCollection providerCollection,
-                                       ProcessJobAssignmentHelper<TransformJob> jobAssignmentHelper,
-                                       WorkerRequestContext requestContext)
+        public async Task ExecuteAsync(ProcessJobAssignmentHelper<TransformJob> jobAssignmentHelper, McmaWorkerRequestContext requestContext)
         {
-            var logger = jobAssignmentHelper.Logger;
+            var logger = jobAssignmentHelper.RequestContext.Logger;
             
             AwsS3FileLocator inputFile;
             if (!jobAssignmentHelper.JobInput.TryGet(nameof(inputFile), out inputFile))
@@ -39,7 +37,7 @@ namespace Mcma.Aws.FFmpegService.Worker
                 await data.WriteResponseStreamToFileAsync(tempVideoFile, true, CancellationToken.None);
             
                 await FFmpegProcess.RunAsync(
-                    jobAssignmentHelper.Logger,
+                    logger,
                     "-i",
                     tempVideoFile,
                     "-ss",

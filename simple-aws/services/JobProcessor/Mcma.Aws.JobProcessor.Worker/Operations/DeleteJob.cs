@@ -1,28 +1,31 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Mcma.Aws.JobProcessor.Common;
+using Mcma.Client;
 using Mcma.Worker;
 
 namespace Mcma.Aws.JobProcessor.Worker
 {
-    internal class DeleteJob : WorkerOperation<JobReference>
+    internal class DeleteJob : McmaWorkerOperation<JobReference>
     {
-        private DataController DataController { get; }
-
-        public DeleteJob(ProviderCollection providerCollection, DataController dataController)
-            : base(providerCollection)
+        public DeleteJob(IResourceManagerProvider resourceManagerProvider,IDataController dataController)
         {
-            DataController = dataController;
+            ResourceManagerProvider = resourceManagerProvider ?? throw new ArgumentNullException(nameof(resourceManagerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
         }
+        
+        private IResourceManagerProvider ResourceManagerProvider { get; }
+
+        private IDataController DataController { get; }
 
         public override string Name => nameof(DeleteJob);
 
-        protected override async Task ExecuteAsync(WorkerRequestContext requestContext, JobReference jobReference)
+        protected override async Task ExecuteAsync(McmaWorkerRequestContext requestContext, JobReference jobReference)
         {
             var jobId = jobReference.JobId;
             
             var logger = requestContext.Logger;
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get();
+            var resourceManager = ResourceManagerProvider.Get(requestContext.Tracker);
 
             var mutex = await DataController.CreateMutexAsync(jobReference.JobId, requestContext.RequestId);
 

@@ -10,7 +10,7 @@ resource "aws_lambda_function" "service_registry_api_handler" {
   filename         = local.service_registry_api_handler_zip_file
   function_name    = format("%.64s", "${var.global_prefix}-service-registry-api-handler")
   role             = aws_iam_role.iam_for_exec_lambda.arn
-  handler          = "Mcma.Aws.ServiceRegistry.ApiHandler::Mcma.Aws.ServiceRegistry.ApiHandler.Function::Handler"
+  handler          = "Mcma.Aws.ServiceRegistry.ApiHandler::Mcma.Aws.ServiceRegistry.ApiHandler.ServiceRegistryApiHandler::ExecuteAsync"
   source_code_hash = filebase64sha256(local.service_registry_api_handler_zip_file)
   runtime          = "dotnetcore3.1"
   timeout          = "30"
@@ -18,9 +18,9 @@ resource "aws_lambda_function" "service_registry_api_handler" {
 
   environment {
     variables = {
-      LogGroupName = var.global_prefix
-      TableName    = aws_dynamodb_table.service_registry_table.name
-      PublicUrl    = local.service_registry_url
+      MCMA_LOG_GROUP_NAME = var.global_prefix
+      MCMA_TABLE_NAME     = aws_dynamodb_table.service_registry_table.name
+      MCMA_PUBLIC_URL     = local.service_registry_url
     }
   }
 }

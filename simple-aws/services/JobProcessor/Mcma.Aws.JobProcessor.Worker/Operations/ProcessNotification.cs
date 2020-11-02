@@ -1,24 +1,27 @@
 using System;
 using System.Threading.Tasks;
 using Mcma.Aws.JobProcessor.Common;
+using Mcma.Client;
 using Mcma.Serialization;
 using Mcma.Worker;
 
 namespace Mcma.Aws.JobProcessor.Worker
 {
-    internal class ProcessNotification : WorkerOperation<NotificationData>
+    internal class ProcessNotification : McmaWorkerOperation<NotificationData>
     {
-        public ProcessNotification(ProviderCollection providerCollection, DataController dataController)
-            : base(providerCollection)
+        public ProcessNotification(IResourceManagerProvider resourceManagerProvider, IDataController dataController)
         {
-            DataController = dataController;
+            ResourceManagerProvider = resourceManagerProvider ?? throw new ArgumentNullException(nameof(resourceManagerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
         }
-        
-        private DataController DataController { get; }
+
+        private IResourceManagerProvider ResourceManagerProvider { get; }
+
+        private IDataController DataController { get; }
 
         public override string Name => nameof(ProcessNotification);
 
-        protected override async Task ExecuteAsync(WorkerRequestContext requestContext, NotificationData notificationData)
+        protected override async Task ExecuteAsync(McmaWorkerRequestContext requestContext, NotificationData notificationData)
         {
             var jobId = notificationData.JobId;
             var jobExecutionId = notificationData.JobExecutionId;
@@ -26,7 +29,7 @@ namespace Mcma.Aws.JobProcessor.Worker
             var notificationContent = notification.Content.ToMcmaObject<JobBase>();
 
             var logger = requestContext.Logger;
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get();
+            var resourceManager = ResourceManagerProvider.Get(requestContext.Tracker);
             var jobEventLogger = new JobEventLogger(logger, resourceManager);
             
             var mutex = await DataController.CreateMutexAsync(jobId, requestContext.RequestId);
@@ -97,7 +100,7 @@ namespace Mcma.Aws.JobProcessor.Worker
 
             await jobEventLogger.LogJobEventAsync(job, jobExecution);
 
-            await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint, job.Tracker);
+            await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint);
         }
     }
 }

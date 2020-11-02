@@ -1,7 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Amazon.CloudWatchEvents;
 using Amazon.CloudWatchEvents.Model;
+using Mcma.Utility;
 
 namespace Mcma.Aws.JobProcessor.Common
 {
@@ -9,7 +9,7 @@ namespace Mcma.Aws.JobProcessor.Common
     {
         private AmazonCloudWatchEventsClient Client { get; } = new AmazonCloudWatchEventsClient();
 
-        private string RuleName { get; } = Environment.GetEnvironmentVariable("CloudwatchEventRule");
+        private string RuleName { get; } = McmaEnvironmentVariables.Get("CLOUDWATCH_EVENT_RULE");
 
         public Task EnableAsync() => Client.EnableRuleAsync(new EnableRuleRequest {Name = RuleName});
 

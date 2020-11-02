@@ -47,7 +47,7 @@ resource "aws_lambda_function" "job_processor_api_handler" {
   filename         = local.job_processor_api_handler_zip_file
   function_name    = format("%.64s", "${var.global_prefix}-job-processor-api-handler")
   role             = aws_iam_role.job_processor_lambda_execution.arn
-  handler          = "Mcma.Aws.JobProcessor.ApiHandler::Mcma.Aws.JobProcessor.ApiHandler.Function::Handler"
+  handler          = "Mcma.Aws.JobProcessor.ApiHandler::Mcma.Aws.JobProcessor.ApiHandler.JobProcessorApiHandler::ExecuteAsync"
   source_code_hash = filebase64sha256(local.job_processor_api_handler_zip_file)
   runtime          = "dotnetcore3.1"
   timeout          = "30"
@@ -55,17 +55,17 @@ resource "aws_lambda_function" "job_processor_api_handler" {
 
   environment {
     variables = {
-      LogGroupName     = var.global_prefix
-      TableName        = aws_dynamodb_table.job_processor_table.name
-      PublicUrl        = local.job_processor_url
-      ServicesUrl      = local.services_url
-      ServicesAuthType = local.service_registry_auth_type
-      WorkerFunctionId = aws_lambda_function.job_processor_worker.function_name
+      MCMA_LOG_GROUP_NAME              = var.global_prefix
+      MCMA_TABLE_NAME                  = aws_dynamodb_table.job_processor_table.name
+      MCMA_PUBLIC_URL                  = local.job_processor_url
+      MCMA_SERVICES_URL                = local.services_url
+      MCMA_SERVICES_AUTH_TYPE          = local.service_registry_auth_type
+      MCMA_WORKER_LAMBDA_FUNCTION_NAME = aws_lambda_function.job_processor_worker.function_name
     }
   }
 }
 
-#################################
+################################# 
 #  aws_lambda_function : job_processor_periodic_job_checker
 #################################
 
@@ -73,7 +73,7 @@ resource "aws_lambda_function" "job_processor_periodic_job_checker" {
   filename         = local.job_processor_periodic_job_checker_zip_file
   function_name    = format("%.64s", "${var.global_prefix}-job-processor-periodic-job-checker")
   role             = aws_iam_role.job_processor_lambda_execution.arn
-  handler          = "Mcma.Aws.JobProcessor.PeriodicJobChecker::Mcma.Aws.JobProcessor.PeriodicJobChecker.Function::Handler"
+  handler          = "Mcma.Aws.JobProcessor.PeriodicJobChecker::Mcma.Aws.JobProcessor.PeriodicJobChecker.PeriodicJobCheckerFunction::ExecuteAsync"
   source_code_hash = filebase64sha256(local.job_processor_periodic_job_checker_zip_file)
   runtime          = "dotnetcore3.1"
   timeout          = "900"
@@ -81,14 +81,14 @@ resource "aws_lambda_function" "job_processor_periodic_job_checker" {
 
   environment {
     variables = {
-      LogGroupName               = var.global_prefix
-      TableName                  = aws_dynamodb_table.job_processor_table.name
-      PublicUrl                  = local.job_processor_url
-      ServicesUrl                = local.services_url
-      ServicesAuthType           = local.service_registry_auth_type
-      CloudwatchEventRule        = aws_cloudwatch_event_rule.job_processor_periodic_job_checker_trigger.name,
-      DefaultJobTimeoutInMinutes = var.job_processor_default_job_timeout_in_minutes
-      WorkerFunctionId           = aws_lambda_function.job_processor_worker.function_name
+      MCMA_LOG_GROUP_NAME                 = var.global_prefix
+      MCMA_TABLE_NAME                     = aws_dynamodb_table.job_processor_table.name
+      MCMA_PUBLIC_URL                     = local.job_processor_url
+      MCMA_SERVICES_URL                   = local.services_url
+      MCMA_SERVICES_AUTH_TYPE             = local.service_registry_auth_type
+      MCMA_CLOUDWATCH_EVENT_RULE          = aws_cloudwatch_event_rule.job_processor_periodic_job_checker_trigger.name,
+      MCMA_DEFAULT_JOB_TIMEOUT_IN_MINUTES = var.job_processor_default_job_timeout_in_minutes
+      MCMA_WORKER_LAMBDA_FUNCTION_NAME    = aws_lambda_function.job_processor_worker.function_name
     }
   }
 }
@@ -120,7 +120,7 @@ resource "aws_lambda_function" "job_processor_periodic_job_cleanup" {
   filename         = local.job_processor_periodic_job_cleanup_zip_file
   function_name    = format("%.64s", "${var.global_prefix}-job-processor-periodic-job-cleanup")
   role             = aws_iam_role.job_processor_lambda_execution.arn
-  handler          = "Mcma.Aws.JobProcessor.PeriodicJobCleanup::Mcma.Aws.JobProcessor.PeriodicJobCleanup.Function::Handler"
+  handler          = "Mcma.Aws.JobProcessor.PeriodicJobCleanup::Mcma.Aws.JobProcessor.PeriodicJobCleanup.PeriodicJobCleanupFunction::ExecuteAsync"
   source_code_hash = filebase64sha256(local.job_processor_periodic_job_cleanup_zip_file)
   runtime          = "dotnetcore3.1"
   timeout          = "900"
@@ -128,13 +128,13 @@ resource "aws_lambda_function" "job_processor_periodic_job_cleanup" {
 
   environment {
     variables = {
-      LogGroupName             = var.global_prefix
-      TableName                = aws_dynamodb_table.job_processor_table.name
-      PublicUrl                = local.job_processor_url
-      ServicesUrl              = local.services_url
-      ServicesAuthType         = local.service_registry_auth_type
-      JobRetentionPeriodInDays = var.job_processor_job_retention_period_in_days
-      WorkerFunctionId         = aws_lambda_function.job_processor_worker.function_name
+      MCMA_LOG_GROUP_NAME               = var.global_prefix
+      MCMA_TABLE_NAME                   = aws_dynamodb_table.job_processor_table.name
+      MCMA_PUBLIC_URL                   = local.job_processor_url
+      MCMA_SERVICES_URL                 = local.services_url
+      MCMA_SERVICES_AUTH_TYPE           = local.service_registry_auth_type
+      MCMA_JOB_RETENTION_PERIOD_IN_DAYS = var.job_processor_job_retention_period_in_days
+      MCMA_WORKER_LAMBDA_FUNCTION_NAME  = aws_lambda_function.job_processor_worker.function_name
     }
   }
 }
@@ -166,7 +166,7 @@ resource "aws_lambda_function" "job_processor_worker" {
   filename         = local.job_processor_worker_zip_file
   function_name    = format("%.64s", "${var.global_prefix}-job-processor-worker")
   role             = aws_iam_role.job_processor_lambda_execution.arn
-  handler          = "Mcma.Aws.JobProcessor.Worker::Mcma.Aws.JobProcessor.Worker.Function::Handler"
+  handler          = "Mcma.Aws.JobProcessor.Worker::Mcma.Aws.JobProcessor.Worker.JobProcessorWorker::ExecuteAsync"
   source_code_hash = filebase64sha256(local.job_processor_worker_zip_file)
   runtime          = "dotnetcore3.1"
   timeout          = "900"
@@ -174,12 +174,12 @@ resource "aws_lambda_function" "job_processor_worker" {
 
   environment {
     variables = {
-      LogGroupName        = var.global_prefix
-      TableName           = aws_dynamodb_table.job_processor_table.name
-      PublicUrl           = local.job_processor_url
-      ServicesUrl         = local.services_url
-      ServicesAuthType    = local.service_registry_auth_type
-      CloudwatchEventRule = aws_cloudwatch_event_rule.job_processor_periodic_job_checker_trigger.name
+      MCMA_LOG_GROUP_NAME        = var.global_prefix
+      MCMA_TABLE_NAME            = aws_dynamodb_table.job_processor_table.name
+      MCMA_PUBLIC_URL            = local.job_processor_url
+      MCMA_SERVICES_URL          = local.services_url
+      MCMA_SERVICES_AUTH_TYPE    = local.service_registry_auth_type
+      MCMA_CLOUDWATCH_EVENT_RULE = aws_cloudwatch_event_rule.job_processor_periodic_job_checker_trigger.name
     }
   }
 }
@@ -212,7 +212,7 @@ resource "aws_dynamodb_table" "job_processor_table" {
   attribute {
     name = "resource_created"
     type = "N"
-  } 
+  }
 
   global_secondary_index {
     name            = "ResourceCreatedIndex"
@@ -345,7 +345,7 @@ resource "aws_api_gateway_stage" "job_processor_gateway_stage" {
   rest_api_id   = aws_api_gateway_rest_api.job_processor_api.id
 
   variables = {
-    DeploymentHash   = filesha256("./services/job-processor.tf")
+    DeploymentHash = filesha256("./services/job-processor.tf")
   }
 }
 

@@ -8,10 +8,9 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="1.0.0" />
-    <PackageReference Include="Mcma.Aws.LambdaWorkerInvoker" Version="0.13.16" />
-    <PackageReference Include="Mcma.Aws.Logger" Version="0.13.16" />
-    <PackageReference Include="Mcma.Aws.Serialization" Version="0.13.16" />
+    <PackageReference Include="Mcma.Aws.Functions" Version="0.14.0-alpha32" />
+    <PackageReference Include="Mcma.Aws.Logger" Version="0.14.0-alpha32" />
+    <PackageReference Include="Mcma.Aws.LambdaWorkerInvoker" Version="0.14.0-alpha32" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mcma.Aws.JobProcessor.Common\Mcma.Aws.JobProcessor.Common.csproj" />

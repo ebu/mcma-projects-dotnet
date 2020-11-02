@@ -1,4 +1,23 @@
-task runAll {
-    dependsOn "post-deploy:run"
-    dependsOn "run-jobs:run"
+apply from: "../projectTasks.gradle"
+
+task postDeploy(type: Exec) {
+    dependsOn ":deployment:generateAwsCredentialsJson"
+    dependsOn ":deployment:terraformOutput"
+
+    commandLine dotnetExecutable
+    args "run"
+    args "post-deploy"
+    args "--"
+    args "--testFilePath=${testFilePath}"
+}
+
+task runJobs(type: Exec) {
+    dependsOn ":deployment:generateAwsCredentialsJson"
+    dependsOn ":deployment:terraformOutput"
+
+    commandLine dotnetExecutable
+    args "run"
+    args "run-jobs"
+    args "--"
+    args "--testFilePath=${testFilePath}"
 }

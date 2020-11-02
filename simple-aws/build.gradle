@@ -3,7 +3,7 @@ def requiredVersionTerraform = "~0.12.19"
 
 allprojects {
     ext {
-		mcmaVersion = "0.13.16"
+		mcmaVersion = "0.14.0-alpha32"
 		
         if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
             dotnetExecutable = ["dotnet"]
@@ -119,9 +119,9 @@ task packageOutput {
 task deploy {
     dependsOn packageOutput
     dependsOn "deployment:deploy"
-    dependsOn "scripts:post-deploy:run"
+    dependsOn "scripts:postDeploy"
 }
 
 task runJobs {
-    dependsOn "scripts:run-jobs:run"
+    dependsOn "scripts:runJobs"
 }

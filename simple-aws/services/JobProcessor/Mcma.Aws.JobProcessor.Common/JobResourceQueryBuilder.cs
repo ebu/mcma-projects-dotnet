@@ -1,12 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Amazon.DynamoDBv2.DocumentModel;
 using Mcma.Data.DocumentDatabase.Queries;
 
 namespace Mcma.Aws.JobProcessor.Common
 {
-    public static class CustomQueries
+    public class JobResourceQueryBuilder : CustomQueryBuilder<JobResourceQueryParameters, QueryOperationConfig>
     {
-        public static QueryOperationConfig CreateJobResourceQuery(CustomQuery<JobResourceQueryParameters> customQuery)
+        public const string QueryName = "JobResourceQuery";
+
+        public override string Name => QueryName;
+
+        public override QueryOperationConfig Build(CustomQuery<JobResourceQueryParameters> customQuery)
         {
             var (partitionKey, status, from, to, ascending, limit) = customQuery.Parameters;
             ascending = ascending ?? true;

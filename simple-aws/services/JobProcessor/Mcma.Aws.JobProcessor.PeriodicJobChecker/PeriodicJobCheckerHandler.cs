@@ -2,26 +2,40 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
-using Mcma.Aws.CloudWatch;
+using Mcma.Aws.Functions;
 using Mcma.Aws.JobProcessor.Common;
-using Mcma.Aws.Lambda;
+using Mcma.Logging;
 using Mcma.WorkerInvoker;
-
-[assembly: LambdaSerializer(typeof(McmaLambdaSerializer))]
+using Microsoft.Extensions.Options;
 
 namespace Mcma.Aws.JobProcessor.PeriodicJobChecker
 {
-    public class Function
+    public class PeriodicJobCheckerHandler : IMcmaLambdaFunctionHandler
     {
-        private static AwsCloudWatchLoggerProvider LoggerProvider { get; } = new AwsCloudWatchLoggerProvider("job-processor-periodic-job-checker");
+        public PeriodicJobCheckerHandler(ILoggerProvider loggerProvider,
+                                         IDataController dataController,
+                                         IWorkerInvoker workerInvoker,
+                                         IJobCheckerTrigger jobCheckerTrigger,
+                                         IOptions<PeriodicJobCheckerOptions> options)
+        {
+            LoggerProvider = loggerProvider ?? throw new ArgumentNullException(nameof(loggerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
+            WorkerInvoker = workerInvoker ?? throw new ArgumentNullException(nameof(workerInvoker));
+            JobCheckerTrigger = jobCheckerTrigger ?? throw new ArgumentNullException(nameof(jobCheckerTrigger));
+            Options = options?.Value ?? new PeriodicJobCheckerOptions();
+        }
 
-        private static DataController DataController { get; } = new DataController();
+        private ILoggerProvider LoggerProvider { get; }
+        
+        private IDataController DataController { get; }
 
-        private static IWorkerInvoker WorkerInvoker { get; } = new LambdaWorkerInvoker();
+        private IWorkerInvoker WorkerInvoker { get; }
 
-        private static IJobCheckerTrigger CheckerTrigger { get; } = new CloudWatchEventsJobCheckerTrigger();
+        private IJobCheckerTrigger JobCheckerTrigger { get; }
 
-        public static async Task Handler(ILambdaContext context)
+        private PeriodicJobCheckerOptions Options { get; }
+
+        public async Task ExecuteAsync(ILambdaContext context)
         {
             var tracker = new McmaTracker
             {
@@ -32,7 +46,7 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobChecker
             var logger = LoggerProvider.Get(context.AwsRequestId, tracker);
             try
             {
-                await CheckerTrigger.DisableAsync();
+                await JobCheckerTrigger.DisableAsync();
                 
                 var newJobs = await DataController.QueryJobsAsync(new JobResourceQueryParameters {Status = JobStatus.New});
                 var queuedJobs = await DataController.QueryJobsAsync(new JobResourceQueryParameters {Status = JobStatus.Queued});
@@ -52,7 +66,7 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobChecker
                     var deadlinePassed = false;
                     var timeoutPassed = false;
 
-                    var defaultTimeout = EnvironmentVariables.Instance.DefaultJobTimeoutInMinutes();
+                    var defaultTimeout = Options.DefaultJobTimeoutInMinutes;
 
                     if (job.Deadline != null)
                     {
@@ -104,7 +118,7 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobChecker
                 if (activeJobsCount > 0)
                 {
                     logger.Info($"There are {activeJobsCount} active jobs remaining");
-                    await CheckerTrigger.EnableAsync();
+                    await JobCheckerTrigger.EnableAsync();
                 }
             }
             catch (Exception error)
@@ -118,16 +132,15 @@ namespace Mcma.Aws.JobProcessor.PeriodicJobChecker
             }
         }
 
-        private static async Task FailJobAsync(Job job, ProblemDetail error)
+        private async Task FailJobAsync(Job job, ProblemDetail error)
         {
-            await WorkerInvoker.InvokeAsync(EnvironmentVariables.Instance.WorkerFunctionId(),
-                                            "FailJob",
-                                            input: new
+            await WorkerInvoker.InvokeAsync("FailJob",
+                                            new
                                             {
                                                 jobId = job.Id,
                                                 error
                                             },
-                                            tracker: job.Tracker);
+                                            job.Tracker);
         }
     }
 }

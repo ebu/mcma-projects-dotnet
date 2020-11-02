@@ -113,7 +113,7 @@ task plan {
 
 task deploy {
     dependsOn terraformApply
-    dependsOn ":scripts:post-deploy:run"
+    dependsOn ":scripts:postDeploy"
 }
 
 task destroy {

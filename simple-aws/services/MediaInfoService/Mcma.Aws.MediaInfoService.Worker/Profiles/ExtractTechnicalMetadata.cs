@@ -12,9 +12,9 @@ namespace Mcma.Aws.MediaInfoService.Worker.Profiles
     {
         public string Name => nameof(ExtractTechnicalMetadata);
 
-        public async Task ExecuteAsync(ProviderCollection providerCollection, ProcessJobAssignmentHelper<AmeJob> jobAssignmentHelper, WorkerRequestContext requestContext)
+        public async Task ExecuteAsync(ProcessJobAssignmentHelper<AmeJob> jobAssignmentHelper, McmaWorkerRequestContext requestContext)
         {
-            var logger = jobAssignmentHelper.Logger;
+            var logger = jobAssignmentHelper.RequestContext.Logger;
             
             AwsS3FileLocator inputFile;
             if (!jobAssignmentHelper.JobInput.TryGet(nameof(inputFile), out inputFile))

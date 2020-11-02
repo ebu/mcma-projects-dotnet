@@ -1,4 +1,4 @@
-#r "nuget:Mcma.Azure.Client, 0.13.16"
+#r "nuget:Mcma.Azure.Client, 0.14.0-alpha35"
 
 #load "./json-data.csx"
 #load "./update-service-registry.csx"

@@ -2,61 +2,46 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using Mcma.Logging;
+using Microsoft.Azure.WebJobs.Host.Bindings;
+using Microsoft.Extensions.Options;
 
 namespace Mcma.Azure.MediaInfoService.Worker
 {
-    internal class MediaInfoProcess
+    internal class MediaInfoProcess : IMediaInfoProcess
     {
         private const string MediaInfoFolder = "exe";
 
-        public static string HostRootDir { get; set; }
-
-        public static async Task<MediaInfoProcess> RunAsync(ILogger logger, params string[] args)
+        public MediaInfoProcess(IOptions<ExecutionContextOptions> executionContextOptions)
         {
-            var mediaInfoProcess = new MediaInfoProcess(logger, args);
-            await mediaInfoProcess.RunAsync();
-            return mediaInfoProcess;
+            HostRootDir = executionContextOptions.Value?.AppDirectory;
         }
 
-        private MediaInfoProcess(ILogger logger, params string[] args)
+        private string HostRootDir { get; }
+
+        public async Task<(string stdOut, string stdErr)> RunAsync(params string[] args)
         {
-            Logger = logger;
-            ProcessStartInfo = 
+            var processStartInfo = 
                 new ProcessStartInfo(Path.Combine(HostRootDir, MediaInfoFolder, "MediaInfo.exe"), string.Join(" ", args))
                 {
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                 };
-        }
+            
+            using var process = Process.Start(processStartInfo);
+            
+            if (process == null)
+                throw new McmaException($"Failed to start process at {processStartInfo.FileName}. Process.Start returned null.");
+            
+            var stdOut = await process.StandardOutput.ReadToEndAsync();
+            var stdErr = await process.StandardError.ReadToEndAsync();
 
-        private ILogger Logger { get; }
+            process.WaitForExit();
 
-        private ProcessStartInfo ProcessStartInfo { get; }
+            if (process.ExitCode != 0)
+                throw new Exception($"MediaInfo process exited with code {process.ExitCode}:\r\nStdOut:\r\n{stdOut}StdErr:\r\n{stdErr}");
 
-        public string StdOut { get; private set; }
-
-        public string StdErr { get; private set; }
-
-        public async Task RunAsync()
-        {
-            using (var process = Process.Start(ProcessStartInfo))
-            {
-                if (process == null)
-                    throw new McmaException($"Failed to start process at {ProcessStartInfo.FileName}. Process.Start returned null.");
-                
-                Logger.Debug("MediaInfo process started. Reading stdout and stderr...");
-                StdOut = await process.StandardOutput.ReadToEndAsync();
-                StdErr = await process.StandardError.ReadToEndAsync();
-
-                Logger.Debug("Waiting for MediaInfo process to exit...");
-                process.WaitForExit();
-                Logger.Debug($"MediaInfo process exited with code {process.ExitCode}.");
-
-                if (process.ExitCode != 0)
-                    throw new Exception($"MediaInfo process exited with code {process.ExitCode}:\r\nStdOut:\r\n{StdOut}StdErr:\r\n{StdErr}");
-            }
+            return (stdOut, stdErr);
         }
     }
 }

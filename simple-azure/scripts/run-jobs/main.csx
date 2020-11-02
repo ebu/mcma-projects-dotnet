@@ -1,5 +1,5 @@
-#r "nuget:Mcma.Azure.BlobStorage, 0.13.16"
-#r "nuget:Mcma.Azure.Client, 0.13.16"
+#r "nuget:Mcma.Azure.BlobStorage, 0.14.0-alpha35"
+#r "nuget:Mcma.Azure.Client, 0.14.0-alpha35"
 
 #load "./upload-file.csx"
 #load "./run-mediainfo-job.csx"

@@ -7,33 +7,38 @@ using Mcma.Api.Routes;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Client;
 using Mcma.WorkerInvoker;
+using Microsoft.Extensions.Options;
 
 namespace Mcma.Azure.JobProcessor.ApiHandler
 {
     public class JobRoutes : McmaApiRouteCollection
     {
-        public JobRoutes(DataController dataController,
+        public JobRoutes(IDataController dataController,
                          IResourceManagerProvider resourceManagerProvider,
-                         IWorkerInvoker workerInvoker)
+                         IWorkerInvoker workerInvoker,
+                         IOptions<McmaApiOptions> options)
         {
-            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
             ResourceManagerProvider = resourceManagerProvider ?? throw new ArgumentNullException(nameof(resourceManagerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
             WorkerInvoker = workerInvoker ?? throw new ArgumentNullException(nameof(workerInvoker));
+            Options = options.Value ?? new McmaApiOptions();
 
-            AddRoute(new McmaApiRoute(HttpMethod.Get, "/jobs", QueryAsync));
-            AddRoute(new McmaApiRoute(HttpMethod.Post, "/jobs", CreateAsync));
-            AddRoute(new McmaApiRoute(HttpMethod.Get, "/jobs/{jobId}", GetAsync));
-            AddRoute(new McmaApiRoute(HttpMethod.Delete, "/jobs/{jobId}", DeleteAsync));
+            AddRoute(new DelegateMcmaApiRoute(HttpMethod.Get, "/jobs", QueryAsync));
+            AddRoute(new DelegateMcmaApiRoute(HttpMethod.Post, "/jobs", CreateAsync));
+            AddRoute(new DelegateMcmaApiRoute(HttpMethod.Get, "/jobs/{jobId}", GetAsync));
+            AddRoute(new DelegateMcmaApiRoute(HttpMethod.Delete, "/jobs/{jobId}", DeleteAsync));
 
-            AddRoute(new McmaApiRoute(HttpMethod.Post, "/jobs/{jobId}/cancel", CancelAsync));
-            AddRoute(new McmaApiRoute(HttpMethod.Post, "/jobs/{jobId}/restart", RestartAsync));
+            AddRoute(new DelegateMcmaApiRoute(HttpMethod.Post, "/jobs/{jobId}/cancel", CancelAsync));
+            AddRoute(new DelegateMcmaApiRoute(HttpMethod.Post, "/jobs/{jobId}/restart", RestartAsync));
         }
 
-        private DataController DataController { get; }
+        private IDataController DataController { get; }
 
         private IResourceManagerProvider ResourceManagerProvider { get; }
 
         private IWorkerInvoker WorkerInvoker { get; }
+        
+        private McmaApiOptions Options { get; }
 
         private async Task QueryAsync(McmaApiRequestContext requestContext)
             => requestContext.SetResponseBody(
@@ -66,8 +71,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
             
             requestContext.SetResponseBody(job);
 
-            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
-                                            "StartJob",
+            await WorkerInvoker.InvokeAsync("StartJob",
                                             new
                                             {
                                                 jobId = job.Id
@@ -79,7 +83,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var jobId = requestContext.JobId();
 
-            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{Options.PublicUrl}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -93,7 +97,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var jobId = requestContext.JobId();
             
-            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{Options.PublicUrl}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -110,8 +114,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
             
             requestContext.SetResponseStatusCode(HttpStatusCode.Accepted);
 
-            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
-                                            "DeleteJob",
+            await WorkerInvoker.InvokeAsync("DeleteJob",
                                             new
                                             {
                                                 jobId = job.Id
@@ -123,7 +126,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var jobId = requestContext.JobId();
             
-            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{Options.PublicUrl}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -140,8 +143,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
             
             requestContext.SetResponseStatusCode(HttpStatusCode.Accepted);
 
-            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
-                                            "CancelJob",
+            await WorkerInvoker.InvokeAsync("CancelJob",
                                             new
                                             {
                                                 jobId = job.Id
@@ -153,7 +155,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
         {
             var jobId = requestContext.JobId();
             
-            var job = await DataController.GetJobAsync($"{requestContext.EnvironmentVariables.PublicUrl()}/jobs/{jobId}");
+            var job = await DataController.GetJobAsync($"{Options.PublicUrl}/jobs/{jobId}");
             if (job == null)
             {
                 requestContext.SetResponseResourceNotFound();
@@ -176,8 +178,7 @@ namespace Mcma.Azure.JobProcessor.ApiHandler
             
             requestContext.SetResponseStatusCode(HttpStatusCode.Accepted);
 
-            await WorkerInvoker.InvokeAsync(requestContext.EnvironmentVariables.WorkerFunctionId(),
-                                            "CancelJob",
+            await WorkerInvoker.InvokeAsync("CancelJob",
                                             new
                                             {
                                                 jobId = job.Id

@@ -1,27 +1,39 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Mcma.Azure.Logger;
 using Mcma.Azure.JobProcessor.Common;
-using Mcma.Azure.WorkerInvoker;
 using Mcma.Logging;
 using Mcma.WorkerInvoker;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Options;
 
 namespace Mcma.Azure.JobProcessor.PeriodicJobCleanup
 {
-    public class Function
+    public class JobProcessorPeriodicJobCleanup
     {
-        private static ILoggerProvider LoggerProvider { get; } = new AppInsightsLoggerProvider("job-processor-periodic-job-checker");
+        public JobProcessorPeriodicJobCleanup(ILoggerProvider loggerProvider,
+                                              IDataController dataController,
+                                              IWorkerInvoker workerInvoker,
+                                              IOptions<JobProcessorPeriodicJobCleanupOptions> options)
+        {
+            LoggerProvider = loggerProvider ?? throw new ArgumentNullException(nameof(loggerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
+            WorkerInvoker = workerInvoker ?? throw new ArgumentNullException(nameof(workerInvoker));
+            Options = options.Value ?? new JobProcessorPeriodicJobCleanupOptions();
+        }
+
+        private ILoggerProvider LoggerProvider { get; }
         
-        private static DataController DataController { get; } = new DataController();
+        private IDataController DataController { get; }
 
-        private static IWorkerInvoker WorkerInvoker { get; } = new QueueWorkerInvoker();
+        private IWorkerInvoker WorkerInvoker { get; }
+        
+        private JobProcessorPeriodicJobCleanupOptions Options { get; }
 
-        [FunctionName("JobProcessorPeriodicJobCleanup")]
-        public static async Task Run(
+        [FunctionName(nameof(JobProcessorPeriodicJobCleanup))]
+        public async Task Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest request,
             ExecutionContext executionContext)
         {
@@ -34,7 +46,7 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobCleanup
             var logger = LoggerProvider.Get(executionContext.InvocationId.ToString(), tracker);
             try
             {
-                var jobRetentionPeriodInDays = EnvironmentVariables.Instance.JobRetentionPeriodInDays();
+                var jobRetentionPeriodInDays = Options.JobRetentionPeriodInDays;
                 
                 logger.Info($"Job Retention Period set to {jobRetentionPeriodInDays} days");
 
@@ -68,10 +80,9 @@ namespace Mcma.Azure.JobProcessor.PeriodicJobCleanup
             }
         }
 
-        private static async Task DeleteJobAsync(Job job)
+        private async Task DeleteJobAsync(Job job)
         {
-            await WorkerInvoker.InvokeAsync(EnvironmentVariables.Instance.WorkerFunctionId(),
-                                            "DeleteJob",
+            await WorkerInvoker.InvokeAsync("DeleteJob",
                                             new
                                             {
                                                 jobId = job.Id

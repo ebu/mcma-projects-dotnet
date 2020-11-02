@@ -1,25 +1,28 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Client;
 using Mcma.Worker;
 
 namespace Mcma.Azure.JobProcessor.Worker
 {
-    internal class CancelJob : WorkerOperation<JobReference>
+    internal class CancelJob : McmaWorkerOperation<JobReference>
     {
-        private DataController DataController { get; }
-
-        public CancelJob(ProviderCollection providerCollection, DataController dataController)
-            : base(providerCollection)
+        public CancelJob(IResourceManagerProvider resourceManagerProvider, IDataController dataController)
         {
-            DataController = dataController;
+            ResourceManagerProvider = resourceManagerProvider ?? throw new ArgumentNullException(nameof(resourceManagerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
         }
+        
+        private IResourceManagerProvider ResourceManagerProvider { get; }
+
+        private IDataController DataController { get; }
 
         public override string Name => nameof(CancelJob);
 
-        protected override async Task ExecuteAsync(WorkerRequestContext requestContext, JobReference jobReference)
+        protected override async Task ExecuteAsync(McmaWorkerRequestContext requestContext, JobReference jobReference)
         {
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext.EnvironmentVariables);
+            var resourceManager = ResourceManagerProvider.Get(requestContext.Tracker);
 
             var mutex = await DataController.CreateMutexAsync(jobReference.JobId, requestContext.RequestId);
 
@@ -34,7 +37,7 @@ namespace Mcma.Azure.JobProcessor.Worker
 
                 job = await jobExecutor.CancelExecutionAsync(jobReference, job);
 
-                await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint, job.Tracker);
+                await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint);
             }
             finally
             {

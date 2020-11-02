@@ -1,34 +1,32 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.Logic;
+using Microsoft.Extensions.Options;
 
 namespace Mcma.Azure.JobProcessor.Common
 {
     public class LogicAppWorkflowCheckerTrigger : IJobCheckerTrigger, IDisposable
     {
-        public LogicAppWorkflowCheckerTrigger()
+        public LogicAppWorkflowCheckerTrigger(IOptions<LogicAppWorkflowCheckerTriggerOptions> options)
         {
-            LogicManagementClient =
-                new LogicManagementClient(EnvironmentVariables.Instance.AzureCredentials())
-                {
-                    SubscriptionId = EnvironmentVariables.Instance.AzureSubscriptionId()
-                };
+            Options = options.Value ?? new LogicAppWorkflowCheckerTriggerOptions();
             
-            ResourceGroupName = EnvironmentVariables.Instance.AzureResourceGroupName();
-            WorkflowName = EnvironmentVariables.Instance.JobCheckerWorkflowName();
+            LogicManagementClient =
+                new LogicManagementClient(Options.GetManagedServiceIdentityCredentials())
+                {
+                    SubscriptionId = Options.AzureSubscriptionId
+                };
         }
 
         private LogicManagementClient LogicManagementClient { get; }
         
-        private string ResourceGroupName { get; }
-        
-        private string WorkflowName { get; }
+        private LogicAppWorkflowCheckerTriggerOptions Options { get; }
 
         public Task EnableAsync()
-            => LogicManagementClient.Workflows.EnableAsync(ResourceGroupName, WorkflowName);
+            => LogicManagementClient.Workflows.EnableAsync(Options.AzureResourceGroupName, Options.JobCheckerWorkflowName);
 
         public Task DisableAsync()
-            => LogicManagementClient.Workflows.DisableAsync(ResourceGroupName, WorkflowName);
+            => LogicManagementClient.Workflows.DisableAsync(Options.AzureResourceGroupName, Options.JobCheckerWorkflowName);
 
         public void Dispose()
             => LogicManagementClient?.Dispose();

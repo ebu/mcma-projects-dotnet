@@ -2,59 +2,46 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using Mcma.Logging;
+using Microsoft.Azure.WebJobs.Host.Bindings;
+using Microsoft.Extensions.Options;
 
 namespace Mcma.Azure.FFmpegService.Worker
 {
-    internal class FFmpegProcess
+    internal class FFmpegProcess : IFFmpegProcess
     {
         private const string FFmpegFolder = "exe";
 
-        public static string HostRootDir { get; set; }
-
-        public static async Task<FFmpegProcess> RunAsync(ILogger logger, params string[] args)
+        public FFmpegProcess(IOptions<ExecutionContextOptions> executionContextOptions)
         {
-            var ffmpegProcess = new FFmpegProcess(logger, args);
-            await ffmpegProcess.RunAsync();
-            return ffmpegProcess;
+            HostRootDir = executionContextOptions.Value?.AppDirectory;
         }
+        
+        private string HostRootDir { get; }
 
-        private FFmpegProcess(ILogger logger, params string[] args)
+        public async Task<(string stdOut, string stdErr)> RunAsync(params string[] args)
         {
-            Logger = logger;
-
-            ProcessStartInfo = 
+            var processStartInfo =
                 new ProcessStartInfo(Path.Combine(HostRootDir, FFmpegFolder, "ffmpeg.exe"), string.Join(" ", args))
                 {
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                 };
-        }
 
-        private ILogger Logger { get; }
+            using var process = Process.Start(processStartInfo);
+            
+            if (process == null)
+                throw new McmaException($"Failed to start FFmpeg process with arguments '{string.Join(" ", args)}'");
+            
+            var stdOut = await process.StandardOutput.ReadToEndAsync();
+            var stdErr = await process.StandardError.ReadToEndAsync();
 
-        private ProcessStartInfo ProcessStartInfo { get; }
+            process.WaitForExit();
 
-        public string StdOut { get; private set; }
+            if (process.ExitCode != 0)
+                throw new Exception($"FFmpeg process exited with code {process.ExitCode}:\r\nStdOut:\r\n{stdOut}StdErr:\r\n{stdErr}");
 
-        public string StdErr { get; private set; }
-
-        public async Task RunAsync()
-        {
-            using (var process = Process.Start(ProcessStartInfo))
-            {
-                Logger.Debug("FFmpeg process started. Reading stdout and stderr...");
-                StdOut = await process.StandardOutput.ReadToEndAsync();
-                StdErr = await process.StandardError.ReadToEndAsync();
-
-                Logger.Debug("Waiting for FFmpeg process to exit...");
-                process.WaitForExit();
-                Logger.Debug($"FFmpeg process exited with code {process.ExitCode}.");
-
-                if (process.ExitCode != 0)
-                    throw new Exception($"FFmpeg process exited with code {process.ExitCode}:\r\nStdOut:\r\n{StdOut}StdErr:\r\n{StdErr}");
-            }
+            return (stdOut, stdErr);
         }
     }
 }

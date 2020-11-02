@@ -1,28 +1,31 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Mcma.Azure.JobProcessor.Common;
 using Mcma.Client;
 using Mcma.Worker;
 
 namespace Mcma.Azure.JobProcessor.Worker
 {
-    internal class RestartJob : WorkerOperation<JobReference>
+    internal class RestartJob : McmaWorkerOperation<JobReference>
     {
-        public RestartJob(ProviderCollection providerCollection, DataController dataController, IJobCheckerTrigger jobCheckerTrigger)
-            : base(providerCollection)
+        public RestartJob(IResourceManagerProvider resourceManagerProvider, IDataController dataController, IJobCheckerTrigger jobCheckerTrigger)
         {
-            DataController = dataController;
-            JobCheckerTrigger = jobCheckerTrigger;
+            ResourceManagerProvider = resourceManagerProvider ?? throw new ArgumentNullException(nameof(resourceManagerProvider));
+            DataController = dataController ?? throw new ArgumentNullException(nameof(dataController));
+            JobCheckerTrigger = jobCheckerTrigger ?? throw new ArgumentNullException(nameof(jobCheckerTrigger));
         }
+        
+        private IResourceManagerProvider ResourceManagerProvider { get; }
 
-        private DataController DataController { get; }
+        private IDataController DataController { get; }
 
         private IJobCheckerTrigger JobCheckerTrigger { get; }
         
         public override string Name => nameof(RestartJob);
                 
-        protected override async Task ExecuteAsync(WorkerRequestContext requestContext, JobReference jobReference)
+        protected override async Task ExecuteAsync(McmaWorkerRequestContext requestContext, JobReference jobReference)
         {
-            var resourceManager = ProviderCollection.ResourceManagerProvider.Get(requestContext.EnvironmentVariables);
+            var resourceManager = ResourceManagerProvider.Get(requestContext.Tracker);
 
             var mutex = await DataController.CreateMutexAsync(jobReference.JobId, requestContext.RequestId);
 
@@ -45,7 +48,7 @@ namespace Mcma.Azure.JobProcessor.Worker
                 await mutex.UnlockAsync();
             }
 
-            await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint, job.Tracker);
+            await resourceManager.SendNotificationAsync(job, job.NotificationEndpoint);
         }
     }
 }

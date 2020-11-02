@@ -11,6 +11,7 @@
   &lt;Assembly Path="C:\Users\evanv\.nuget\packages\mcma.azure.queueworkerinvoker\0.13.16-alpha9\lib\netstandard2.0\Mcma.Azure.QueueWorkerInvoker.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Users\evanv\.nuget\packages\newtonsoft.json\12.0.3\lib\netstandard2.0\Newtonsoft.Json.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Users\evanv\.nuget\packages\newtonsoft.json.bson\1.0.1\lib\netstandard1.3\Newtonsoft.Json.Bson.dll" /&gt;&#xD;
+  &lt;Assembly Path="C:\Users\evanv\.nuget\packages\mcma.azure.functions.apihandler\0.14.0-alpha34\lib\netcoreapp3.1\Mcma.Azure.Functions.ApiHandler.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	
 	

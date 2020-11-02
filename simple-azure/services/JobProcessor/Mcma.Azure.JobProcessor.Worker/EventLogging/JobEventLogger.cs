@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Mcma.Client;
 using Mcma.Logging;
+using Mcma.Worker;
 
 namespace Mcma.Azure.JobProcessor
 {

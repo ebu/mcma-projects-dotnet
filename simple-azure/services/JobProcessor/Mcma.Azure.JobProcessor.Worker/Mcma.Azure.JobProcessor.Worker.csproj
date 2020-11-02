@@ -6,11 +6,8 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Mcma.Azure.BlobStorage" Version="0.13.16" />
-    <PackageReference Include="Mcma.Azure.Client" Version="0.13.16" />
-    <PackageReference Include="Mcma.Azure.Logger" Version="0.13.16" />
-    <PackageReference Include="Mcma.Worker" Version="0.13.16" />
-    <PackageReference Include="Microsoft.Azure.Storage.Queue" Version="11.1.7" />
+    <PackageReference Include="Mcma.Azure.Functions.Worker" Version="0.14.0-alpha35" />
+    <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.3" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.9" />
   </ItemGroup>

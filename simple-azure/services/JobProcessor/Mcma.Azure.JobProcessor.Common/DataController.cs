@@ -1,36 +1,24 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Mcma.Azure.CosmosDb;
+using Mcma.Azure.JobProcessor.Common;
 using Mcma.Data;
 using Mcma.Data.DocumentDatabase.Queries;
+using Microsoft.Extensions.Options;
 
 namespace Mcma.Azure.JobProcessor.Common
 {
-    public class DataController
+    public class DataController : IDataController
     {
-        public DataController(bool? consistentRead = null)
+        public DataController(IDocumentDatabaseTable dbTable, IOptions<DataControllerOptions> options)
         {
-            TableName = EnvironmentVariables.Instance.TableName();
-            PublicUrl = EnvironmentVariables.Instance.Get("PublicUrl");
-            
-            DbTableProvider = new CosmosDbTableProvider(tableOptions: GetCosmosDbTableOptions(consistentRead));
+            DbTable = dbTable ?? throw new ArgumentNullException(nameof(dbTable));
+            PublicUrl = options.Value?.PublicUrl ?? throw new McmaException("PublicUrl not configured for DataController");
         }
         
-        private CosmosDbTableProvider DbTableProvider { get; }
-        
-        private string TableName { get; }
+        private IDocumentDatabaseTable DbTable { get; }
         
         private string PublicUrl { get; }
-        
-        private IDocumentDatabaseTable DbTable { get; set; }
-
-        private static CosmosDbTableOptions GetCosmosDbTableOptions(bool? consistentRead)
-            => new CosmosDbTableOptions
-            {
-                ConsistentGet = consistentRead,
-                ConsistentQuery = consistentRead
-            };
 
         private static string ExtractPath(string id)
         {
@@ -64,30 +52,21 @@ namespace Mcma.Azure.JobProcessor.Common
 
             return query;
         }
-
-        private async Task InitAsync()
-        {
-            if (DbTable == null)
-                DbTable = await DbTableProvider.GetAsync(TableName);
-        }
         
         public async Task<QueryResults<Job>> QueryJobsAsync(JobResourceQueryParameters queryParameters, string pageStartToken = null)
         {
-            await InitAsync();
             queryParameters.PartitionKey = "/jobs";
             return await DbTable.QueryAsync(BuildQuery<Job>(queryParameters, pageStartToken));
         }
         
         public async Task<Job> GetJobAsync(string jobId)
         {
-            await InitAsync();
             var jobPath = ExtractPath(jobId);
             return await DbTable.GetAsync<Job>(jobPath);
         }
         
         public async Task<Job> AddJobAsync(Job job)
         {
-            await InitAsync();
             var jobPath = $"/jobs/{Guid.NewGuid()}";
             job.Id = PublicUrl.TrimEnd('/') + jobPath;
             job.DateCreated = job.DateModified = DateTime.UtcNow;
@@ -96,7 +75,6 @@ namespace Mcma.Azure.JobProcessor.Common
         
         public async Task<Job> UpdateJobAsync(Job job)
         {
-            await InitAsync();
             var jobPath = ExtractPath(job.Id);
             job.DateModified = DateTime.UtcNow;
             return await DbTable.PutAsync(jobPath, job);
@@ -104,7 +82,6 @@ namespace Mcma.Azure.JobProcessor.Common
         
         public async Task DeleteJobAsync(string jobId)
         {
-            await InitAsync();
             var jobPath = ExtractPath(jobId);
             await DbTable.DeleteAsync(jobPath);
         }
@@ -113,7 +90,6 @@ namespace Mcma.Azure.JobProcessor.Common
                                                                            JobResourceQueryParameters queryParameters,
                                                                            string pageStartToken = null)
         {
-            await InitAsync();
             var jobPath = ExtractPath(jobId);
             queryParameters.PartitionKey = $"{jobPath}/executions";
             return await DbTable.QueryAsync(BuildQuery<JobExecution>(queryParameters, pageStartToken));
@@ -121,22 +97,18 @@ namespace Mcma.Azure.JobProcessor.Common
 
         public async Task<QueryResults<JobExecution>> GetExecutionsAsync(string jobId)
         {
-            await InitAsync();
             var jobPath = ExtractPath(jobId);
             return await DbTable.QueryAsync(new Query<JobExecution> { Path = jobPath });
         }
 
         public async Task<JobExecution> GetExecutionAsync(string jobExecutionId)
         {
-            await InitAsync();
             var jobExecutionPath = ExtractPath(jobExecutionId);
             return await DbTable.GetAsync<JobExecution>(jobExecutionPath);
         }
 
         public async Task<JobExecution> AddExecutionAsync(string jobId, JobExecution jobExecution)
         {
-            await InitAsync();
-            
             var executions = await GetExecutionsAsync(jobId);
             var executionNumber = executions.Results.Count();
 
@@ -150,7 +122,6 @@ namespace Mcma.Azure.JobProcessor.Common
 
         public async Task<JobExecution> UpdateExecutionAsync(JobExecution jobExecution)
         {
-            await InitAsync();
             var jobExecutionPath = ExtractPath(jobExecution.Id);
             jobExecution.DateModified = DateTime.UtcNow;
             return await DbTable.PutAsync(jobExecutionPath, jobExecution);
@@ -158,15 +129,11 @@ namespace Mcma.Azure.JobProcessor.Common
 
         public async Task DeleteExecutionAsync(string jobExecutionId)
         {
-            await InitAsync();
             var jobExecutionPath = ExtractPath(jobExecutionId);
             await DbTable.DeleteAsync(jobExecutionPath);
         }
 
-        public async Task<IDocumentDatabaseMutex> CreateMutexAsync(string mutexName, string mutexHolder)
-        {
-            await InitAsync();
-            return DbTable.CreateMutex(mutexName, mutexHolder);
-        }
+        public Task<IDocumentDatabaseMutex> CreateMutexAsync(string mutexName, string mutexHolder)
+            => DbTable.CreateMutexAsync(mutexName, mutexHolder);
     }
 }

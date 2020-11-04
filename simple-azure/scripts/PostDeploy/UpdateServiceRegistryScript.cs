@@ -60,7 +60,7 @@ namespace Mcma.Azure.Sample.Scripts.PostDeploy
              =>
              await PopulateAsync(
                  (await ResourceManager.QueryAsync<JobProfile>()).ToArray(),
-                 JsonData.JobProfiles.Value,
+                 JsonData.JobProfiles,
                  jp => jp.Name);
 
          private async Task PopulateServicesAsync()
@@ -69,19 +69,19 @@ namespace Mcma.Azure.Sample.Scripts.PostDeploy
                  (await ResourceManager.QueryAsync<Service>())
                      .Where(s => !JsonData.ServiceRegistry.Name.Equals(s.Name, StringComparison.OrdinalIgnoreCase))
                      .ToArray(),
-                 JsonData.Services.Value,
+                 JsonData.Services,
                  s => s.Name);
          
 
          private void SetJobProfileIds()
          {
-             foreach (var service in JsonData.Services.Value.Where(s => s.JobProfileIds != null && s.JobProfileIds.Length > 0))
+             foreach (var service in JsonData.Services.Where(s => s.JobProfileIds != null && s.JobProfileIds.Length > 0))
              {
                  for (var i = 0; i < service.JobProfileIds.Length; i++)
                  {
                      var jobProfileName = service.JobProfileIds[i];
 
-                     var jobProfileId = JsonData.JobProfiles.Value.FirstOrDefault(p => p.Name.Equals(jobProfileName, StringComparison.OrdinalIgnoreCase))?.Id;
+                     var jobProfileId = JsonData.JobProfiles.FirstOrDefault(p => p.Name.Equals(jobProfileName, StringComparison.OrdinalIgnoreCase))?.Id;
                      if (jobProfileId == null)
                          throw new Exception($"Service {service.Name} references job profile '{jobProfileName}', but the profile has not been defined.");
                     

@@ -5,7 +5,9 @@ namespace Mcma.Azure.Sample.Scripts.Common
     public class AzureADCredentials
     {
         public AzureADCredentials(params string[] args)
-        {            
+        {
+            System.Console.WriteLine("args: {0}", string.Join(" ", args));
+
             TenantId = args.FirstOrDefault(x => x.StartsWith("--azureTenantId="))?.Replace("--azureTenantId=", string.Empty);
             ClientId = args.FirstOrDefault(x => x.StartsWith("--azureClientId="))?.Replace("--azureClientId=", string.Empty);
             ClientSecret = args.FirstOrDefault(x => x.StartsWith("--azureClientSecret="))?.Replace("--azureClientSecret=", string.Empty);

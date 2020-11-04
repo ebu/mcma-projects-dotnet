@@ -2,8 +2,20 @@ output service_registry_url {
   value = module.services.service_registry_url
 }
 
-output job_processor_api_url {
-  value = module.services.job_processor_api_url
+output services_url {
+  value = module.services.services_url
+}
+
+output services_auth_type {
+  value = module.services.services_auth_type
+}
+
+output services_auth_context {
+  value = module.services.services_auth_context
+}
+
+output job_processor_url {
+  value = module.services.job_processor_url
 }
 
 output mediainfo_service_url {

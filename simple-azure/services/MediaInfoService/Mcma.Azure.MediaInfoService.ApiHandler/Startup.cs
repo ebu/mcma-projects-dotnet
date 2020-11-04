@@ -10,9 +10,6 @@ namespace Mcma.Azure.MediaInfoService.ApiHandler
     public class Startup : FunctionsStartup
     {
         public override void Configure(IFunctionsHostBuilder builder)
-            => builder.Services
-                      .AddMcmaAzureFunctionApiHandler(
-                          "mediainfo-service-api-handler",
-                          apiBuilder => apiBuilder.AddDefaultJobAssignmentRoutes());
+            => builder.Services.AddMcmaAzureFunctionJobAssignmentApiHandler("mediainfo-service-api-handler");
     }
 }

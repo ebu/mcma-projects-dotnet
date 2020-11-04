@@ -56,7 +56,7 @@ task terraformPlan(type: Exec) {
 
 task terraformApply(type: Exec) {
     dependsOn ":verifyTerraform"
-    //dependsOn ":build"
+    dependsOn ":build"
     dependsOn terraformInit
     dependsOn generateTerraformTFVars
     commandLine terraformExecutable

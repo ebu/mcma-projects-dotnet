@@ -78,20 +78,20 @@ resource "azurerm_function_app" "job_processor_worker_function" {
     WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.job_processor_worker_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
-    WorkQueueStorage       = var.app_storage_connection_string
-    TableName              = azurerm_cosmosdb_sql_container.job_processor_cosmosdb_container.name
-    PublicUrl              = local.job_processor_api_url
-    AzureSubscriptionId    = var.azure_subscription_id
-    AzureTenantId          = var.azure_tenant_id
-    AzureResourceGroupName = var.resource_group_name
-    CosmosDbEndpoint       = var.cosmosdb_endpoint
-    CosmosDbKey            = var.cosmosdb_key
-    CosmosDbDatabaseId     = local.cosmosdb_id
-    CosmosDbRegion         = var.azure_location
-    ServicesUrl            = local.services_url
-    ServicesAuthType       = "AzureAD"
-    ServicesAuthContext    = "{ \"scope\": \"${local.service_registry_url}/.default\" }"
-    JobCheckerWorkflowName = local.job_processor_job_checker_workflow_name
+    MCMA_WORK_QUEUE_STORAGE        = var.app_storage_connection_string
+    MCMA_TABLE_NAME                = azurerm_cosmosdb_sql_container.job_processor_cosmosdb_container.name
+    MCMA_PUBLIC_URL                = local.job_processor_api_url
+    MCMA_AZURE_SUBSCRIPTION_ID     = var.azure_subscription_id
+    MCMA_AZURE_TENANT_ID           = var.azure_tenant_id
+    MCMA_AZURE_RESOURCE_GROUP_NAME = var.resource_group_name
+    MCMA_COSMOS_DB_ENDPOINT        = var.cosmosdb_endpoint
+    MCMA_COSMOS_DB_KEY             = var.cosmosdb_key
+    MCMA_COSMOS_DB_DATABASE_ID     = local.cosmosdb_id
+    MCMA_COSMOS_DB_REGION          = var.azure_location
+    MCMA_SERVICES_URL              = local.services_url
+    MCMA_SERVICES_AUTH_TYPE        = local.services_auth_type
+    MCMA_SERVICES_AUTH_CONTEXT     = local.services_auth_context
+    MCMA_JOB_CHECKER_WORKFLOW_NAME = local.job_processor_job_checker_workflow_name
   }
 
   provisioner "local-exec" {
@@ -159,16 +159,16 @@ resource "azurerm_function_app" "job_processor_api_function" {
     WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.job_processor_api_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
-    TableName           = azurerm_cosmosdb_sql_container.job_processor_cosmosdb_container.name
-    PublicUrl           = local.job_processor_api_url
-    CosmosDbEndpoint    = var.cosmosdb_endpoint
-    CosmosDbKey         = var.cosmosdb_key
-    CosmosDbDatabaseId  = local.cosmosdb_id
-    CosmosDbRegion      = var.azure_location
-    ServicesUrl         = local.services_url
-    ServicesAuthType    = "AzureAD"
-    ServicesAuthContext = "{ \"scope\": \"${local.service_registry_url}/.default\" }"
-    WorkerFunctionId    = azurerm_storage_queue.job_processor_worker_function_queue.name
+    MCMA_TABLE_NAME            = azurerm_cosmosdb_sql_container.job_processor_cosmosdb_container.name
+    MCMA_PUBLIC_URL            = local.job_processor_api_url
+    MCMA_COSMOS_DB_ENDPOINT    = var.cosmosdb_endpoint
+    MCMA_COSMOS_DB_KEY         = var.cosmosdb_key
+    MCMA_COSMOS_DB_DATABASE_ID = local.cosmosdb_id
+    MCMA_COSMOS_DB_REGION      = var.azure_location
+    MCMA_SERVICES_URL          = local.services_url
+    MCMA_SERVICES_AUTH_TYPE    = local.services_auth_type
+    MCMA_SERVICES_AUTH_CONTEXT = local.services_auth_context
+    MCMA_WORKER_QUEUE_NAME     = azurerm_storage_queue.job_processor_worker_function_queue.name
   }
 }
 
@@ -226,17 +226,17 @@ resource "azurerm_function_app" "job_processor_job_checker_function" {
     WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.job_processor_job_checker_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
-    TableName              = azurerm_cosmosdb_sql_container.job_processor_cosmosdb_container.name
-    PublicUrl              = local.job_processor_api_url
-    AzureSubscriptionId    = var.azure_subscription_id
-    AzureTenantId          = var.azure_tenant_id
-    AzureResourceGroupName = var.resource_group_name
-    CosmosDbEndpoint       = var.cosmosdb_endpoint
-    CosmosDbKey            = var.cosmosdb_key
-    CosmosDbDatabaseId     = local.cosmosdb_id
-    CosmosDbRegion         = var.azure_location
-    WorkerFunctionId       = azurerm_storage_queue.job_processor_worker_function_queue.name
-    JobCheckerWorkflowName = local.job_processor_job_checker_workflow_name
+    MCMA_TABLE_NAME                = azurerm_cosmosdb_sql_container.job_processor_cosmosdb_container.name
+    MCMA_PUBLIC_URL                = local.job_processor_api_url
+    MCMA_AZURE_SUBSCRIPTION_ID     = var.azure_subscription_id
+    MCMA_AZURE_TENANT_ID           = var.azure_tenant_id
+    MCMA_AZURE_RESOURCE_GROUP_NAME = var.resource_group_name
+    MCMA_COSMOS_DB_ENDPOINT        = var.cosmosdb_endpoint
+    MCMA_COSMOS_DB_KEY             = var.cosmosdb_key
+    MCMA_COSMOS_DB_DATABASE_ID     = local.cosmosdb_id
+    MCMA_COSMOS_DB_REGION          = var.azure_location
+    MCMA_WORKER_QUEUE_NAME         = azurerm_storage_queue.job_processor_worker_function_queue.name
+    MCMA_JOB_CHECKER_WORKFLOW_NAME = local.job_processor_job_checker_workflow_name
   }
 }
 
@@ -370,16 +370,16 @@ resource "azurerm_function_app" "job_processor_job_cleanup_function" {
     WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.job_processor_job_cleanup_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
-    TableName              = azurerm_cosmosdb_sql_container.job_processor_cosmosdb_container.name
-    PublicUrl              = local.job_processor_api_url
-    AzureSubscriptionId    = var.azure_subscription_id
-    AzureTenantId          = var.azure_tenant_id
-    AzureResourceGroupName = var.resource_group_name
-    CosmosDbEndpoint       = var.cosmosdb_endpoint
-    CosmosDbKey            = var.cosmosdb_key
-    CosmosDbDatabaseId     = local.cosmosdb_id
-    CosmosDbRegion         = var.azure_location
-    WorkerFunctionId       = azurerm_storage_queue.job_processor_worker_function_queue.name
+    MCMA_TABLE_NAME                = azurerm_cosmosdb_sql_container.job_processor_cosmosdb_container.name
+    MCMA_PUBLIC_URL                = local.job_processor_api_url
+    MCMA_AZURE_SUBSCRIPTION_ID     = var.azure_subscription_id
+    MCMA_AZURE_TENANT_ID           = var.azure_tenant_id
+    MCMA_AZURE_RESOURCE_GROUP_NAME = var.resource_group_name
+    MCMA_COSMOS_DB_ENDPOINT        = var.cosmosdb_endpoint
+    MCMA_COSMOS_DB_KEY             = var.cosmosdb_key
+    MCMA_COSMOS_DB_DATABASE_ID     = local.cosmosdb_id
+    MCMA_COSMOS_DB_REGION          = var.azure_location
+    MCMA_WORKER_QUEUE_NAME         = azurerm_storage_queue.job_processor_worker_function_queue.name
   }
 }
 

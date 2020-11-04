@@ -1,93 +1,97 @@
-{
-    "service_registry_url": {
+[
+    {
         "@type": "Service",
         "name": "Service Registry",
         "resources": [
             {
                 "@type": "ResourceEndpoint",
                 "resourceType": "Service",
-                "httpEndpoint": "/services"
+                "httpEndpoint": "{{{service_registry_url}}}services"
             },
             {
                 "@type": "ResourceEndpoint",
                 "resourceType": "JobProfile",
-                "httpEndpoint": "/job-profiles"
+                "httpEndpoint": "{{{service_registry_url}}}job-profiles"
             }
         ],
-        "authType": "AWS4"
+        "authType": "AzureAD",
+        "authContext": "{ \"scope\": \"{{{service_registry_url}}}.default\" }"
     },
-    "job_processor_url": {
+    {
         "@type": "Service",
         "name": "Job Processor Service",
         "resources": [
             {
                 "@type": "ResourceEndpoint",
                 "resourceType": "AmeJob",
-                "httpEndpoint": "/jobs"
+                "httpEndpoint": "{{{job_processor_url}}}jobs"
             },
             {
                 "@type": "ResourceEndpoint",
 				"resourceType": "AIJob",
-				"httpEndpoint": "/jobs"
+				"httpEndpoint": "{{{job_processor_url}}}jobs"
             },
             {
                 "@type": "ResourceEndpoint",
 				"resourceType": "CaptureJob",
-				"httpEndpoint": "/jobs"
+				"httpEndpoint": "{{{job_processor_url}}}jobs"
             },
             {
                 "@type": "ResourceEndpoint",
 				"resourceType": "QAJob",
-				"httpEndpoint": "/jobs"
+				"httpEndpoint": "{{{job_processor_url}}}jobs"
             },
             {
                 "@type": "ResourceEndpoint",
 				"resourceType": "TransferJob",
-				"httpEndpoint": "/jobs"
+				"httpEndpoint": "{{{job_processor_url}}}jobs"
             },
             {
                 "@type": "ResourceEndpoint",
 				"resourceType": "TransformJob",
-				"httpEndpoint": "/jobs"
+				"httpEndpoint": "{{{job_processor_url}}}jobs"
             },
             {
                 "@type": "ResourceEndpoint",
                 "resourceType": "WorkflowJob",
-                "httpEndpoint": "/jobs"
+                "httpEndpoint": "{{{job_processor_url}}}jobs"
             }
         ],
-        "authType": "AWS4"
+        "authType": "AzureAD",
+        "authContext": "{ \"scope\": \"{{{job_processor_url}}}.default\" }"
     },
-    "ffmpeg_service_url": {
+    {
         "@type": "Service",
         "name": "FFmpeg Transform Service",
         "resources": [
             {
                 "@type": "ResourceEndpoint",
                 "resourceType": "JobAssignment",
-                "httpEndpoint": "/job-assignments"
+                "httpEndpoint": "{{{ffmpeg_service_url}}}job-assignments"
             }
         ],
         "jobType": "TransformJob",
         "jobProfileIds": [
             "ExtractThumbnail"
         ],
-        "authType": "AWS4"
+        "authType": "AzureAD",
+        "authContext": "{ \"scope\": \"{{{ffmpeg_service_url}}}.default\" }"
     },
-    "mediainfo_service_url": {
+    {
         "@type": "Service",
         "name": "MediaInfo AME Service",
         "resources": [
             {
                 "@type": "ResourceEndpoint",
                 "resourceType": "JobAssignment",
-                "httpEndpoint": "/job-assignments"
+                "httpEndpoint": "{{{mediainfo_service_url}}}job-assignments"
             }
         ],
         "jobType": "AmeJob",
         "jobProfileIds": [
             "ExtractTechnicalMetadata"
         ],
-        "authType": "AWS4"
+        "authType": "AzureAD",
+        "authContext": "{ \"scope\": \"{{{mediainfo_service_url}}}.default\" }"
     }
-}
+]

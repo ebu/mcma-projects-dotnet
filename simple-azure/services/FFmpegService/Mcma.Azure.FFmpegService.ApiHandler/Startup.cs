@@ -10,9 +10,6 @@ namespace Mcma.Azure.FFmpegService.ApiHandler
     public class Startup : FunctionsStartup
     {
         public override void Configure(IFunctionsHostBuilder builder)
-            => builder.Services
-                      .AddMcmaAzureFunctionApiHandler(
-                          "ffmpeg-service-api-handler",
-                          apiBuilder => apiBuilder.AddDefaultJobAssignmentRoutes());
+            => builder.Services.AddMcmaAzureFunctionJobAssignmentApiHandler("ffmpeg-service-api-handler");
     }
 }

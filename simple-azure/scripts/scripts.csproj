@@ -7,8 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Mcma.Azure.Client" Version="0.14.0-alpha36" />
-        <PackageReference Include="Mcma.Azure.BlobStorage" Version="0.14.0-alpha36" />
+        <PackageReference Include="Mcma.Azure.Client" Version="0.14.0-alpha45" />
+        <PackageReference Include="Mcma.Azure.BlobStorage" Version="0.14.0-alpha45" />
     </ItemGroup>
     
 </Project>

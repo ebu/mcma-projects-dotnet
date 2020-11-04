@@ -16,14 +16,14 @@ namespace Mcma.Azure.Sample.Scripts.Common
             if (ServiceRegistryUrl == null)
                 throw new Exception("Service registry url not set.");
             
-            ServiceRegistryAuthType = this["service_registry_auth_type"]?["value"]?.Value<string>();
-            ServiceRegistryAuthContext = this["service_registry_auth_context"]?["value"]?.Value<string>();
-            UploadContainer = this["upload_bucket"]?["value"]?.Value<string>();
-            OutputContainer = this["output_bucket"]?["value"]?.Value<string>();
+            ServicesUrl = this["services_url"]?["value"]?.Value<string>();
+            ServiceRegistryAuthType = this["services_auth_type"]?["value"]?.Value<string>();
+            ServiceRegistryAuthContext = this["services_auth_context"]?["value"]?.Value<string>();
+
+            UploadContainer = this["upload_container"]?["value"]?.Value<string>();
+            OutputContainer = this["output_container"]?["value"]?.Value<string>();
             MediaStorageAccountName = this["media_storage_account_name"]?["value"]?.Value<string>();
             MediaStorageConnectionString = this["media_storage_connection_string"]?["value"]?.Value<string>();
-            
-            ServicesUrl = ServiceRegistryUrl + "/services";
         }
         
         public string ServiceRegistryUrl { get; }

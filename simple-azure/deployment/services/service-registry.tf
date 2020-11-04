@@ -3,6 +3,8 @@ locals {
   service_registry_api_function_name = "${var.global_prefix}-service-registry-api"
   service_registry_url               = "https://${local.service_registry_api_function_name}.azurewebsites.net"
   services_url                       = "${local.service_registry_url}/services"
+  services_auth_type                 = "AzureAD"
+  services_auth_context              = "{ \"scope\": \"${local.service_registry_url}/.default\" }"
 }
 
 resource "azurerm_cosmosdb_sql_container" "service_registry_cosmosdb_container" {
@@ -59,11 +61,11 @@ resource "azurerm_function_app" "service_registry_api_function" {
     WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.service_registry_api_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
-    TableName          = azurerm_cosmosdb_sql_container.service_registry_cosmosdb_container.name
-    PublicUrl          = local.service_registry_url
-    CosmosDbEndpoint   = var.cosmosdb_endpoint
-    CosmosDbKey        = var.cosmosdb_key
-    CosmosDbDatabaseId = local.cosmosdb_id
-    CosmosDbRegion     = var.azure_location
+    MCMA_TABLE_NAME            = azurerm_cosmosdb_sql_container.service_registry_cosmosdb_container.name
+    MCMA_PUBLIC_URL            = local.service_registry_url
+    MCMA_COSMOS_DB_ENDPOINT    = var.cosmosdb_endpoint
+    MCMA_COSMOS_DB_KEY         = var.cosmosdb_key
+    MCMA_COSMOS_DB_DATABASE_ID = local.cosmosdb_id
+    MCMA_COSMOS_DB_REGION      = var.azure_location
   }
 }

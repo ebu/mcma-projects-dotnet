@@ -11,7 +11,7 @@ namespace Mcma.Azure.Sample.Scripts.Common
         {
             var services = new ServiceCollection();
             services.AddSingleton<ExecutionIdProvider>();
-            services.AddMcmaClient(builder => builder.ConfigureForScripts());
+            services.AddMcmaClient(builder => builder.ConfigureForScripts(args));
             configure?.Invoke(services);
             services.AddSingleton<IScript, T>();
 

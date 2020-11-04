@@ -16,7 +16,7 @@ namespace Mcma.Azure.JobProcessor.Worker
 
         [FunctionName(nameof(JobProcessorWorker))]
         public Task ExecuteAsync(
-            [QueueTrigger("job-processor-work-queue", Connection = "WorkQueueStorage")] McmaWorkerRequest request,
+            [QueueTrigger("job-processor-work-queue", Connection = "MCMA_WORK_QUEUE_STORAGE")] McmaWorkerRequest request,
             ExecutionContext executionContext)
         {
             return Worker.DoWorkAsync(new McmaWorkerRequestContext(request, executionContext.InvocationId.ToString()));

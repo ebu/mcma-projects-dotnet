@@ -6,6 +6,9 @@ task postDeploy(type: Exec) {
     commandLine dotnetExecutable
     args "run"
     args "post-deploy"
+    args "--azureTenantId=${azureTenantId}"
+    args "--azureClientId=${azureClientId}"
+    args "--azureClientSecret=${azureClientSecret}"
 }
 
 task runJobs(type: Exec) {
@@ -14,6 +17,8 @@ task runJobs(type: Exec) {
     commandLine dotnetExecutable
     args "run"
     args "run-jobs"
-    args "--"
+    args "--azureTenantId=${azureTenantId}"
+    args "--azureClientId=${azureClientId}"
+    args "--azureClientSecret=${azureClientSecret}"
     args "--testFilePath=${testFilePath}"
 }

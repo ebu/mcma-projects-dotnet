@@ -51,18 +51,18 @@ resource "azurerm_function_app" "ffmpeg_service_worker_function" {
     WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.ffmpeg_service_worker_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
-    WorkQueueStorage             = var.app_storage_connection_string
-    TableName                    = azurerm_cosmosdb_sql_container.ffmpeg_service_cosmosdb_container.name
-    PublicUrl                    = local.ffmpeg_service_url
-    CosmosDbEndpoint             = var.cosmosdb_endpoint
-    CosmosDbKey                  = var.cosmosdb_key
-    CosmosDbDatabaseId           = local.cosmosdb_id
-    CosmosDbRegion               = var.azure_location
-    ServicesUrl                  = local.services_url
-    ServicesAuthType             = "AzureAD"
-    ServicesAuthContext          = "{ \"scope\": \"${local.service_registry_url}/.default\" }"
-    MediaStorageAccountName      = var.media_storage_account_name
-    MediaStorageConnectionString = var.media_storage_connection_string
+    MCMA_WORK_QUEUE_STORAGE              = var.app_storage_connection_string
+    MCMA_TABLE_NAME                      = azurerm_cosmosdb_sql_container.ffmpeg_service_cosmosdb_container.name
+    MCMA_PUBLIC_URL                      = local.ffmpeg_service_url
+    MCMA_COSMOS_DB_ENDPOINT              = var.cosmosdb_endpoint
+    MCMA_COSMOS_DB_KEY                   = var.cosmosdb_key
+    MCMA_COSMOS_DB_DATABASE_ID           = local.cosmosdb_id
+    MCMA_COSMOS_DB_REGION                = var.azure_location
+    MCMA_SERVICES_URL                    = local.services_url
+    MCMA_SERVICES_AUTH_TYPE              = local.services_auth_type
+    MCMA_SERVICES_AUTH_CONTEXT           = local.services_auth_context
+    MCMA_MEDIA_STORAGE_ACCOUNT_NAME      = var.media_storage_account_name
+    MCMA_MEDIA_STORAGE_CONNECTION_STRING = var.media_storage_connection_string
   }
 
   provisioner "local-exec" {
@@ -120,12 +120,12 @@ resource "azurerm_function_app" "ffmpeg_service_api_function" {
     WEBSITE_RUN_FROM_PACKAGE       = "${local.deploy_container_url}/${azurerm_storage_blob.ffmpeg_service_api_function_zip.name}${var.app_storage_sas}"
     APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.services_appinsights.instrumentation_key
 
-    TableName          = azurerm_cosmosdb_sql_container.ffmpeg_service_cosmosdb_container.name
-    PublicUrl          = local.ffmpeg_service_url
-    CosmosDbEndpoint   = var.cosmosdb_endpoint
-    CosmosDbKey        = var.cosmosdb_key
-    CosmosDbDatabaseId = local.cosmosdb_id
-    CosmosDbRegion     = var.azure_location
-    WorkerFunctionId   = azurerm_storage_queue.ffmpeg_service_worker_function_queue.name
+    MCMA_TABLE_NAME            = azurerm_cosmosdb_sql_container.ffmpeg_service_cosmosdb_container.name
+    MCMA_PUBLIC_URL            = local.ffmpeg_service_url
+    MCMA_COSMOS_DB_ENDPOINT    = var.cosmosdb_endpoint
+    MCMA_COSMOS_DB_KEY         = var.cosmosdb_key
+    MCMA_COSMOS_DB_DATABASE_ID = local.cosmosdb_id
+    MCMA_COSMOS_DB_REGION      = var.azure_location
+    MCMA_WORKER_QUEUE_NAME     = azurerm_storage_queue.ffmpeg_service_worker_function_queue.name
   }
 }

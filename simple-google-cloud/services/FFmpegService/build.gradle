@@ -1,0 +1,4 @@
+task packageCode {
+    dependsOn "Mcma.GoogleCloud.FFmpegService.ApiHandler:packageCode"
+    dependsOn "Mcma.GoogleCloud.FFmpegService.Worker:packageCode"
+}

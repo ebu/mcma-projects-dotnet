@@ -1,0 +1,3 @@
+task packageCode {
+    dependsOn "Mcma.GoogleCloud.ServiceRegistry.ApiHandler:packageCode"
+}

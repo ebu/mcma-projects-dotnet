@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <OutputType>exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Mcma.GoogleCloud.Functions.Worker" Version="0.14.0-rc1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mcma.GoogleCloud.JobProcessor.Common\Mcma.GoogleCloud.JobProcessor.Common.csproj" />
+  </ItemGroup>
+</Project>

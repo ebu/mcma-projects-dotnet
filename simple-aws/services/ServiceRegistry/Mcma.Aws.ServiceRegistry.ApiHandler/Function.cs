@@ -14,6 +14,8 @@ namespace Mcma.Aws.ServiceRegistry.ApiHandler
     {
         protected override void Configure(IServiceCollection services)
             => services.AddMcmaLambdaApiHandler("service-registry-api-handler",
-                                             apiBuilder => apiBuilder.AddDefaultRoutes<Service>().AddDefaultRoutes<JobProfile>());
+                                                apiBuilder =>
+                                                 apiBuilder.AddDefaultRoutes<Service>()
+                                                           .AddDefaultRoutes<JobProfile>());
     }
 }

@@ -1,0 +1,4 @@
+task packageCode {
+    dependsOn "Mcma.GoogleCloud.MediaInfoService.ApiHandler:packageCode"
+    dependsOn "Mcma.GoogleCloud.MediaInfoService.Worker:packageCode"
+}

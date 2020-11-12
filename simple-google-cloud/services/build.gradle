@@ -1,0 +1,6 @@
+task packageCode {
+    dependsOn "FFmpegService:packageCode"
+    dependsOn "JobProcessor:packageCode"
+    dependsOn "MediaInfoService:packageCode"
+    dependsOn "ServiceRegistry:packageCode"
+}

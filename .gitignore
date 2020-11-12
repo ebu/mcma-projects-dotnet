@@ -19,3 +19,4 @@ public-key.json
 client-secrets.json
 website-files.tf
 gradle.properties
+google-cloud-credentials.json

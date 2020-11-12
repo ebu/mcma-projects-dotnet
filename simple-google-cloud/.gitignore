@@ -1,0 +1,7 @@
+﻿.idea
+bin
+obj
+dist
+build
+/deployment/terraform.tfvars.json
+/deployment/terraform.output.json

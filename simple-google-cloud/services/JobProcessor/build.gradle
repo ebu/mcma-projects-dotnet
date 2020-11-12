@@ -1,0 +1,6 @@
+task packageCode {
+    dependsOn "Mcma.GoogleCloud.JobProcessor.ApiHandler:packageCode"
+    dependsOn "Mcma.GoogleCloud.JobProcessor.PeriodicJobChecker:packageCode"
+    dependsOn "Mcma.GoogleCloud.JobProcessor.PeriodicJobCleanup:packageCode"
+    dependsOn "Mcma.GoogleCloud.JobProcessor.Worker:packageCode"
+}

@@ -1,0 +1,106 @@
+task setMcmaVersion {
+    def projectFiles = files(fileTree(".") {
+        include "**/*.csproj"
+    })
+
+    inputs.files(projectFiles)
+    inputs.property("VERSION", mcmaVersion)
+    outputs.files(projectFiles)
+
+    doLast {
+        projectFiles.each {
+            def projectFileContents = projectFile.getText("UTF-8")
+    
+            def updated =
+                projectFileContents.replaceAll(
+                    /\<PackageReference\s+Include="(Mcma(?:\.\w+)+)"\s+Version="\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\d*)?"\s*\/\>/,
+                    '<PackageReference Include="$1" Version="' + mcmaVersion + '" />')
+    
+            projectFile.write(updated)
+        }
+    }
+}
+
+task stageProjectReferences {
+    dependsOn ":build"
+    def projectFiles = files(fileTree(".") {
+        include "**/*.csproj"
+    })
+
+    inputs.files(projectFiles)
+
+    doLast {
+        projectFiles.each { projectFile ->
+            def projectRefPattern = /\<ProjectReference\s+Include="(.+)"\s*\/\>/; 
+            def matcher = projectFile.getText("UTF-8") =~ projectRefPattern
+            
+            matcher.each { match ->
+                def refProjectFolder = file(match[1]).getParentFile()
+                copy {
+                    from refProjectFolder.getAbsolutePath()
+                    into "dist/staging"
+                    exclude "bin"
+                    exclude "dist"
+                    exclude "obj"
+                    exclude "*.gradle"
+                    exclude "*.csproj"
+                }
+            }
+        }
+    }
+}
+
+task stageProject(type: Copy) {
+    dependsOn stageProjectReferences
+    from "."
+    into "dist/staging"
+    exclude "bin"
+    exclude "dist"
+    exclude "obj"
+    exclude "*.gradle"
+}
+
+task removeProjectReferences {
+    dependsOn stageProject
+    def projectFiles = files(fileTree("dist/staging") {
+        include "**/*.csproj"
+    })
+
+    inputs.files(projectFiles)
+
+    doLast {
+        projectFiles.each { projectFile ->
+            def projectFileContents = projectFile.getText("UTF-8")
+            
+            def updated =
+                projectFileContents.replaceAll(
+                    /\<ItemGroup\>[\s\r\n]*(?:\<ProjectReference\s+Include="(.+)"\s*\/\>)+[\s\r\n]*\<\/ItemGroup\>/,
+                    "")
+                    
+            projectFile.write(updated)
+        }
+    }
+}
+
+task zipProjects(type: Zip) {
+    dependsOn removeProjectReferences
+    from "dist/staging"
+    archiveFileName = "function.zip"
+    destinationDirectory = file("dist")
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+task cleanStaging(type: Delete) {
+    dependsOn zipProjects
+    delete "dist/staging"
+}
+
+task packageCode {
+    dependsOn zipProjects
+    dependsOn cleanStaging
+}
+
+task clean(type: Delete) {
+    delete "dist"
+}

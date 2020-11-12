@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <OutputType>exe</OutputType>
+        <RootNamespace>Mcma.GoogleCloud.Sample.Scripts</RootNamespace>
+        <IsPublishable>false</IsPublishable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Mcma.GoogleCloud.Client" Version="0.14.0-rc1" />
+        <PackageReference Include="Mcma.GoogleCloud.Storage" Version="0.14.0-rc1" />
+    </ItemGroup>
+    
+</Project>

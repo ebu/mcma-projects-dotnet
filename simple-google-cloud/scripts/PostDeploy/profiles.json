@@ -1,0 +1,50 @@
+[
+    {
+        "@type": "JobProfile",
+        "name": "ExtractTechnicalMetadata",
+        "inputParameters": [
+            {
+                "parameterName": "inputFile",
+                "parameterType": "Locator"
+            },
+            {
+                "parameterName": "outputLocation",
+                "parameterType": "Locator"
+            }
+        ],
+        "outputParameters": [
+            {
+                "parameterName": "outputFile",
+                "parameterType": "Locator"
+            }
+        ]
+    },
+    {
+        "@type": "JobProfile",
+        "name": "ExtractThumbnail",
+        "inputParameters": [
+            {
+                "parameterName": "inputFile",
+                "parameterType": "Locator"
+            },
+            {
+                "parameterName": "outputLocation",
+                "parameterType": "Locator"
+            }
+        ],
+        "outputParameters": [
+            {
+                "parameterName": "outputFile",
+                "parameterType": "Locator"
+            }
+        ],
+        "OptionalInputParameters": [
+            {
+                "parameterName": "ebucore:width"
+            },
+            {
+                "parameterName": "ebucore:height"
+            }
+        ]
+    }
+]
